@@ -9,8 +9,6 @@ const DATE_TIME = new Intl.DateTimeFormat('en-GB', {
   minute: '2-digit',
 });
 
-const DATE = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
 const WEEKDAY = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
   day: 'numeric',
@@ -19,10 +17,6 @@ const WEEKDAY = new Intl.DateTimeFormat('en-GB', {
 
 export function formatDateTime(iso: string): string {
   return DATE_TIME.format(new Date(iso));
-}
-
-export function formatDate(iso: string): string {
-  return DATE.format(new Date(iso));
 }
 
 export function formatWeekday(iso: string): string {

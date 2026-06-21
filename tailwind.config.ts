@@ -5,7 +5,7 @@ import type { Config } from 'tailwindcss';
  * Color is reserved for *meaning* — debt, settled, attention — never decoration.
  */
 const config: Config = {
-  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
+  content: ['./src/app/**/*.{ts,tsx}', './src/components/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {

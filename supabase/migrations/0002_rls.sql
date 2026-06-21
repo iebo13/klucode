@@ -17,7 +17,9 @@ alter table cafe_settings enable row level security;
 
 -- ─── Helper: the caller's role, read once (§8 mirrored by data) ─────────
 -- security definer so it can read `staff` regardless of the caller's own RLS;
--- the (select auth.uid()) wrapper lets Postgres cache it per statement.
+-- the (select auth.uid()) wrapper lets Postgres cache it per statement. The
+-- policies below likewise call it as (select current_staff_role()) so the
+-- optimizer evaluates it once per statement (initplan) instead of per row.
 create function current_staff_role()
 returns staff_role
 language sql
@@ -36,8 +38,8 @@ create policy staff_read on staff
 
 create policy staff_write on staff
   for all
-  using (current_staff_role() = 'owner')
-  with check (current_staff_role() = 'owner');
+  using ((select current_staff_role()) = 'owner')
+  with check ((select current_staff_role()) = 'owner');
 
 -- ─── CUSTOMERS ──────────────────────────────────────────────────────────
 -- Anyone signed in may read and add customers; manager+ may edit basic info.
@@ -50,8 +52,8 @@ create policy cust_insert on customers
 
 create policy cust_update on customers
   for update
-  using (current_staff_role() in ('owner', 'manager'))
-  with check (current_staff_role() in ('owner', 'manager'));
+  using ((select current_staff_role()) in ('owner', 'manager'))
+  with check ((select current_staff_role()) in ('owner', 'manager'));
 
 -- ─── CAFÉ SETTINGS ──────────────────────────────────────────────────────
 -- Everyone signed in reads settings (café name, alert threshold); only the
@@ -61,8 +63,8 @@ create policy settings_read on cafe_settings
 
 create policy settings_update on cafe_settings
   for update
-  using (current_staff_role() = 'owner')
-  with check (current_staff_role() = 'owner');
+  using ((select current_staff_role()) = 'owner')
+  with check ((select current_staff_role()) = 'owner');
 
 -- ─── EVENTS — the heart of §3 ───────────────────────────────────────────
 -- Anyone signed in may READ the full history.
@@ -78,8 +80,8 @@ create policy ev_insert on events
 -- themselves as the voider.
 create policy ev_void on events
   for update
-  using (current_staff_role() = 'owner' and voided_at is null)
-  with check (current_staff_role() = 'owner' and voided_by = (select auth.uid()));
+  using ((select current_staff_role()) = 'owner' and voided_at is null)
+  with check ((select current_staff_role()) = 'owner' and voided_by = (select auth.uid()));
 
 -- NO delete policy exists → DELETE is denied to everyone, including the owner.
 

@@ -16,11 +16,6 @@ export function cents(value: number): Cents {
   return value as Cents;
 }
 
-/** Sum a list of cents, staying inside the brand. */
-export function sumCents(values: readonly Cents[]): Cents {
-  return cents(values.reduce<number>((total, c) => total + c, 0));
-}
-
 const EUR = new Intl.NumberFormat('en-IE', {
   style: 'currency',
   currency: 'EUR',

@@ -69,24 +69,27 @@ formatted `€1,234.56`. Floats of euros never appear.
 Dependencies point downward only. The UI never runs ad-hoc Supabase queries; it
 goes through the data-access layer, which returns clean domain types.
 
+All application code lives under `src/` (separating it from root config files,
+the current Next.js recommendation).
+
 ```
-UI            app/** + components/**     React components. Render state.
-Data access   lib/data/* + app/actions/* All Supabase reads/writes. Return domain types.
-Domain        domain/*                   Pure types + pure functions. No I/O. Unit-tested.
-Platform      lib/supabase/*, lib/money,  Clients, capability map, money utils.
-              lib/permissions
-Database      supabase/migrations/*       The real source of truth & the real lock:
-                                          schema + constraints + RLS + triggers + views.
+UI            src/app/** + src/components/**     React components. Render state.
+Data access   src/lib/data/* + src/app/actions/* All Supabase reads/writes. Return domain types.
+Domain        src/domain/*                       Pure types + pure functions. No I/O. Unit-tested.
+Platform      src/lib/supabase/*, src/lib/money, Clients, capability map, money utils.
+              src/lib/permissions
+Database      supabase/migrations/*              The real source of truth & the real lock:
+                                                 schema + constraints + RLS + triggers + views.
 ```
 
-- `domain/` knows _what things are_ and _how balances derive_. It imports no
+- `src/domain/` knows _what things are_ and _how balances derive_. It imports no
   Supabase client. `deriveBalanceCents`, `withRunningBalance`, `summariseBalance`
   live here.
-- `lib/data/` is the only place that queries Supabase. Each function returns
+- `src/lib/data/` is the only place that queries Supabase. Each function returns
   domain types, never raw rows.
-- `lib/permissions.ts` is the single capability map in code, mirrored by RLS.
+- `src/lib/permissions.ts` is the single capability map in code, mirrored by RLS.
 
-See `app/actions/` for the Server Actions (`recordCharge`, `recordPayment`,
+See `src/app/actions/` for the Server Actions (`recordCharge`, `recordPayment`,
 `voidEvent`, `addCustomer`, `changeRole`, `inviteColleague`, `updateSettings`).
 
 ---
@@ -199,25 +202,28 @@ no manual refresh — everyone sees the same tab, now.
 ## Project layout
 
 ```
-app/
-  (auth)/login/              Sign in / create account
-  (app)/                     Auth-guarded shell (sidebar / bottom tabs)
-    dashboard/               Total outstanding, today's figures, biggest debtors
-    customers/               Searchable roster  + [id] detail timeline + charge/pay
-    reports/                 Charged vs collected (manager+), CSV export (owner)
-    team/                    Roles & invites (owner)
-    settings/                Café name, time zone, alert threshold
-  actions/                   'use server' writes, validated with Zod
-  api/export/                Owner-only CSV download
-domain/                      Pure types + balance derivation (unit-tested)
-lib/
-  supabase/                  Browser / server / admin clients, generated-style types
-  data/                      Queries → domain types
-  money.ts permissions.ts    DRY money + the capability map
-components/                  Hand-rolled Tailwind UI
+src/
+  app/
+    (auth)/login/            Sign in / create account
+    (app)/                   Auth-guarded shell (sidebar / bottom tabs)
+      dashboard/             Total outstanding, today's figures, biggest debtors
+      customers/             Searchable roster + [id] detail timeline + charge/pay
+      reports/               Charged vs collected (manager+), CSV export (owner)
+      team/                  Roles & invites (owner)
+      settings/              Café name, time zone, alert threshold
+    actions/                 'use server' writes, validated with Zod
+    api/export/              Owner-only CSV download
+  domain/                    Pure types + balance derivation (unit-tested)
+  lib/
+    supabase/                Browser / server / admin clients, generated-style types
+    data/                    Queries → domain types
+    money.ts permissions.ts  DRY money + the capability map
+  components/                Hand-rolled Tailwind UI
+  middleware.ts              Session refresh + auth redirects
 supabase/migrations/         0001 schema, 0002 RLS + triggers + RPCs
 supabase/seed.sql            A working local dataset
 tests/                       balances.test.ts, append-only.e2e.ts
+.github/workflows/ci.yml     Typecheck + lint + format + test + build on every PR
 ```
 
 ---

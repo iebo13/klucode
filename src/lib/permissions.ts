@@ -16,8 +16,6 @@ export const can = {
   manageTeam: (role: Role) => role === 'owner',
 } as const;
 
-export type Capability = keyof typeof can;
-
 /** Human label for a role, for the Team screen and badges. */
 export function roleLabel(role: Role): string {
   switch (role) {
