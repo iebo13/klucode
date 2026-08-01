@@ -12,6 +12,7 @@ klucode/
 │   ├── 03-visual-identity.md   logo rules, colour, type, layout, imagery
 │   ├── 04-launch-playbook.md   pricing, German admin checklist, first 90 days
 │   ├── FONTS.md                licensing
+│   ├── board/                  the system as three PNG sheets
 │   ├── logo/                   17 SVGs — all generated, never hand-edited
 │   │   └── _build/             the generator
 │   └── tokens/                 tokens.json (source of truth) + generated CSS
