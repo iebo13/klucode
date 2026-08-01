@@ -22,6 +22,7 @@ licence live in ../FONTS.md.
 from __future__ import annotations
 
 import os
+import random
 import urllib.request
 from pathlib import Path
 
@@ -226,6 +227,65 @@ def graph_only_body(color: str, indent: str, scale: float, dx: float, dy: float)
     lines.append(f"{indent}  </g>")
     lines.append(f"{indent}</g>")
     return "\n".join(lines) + "\n"
+
+
+def constellation(seed: int, bg: str, on_dark: bool) -> str:
+    """A sparse node graph, 1600x900, for use as a background texture.
+
+    Nodes sit on a jittered grid so they read as organic without clustering;
+    each connects only to near neighbours, which is what makes it look like a
+    graph rather than a starfield. Density falls away toward the upper right so
+    there is always somewhere clean to put a headline.
+    """
+    rng = random.Random(seed)
+    W, H = 1600.0, 900.0
+    cols, rows = 13, 8
+    node_c = VIRIDIAN if not on_dark else "#5C9781"
+    edge_c = "#AECFC1" if not on_dark else "#2B564A"
+
+    pts: list[tuple[float, float, float]] = []
+    for r in range(rows):
+        for c in range(cols):
+            # Falloff: dense lower-left, empty upper-right.
+            weight = (c / (cols - 1)) * 0.5 + (1 - r / (rows - 1)) * 0.5
+            if rng.random() < weight * 0.62:
+                continue
+            x = (c + 0.5) / cols * W + rng.uniform(-38, 38)
+            y = (r + 0.5) / rows * H + rng.uniform(-30, 30)
+            pts.append((x, y, rng.uniform(2.6, 6.4)))
+
+    edges: set[tuple[int, int]] = set()
+    for i, (x1, y1, _) in enumerate(pts):
+        near = sorted(
+            (
+                (j, (x1 - x2) ** 2 + (y1 - y2) ** 2)
+                for j, (x2, y2, _) in enumerate(pts)
+                if j != i
+            ),
+            key=lambda t: t[1],
+        )[: rng.choice((1, 1, 2))]
+        for j, d2 in near:
+            if d2 < 250**2:
+                edges.add((min(i, j), max(i, j)))
+
+    lines = [
+        f'  <rect width="{fmt(W)}" height="{fmt(H)}" fill="{bg}"/>',
+        f'  <g stroke="{edge_c}" stroke-width="1.6" stroke-linecap="round" opacity="0.85">',
+    ]
+    for i, j in sorted(edges):
+        x1, y1, _ = pts[i]
+        x2, y2, _ = pts[j]
+        lines.append(
+            f'    <line x1="{fmt(x1)}" y1="{fmt(y1)}" '
+            f'x2="{fmt(x2)}" y2="{fmt(y2)}"/>'
+        )
+    lines.append("  </g>")
+    lines.append(f'  <g fill="{node_c}">')
+    for x, y, r in pts:
+        lines.append(f'    <circle cx="{fmt(x)}" cy="{fmt(y)}" r="{fmt(r)}"/>')
+    lines.append("  </g>")
+
+    return svg_doc(W, H, "\n".join(lines) + "\n", "KluCode")
 
 
 def wordmark_body(
@@ -442,6 +502,19 @@ def main() -> None:
         )
     )
     write("klucode-linkedin-banner.svg", svg_doc(b_w, b_h, b_body, "KluCode"))
+
+    # -- 8. Node-constellation textures ------------------------------------
+    # The house graphic device from 03-visual-identity.md §7: the logo's own
+    # node graph, scaled up. Vector rather than a raster image, so it stays
+    # crisp at any size and carries exact brand hex values.
+    #
+    # Seeded, so re-running produces byte-identical files. Never make this
+    # unseeded — a texture that changes on every build is not a brand asset.
+    for name, seed, bg, on_dark in (
+        ("klucode-texture-light.svg", 7, PAPER, False),
+        ("klucode-texture-dark.svg", 7, INK, True),
+    ):
+        write(name, constellation(seed, bg, on_dark))
 
     print(f"Wrote {len(written)} files to {OUT}:")
     for n in sorted(written):

@@ -12,7 +12,7 @@ klucode/
 │   ├── 03-visual-identity.md   logo rules, colour, type, layout, imagery
 │   ├── 04-launch-playbook.md   pricing, German admin checklist, first 90 days
 │   ├── FONTS.md                licensing
-│   ├── logo/                   15 SVGs — all generated, never hand-edited
+│   ├── logo/                   17 SVGs — all generated, never hand-edited
 │   │   └── _build/             the generator
 │   └── tokens/                 tokens.json (source of truth) + generated CSS
 └── web/                        Next.js 15, static export, DE + EN
@@ -64,7 +64,7 @@ Nothing under `brand/logo/` or `brand/tokens/tokens.css` is written by hand.
 
 ```bash
 pip install fonttools uharfbuzz brotli
-python3 brand/logo/_build/build_logos.py   # 15 SVGs
+python3 brand/logo/_build/build_logos.py   # 17 SVGs
 python3 brand/tokens/build_css.py          # tokens.css, in both places it is needed
 ```
 
