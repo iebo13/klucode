@@ -1,0 +1,81 @@
+name: Deploy KluCode site
+
+# Publishes klucode/web to GitHub Pages.
+#
+# Pages serves a project repo from a subpath (https://<owner>.github.io/<repo>/),
+# so the build is given NEXT_PUBLIC_BASE_PATH and NEXT_PUBLIC_SITE_URL rather
+# than assuming a domain root. Both come from configure-pages, so this works
+# unchanged if the repo is renamed or a custom domain is attached later.
+#
+# This is a PREVIEW deployment. The real site is a static export uploaded to
+# Plesk — see klucode/web/README.md. Nothing here changes that path.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'klucode/**'
+      - '.github/workflows/deploy-klucode.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two Pages deployments at once, but do not cancel one midway —
+# a half-finished deploy is worse than a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: klucode/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: klucode/web/package-lock.json
+
+      # enablement: true turns Pages on via the API if it is not already,
+      # so this needs no manual click in repository settings.
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - run: npm ci
+
+      - name: Verify
+        run: |
+          npm run typecheck
+          npm run lint
+          npm run format:check
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          NEXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.base_url }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: klucode/web/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

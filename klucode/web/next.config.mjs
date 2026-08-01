@@ -1,5 +1,16 @@
+// Where the site will be served from. Empty for a domain root (klucode.de,
+// Plesk, Netlify); "/test" or similar when GitHub Pages serves a project repo
+// from a subpath. configure-pages reports "/" for a user/org site, which Next
+// rejects — basePath must be empty or start with a slash and not be just one.
+const raw = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+const basePath = raw === '/' ? '' : raw.replace(/\/$/, '');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Next prefixes basePath onto <Link> hrefs and bundled assets automatically.
+  // It does NOT prefix string URLs in the metadata API or anything written by
+  // hand — see src/lib/base-path.ts for the places that need doing manually.
+  basePath,
   // Static export. Three reasons this is the right call for klucode.de:
   //  1. It deploys to the Plesk server KluCode already runs — plain files over
   //     FTP, no Node process to keep alive, no runtime to patch.
