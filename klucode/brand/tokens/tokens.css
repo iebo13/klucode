@@ -48,8 +48,8 @@
   --kc-text-display: clamp(2.75rem, 1.7rem + 4.6vw, 5rem);
 
   /* --- glass (scheme-independent parts) --------------------------- */
-  --kc-glass-blur: 16px;
-  --kc-glass-saturate: 1.4;
+  --kc-glass-blur: 12px;
+  --kc-glass-saturate: 1.9;
 
   /* --- space, radius, layout, motion ------------------------------ */
   --kc-space-1: 0.25rem;
@@ -86,10 +86,16 @@
   --kc-brandText: var(--kc-viridian-700);
   --kc-brandAction: var(--kc-viridian-600);
   --kc-onBrand: var(--kc-stone-50);
-  --kc-glass-fill: rgba(255, 255, 255, 0.66);
-  --kc-glass-fillStrong: rgba(255, 255, 255, 0.82);
-  --kc-glass-border: rgba(255, 255, 255, 0.75);
+  --kc-glass-fill: rgba(255, 255, 255, 0.44);
+  --kc-glass-fillStrong: rgba(255, 255, 255, 0.72);
+  --kc-glass-border: rgba(255, 255, 255, 0.65);
   --kc-glass-edge: rgba(12, 26, 21, 0.07);
+  --kc-glass-rim: rgba(255, 255, 255, 0.95);
+  --kc-glass-rimLow: rgba(255, 255, 255, 0.5);
+  --kc-glass-spec: rgba(255, 255, 255, 0.6);
+  --kc-glass-specLow: rgba(255, 255, 255, 0.26);
+  --kc-glass-cast: rgba(12, 26, 21, 0.16);
+  --kc-glass-depth: rgba(12, 26, 21, 0.32);
   --kc-glass-shadow: 0 1px 2px rgba(12, 26, 21, 0.03), 0 12px 32px -8px rgba(12, 26, 21, 0.10);
 }
 
@@ -107,10 +113,16 @@
     --kc-brandText: var(--kc-viridian-300);
     --kc-brandAction: var(--kc-viridian-400);
     --kc-onBrand: var(--kc-stone-900);
-    --kc-glass-fill: rgba(34, 48, 42, 0.62);
+    --kc-glass-fill: rgba(34, 48, 42, 0.5);
     --kc-glass-fillStrong: rgba(34, 48, 42, 0.82);
-    --kc-glass-border: rgba(169, 181, 174, 0.16);
+    --kc-glass-border: rgba(169, 181, 174, 0.2);
     --kc-glass-edge: rgba(255, 255, 255, 0.06);
+    --kc-glass-rim: rgba(255, 255, 255, 0.34);
+    --kc-glass-rimLow: rgba(255, 255, 255, 0.1);
+    --kc-glass-spec: rgba(255, 255, 255, 0.16);
+    --kc-glass-specLow: rgba(255, 255, 255, 0.06);
+    --kc-glass-cast: rgba(0, 0, 0, 0.55);
+    --kc-glass-depth: rgba(0, 0, 0, 0.6);
     --kc-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
   }
 }
@@ -126,10 +138,16 @@
   --kc-brandText: var(--kc-viridian-300);
   --kc-brandAction: var(--kc-viridian-400);
   --kc-onBrand: var(--kc-stone-900);
-  --kc-glass-fill: rgba(34, 48, 42, 0.62);
+  --kc-glass-fill: rgba(34, 48, 42, 0.5);
   --kc-glass-fillStrong: rgba(34, 48, 42, 0.82);
-  --kc-glass-border: rgba(169, 181, 174, 0.16);
+  --kc-glass-border: rgba(169, 181, 174, 0.2);
   --kc-glass-edge: rgba(255, 255, 255, 0.06);
+  --kc-glass-rim: rgba(255, 255, 255, 0.34);
+  --kc-glass-rimLow: rgba(255, 255, 255, 0.1);
+  --kc-glass-spec: rgba(255, 255, 255, 0.16);
+  --kc-glass-specLow: rgba(255, 255, 255, 0.06);
+  --kc-glass-cast: rgba(0, 0, 0, 0.55);
+  --kc-glass-depth: rgba(0, 0, 0, 0.6);
   --kc-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
 }
 
@@ -144,9 +162,15 @@
   --kc-brandText: var(--kc-viridian-700);
   --kc-brandAction: var(--kc-viridian-600);
   --kc-onBrand: var(--kc-stone-50);
-  --kc-glass-fill: rgba(255, 255, 255, 0.66);
-  --kc-glass-fillStrong: rgba(255, 255, 255, 0.82);
-  --kc-glass-border: rgba(255, 255, 255, 0.75);
+  --kc-glass-fill: rgba(255, 255, 255, 0.44);
+  --kc-glass-fillStrong: rgba(255, 255, 255, 0.72);
+  --kc-glass-border: rgba(255, 255, 255, 0.65);
   --kc-glass-edge: rgba(12, 26, 21, 0.07);
+  --kc-glass-rim: rgba(255, 255, 255, 0.95);
+  --kc-glass-rimLow: rgba(255, 255, 255, 0.5);
+  --kc-glass-spec: rgba(255, 255, 255, 0.6);
+  --kc-glass-specLow: rgba(255, 255, 255, 0.26);
+  --kc-glass-cast: rgba(12, 26, 21, 0.16);
+  --kc-glass-depth: rgba(12, 26, 21, 0.32);
   --kc-glass-shadow: 0 1px 2px rgba(12, 26, 21, 0.03), 0 12px 32px -8px rgba(12, 26, 21, 0.10);
 }

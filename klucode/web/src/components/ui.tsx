@@ -77,7 +77,7 @@ export function ButtonLink({
   const style =
     variant === 'primary'
       ? 'bg-brand-action text-on-brand shadow-[0_6px_20px_-6px_rgba(53,108,91,.55)] hover:bg-viridian-700 hover:shadow-[0_10px_28px_-8px_rgba(53,108,91,.65)]'
-      : 'glass text-body hover:border-brand-action hover:text-brand-text';
+      : 'glass glass-sm text-body hover:text-brand-text';
   return (
     <Link href={href} className={`${base} ${style}`}>
       {children}
@@ -129,7 +129,7 @@ export function Tags({ items }: { items: readonly string[] }) {
   return (
     <ul className="flex flex-wrap gap-2">
       {items.map((t) => (
-        <li key={t} className="glass rounded-full px-3 py-1 font-mono text-eyebrow text-muted">
+        <li key={t} className="glass glass-sm px-3 py-1 font-mono text-eyebrow text-muted">
           {t}
         </li>
       ))}

@@ -22,8 +22,11 @@ export function Header({
   const links = NAV_KEYS.map((k) => ({ key: k, href: pathFor(k, lang), label: c.nav[k] }));
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-[color-mix(in_srgb,var(--kc-surface)_72%,transparent)] backdrop-blur-xl backdrop-saturate-150">
-      <div className="mx-auto flex max-w-container items-center justify-between gap-6 px-6 py-4 md:px-10">
+    <header className="sticky top-0 z-50 px-4 pt-4 md:px-6 md:pt-5">
+      {/* A floating capsule rather than a full-width bar. This is the most
+          recognisable liquid-glass move: the chrome is an object sitting on
+          the page, with the content visibly flowing underneath it. */}
+      <div className="glass mx-auto flex max-w-container items-center justify-between gap-6 rounded-full py-3 pl-6 pr-3 md:pl-8 md:pr-4">
         <Link
           href={pathFor('home', lang)}
           className="shrink-0 text-[1.35rem]"
@@ -70,7 +73,7 @@ export function Header({
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="mobile-nav"
-          className="glass rounded-full px-4 py-2 font-mono text-eyebrow uppercase lg:hidden"
+          className="glass glass-sm px-4 py-2 font-mono text-eyebrow uppercase lg:hidden"
         >
           {open ? c.ui.close : c.ui.menu}
         </button>
@@ -80,7 +83,7 @@ export function Header({
         <nav
           id="mobile-nav"
           aria-label={c.ui.menu}
-          className="border-t border-line bg-surface px-6 py-6 lg:hidden"
+          className="glass mx-auto mt-3 max-w-container rounded-glass px-6 py-6 lg:hidden"
         >
           <ul className="flex flex-col gap-1">
             {[

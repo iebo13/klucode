@@ -259,48 +259,66 @@ something to tell clients about.
   ambient shadow that separates a panel from what it floats over. Never a hard
   drop shadow, never on flat elements, never to fake depth where there is none.
 
-### The glass layer
+### The liquid glass layer
 
-Panels are **frosted glass** floating over a soft aurora wash, not flat cards on
-a flat background. This is what carries the "modern" register — but glassmorphism
-is also the easiest way in modern UI to ship something beautiful and unreadable,
-so the system is bounded by four rules.
+Panels are **liquid glass** — slabs with thickness floating over an aurora wash —
+not flat frosted rectangles. Three things separate the two, and all three are
+required or the effect collapses back into "a white card with a shadow":
 
-**1. Fills stay opaque enough to read on.** `0.66` for standard panels, `0.82`
-for strong ones, never the `0.2–0.3` of design-shot glassmorphism. Below roughly
-`0.6` the wash behind starts showing through body text and contrast collapses.
-**Glass buys depth here, never legibility.**
+1. **A specular sweep.** A directional highlight raking across the face, as if
+   one light source is hitting a curved lens.
+2. **An edge refraction band.** A bright ring hugging the border — a *ring*,
+   masked to a fixed inset, not a `border` — where a real lens would bend and
+   concentrate light.
+3. **Thickness.** Paired inset highlights top and bottom plus an interior
+   shadow, so the panel has a bottom and reads as a slab rather than a hole cut
+   in a sheet.
 
-**2. Long copy and form fields sit on `glass-solid`** — a near-opaque panel
-(92% surface) that keeps the blur and the shadow but takes no chances with text.
+**The fill has to be low enough to transmit colour.** This is the counter-
+intuitive part: at `0.66` the panels read as plain white cards, because glass
+over a near-white background is white. Light fill is `0.44`, dark `0.50`, and
+the blur is *lower* than flat glass would use (12px) with saturation *higher*
+(1.9) — liquid glass transmits colour, it does not fog it.
 
-**3. The primary button is never glass.** It is a solid `viridian-600` fill. It
-is the one element on the page whose contrast is not permitted to depend on what
-happens to be behind it.
-
-**4. Every panel keeps a real 1px border and a hairline top highlight.** Without
-them a panel over a flat area stops reading as glass and becomes a vague pale
-rectangle.
+**Which means the aurora is not decoration, it is a requirement.** Glass with
+nothing behind it has nothing to refract. Sections that carry glass panels get
+`glow`; sections that do not, do not.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `glass-fill` | `rgba(255,255,255,.66)` | `rgba(34,48,42,.62)` |
-| `glass-fillStrong` | `rgba(255,255,255,.82)` | `rgba(34,48,42,.82)` |
-| `glass-border` | `rgba(255,255,255,.75)` | `rgba(169,181,174,.16)` |
-| `glass-blur` | `16px` | `16px` |
+| `glass-fill` | `rgba(255,255,255,.44)` | `rgba(34,48,42,.50)` |
+| `glass-fillStrong` | `rgba(255,255,255,.72)` | `rgba(34,48,42,.82)` |
+| `glass-rim` / `rimLow` | specular edge lights | — |
+| `glass-spec` / `specLow` | the face sweep | — |
+| `glass-cast` / `depth` | ambient float / interior shading | — |
+| `glass-blur` · `saturate` | `12px` · `1.9` | same |
 
-**The aurora** is the field the glass sits over: two or three very large,
-heavily blurred viridian washes bled off the section edges, plus a fine grain
-overlay to stop a 90px blur banding on 8-bit displays. It is **static** — a
-moving background is exactly the decoration this brand does not do — and it is
-applied per section via `glow`, not globally. Use it on card-heavy sections and
-the final call to action. A page where every section glows has no emphasis left.
+**Classes**
 
-**Verify, do not assume.** Composited contrast was measured on the rendered
-pixels — not on the declared CSS values, which lie the moment translucency is
-involved. Every text role clears its WCAG threshold in both schemes, the tightest
-being 6.5:1 against a 4.5 requirement. Re-run that audit after any change to
-fill opacity or aurora strength.
+- `.glass` — the standard panel. Radius `1.75rem`, 9px refraction band.
+- `.glass-sm` — pills, tags, small buttons. 4px band, full radius. Without it
+  the ring swallows the shape.
+- `.glass-strong` — higher fill where a panel overlaps busy content.
+- `.glass-solid` — near-opaque (92%), for long copy and form fields.
+
+**The four rules that keep it readable**
+
+1. Fills stay high enough that the audit passes — the number is not sacred, the
+   audit is.
+2. Long copy and form fields sit on `glass-solid`.
+3. **The primary button is never glass.** Solid `viridian-600`. It is the one
+   element whose contrast may not depend on what happens to be behind it.
+4. Every panel keeps its border and rim, or it stops reading as glass.
+
+**The chrome is an object.** The header is a floating capsule with page content
+visibly flowing underneath, not a full-width bar pinned to the top edge. That
+single move does more to signal the register than any amount of blur.
+
+**Verify, do not assume.** Composited contrast is measured on *rendered pixels* —
+declared CSS values lie the moment translucency is involved. Every text role
+clears its WCAG threshold in both schemes, tightest 6.44:1 against a 4.5
+requirement. **Re-run that audit after any change to fill opacity or aurora
+strength**, because both move the number.
 
 ### The house graphic device
 

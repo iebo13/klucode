@@ -268,7 +268,7 @@ def glass_demo(dark: bool) -> str:
         <div class="glass" style="flex:1;border-radius:1.25rem;padding:16px 18px">
           <p style="font:700 15px/1.2 var(--font-display);margin:0 0 5px;color:var(--kc-text)">glass</p>
           <p style="font:400 12px/1.5 var(--font-body);color:var(--kc-textMuted);margin:0">
-            Standard panel, 0.66 fill.</p>
+            Sweep, refraction band, thickness.</p>
         </div>
         <div class="glass-solid" style="flex:1;border-radius:1.25rem;padding:16px 18px">
           <p style="font:700 15px/1.2 var(--font-display);margin:0 0 5px;color:var(--kc-text)">glass-solid</p>
@@ -290,8 +290,8 @@ def glass_demo(dark: bool) -> str:
 
 SHEETS.append(f"""
 {eyebrow('Brand system · 04')}
-{h2('Glass')}
-{note('Panels are frosted glass over a soft aurora wash. Glassmorphism is the easiest way to ship something beautiful and unreadable, so the system is bounded — fills stay opaque enough to read on, and the composited contrast was measured on rendered pixels, not on declared CSS values.')}
+{h2('Liquid glass')}
+{note('Slabs with thickness floating over an aurora wash — a specular sweep across the face, an edge refraction band, and paired inset highlights so the panel has a bottom. The fill is deliberately LOW (0.44 light) because liquid glass has to transmit the colour behind it; at 0.66 the panels just read as white cards. The guardrail is not a fixed opacity, it is the audit: composited contrast is sampled from rendered pixels.')}
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:26px">
   {glass_demo(False)}
@@ -299,19 +299,19 @@ SHEETS.append(f"""
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
-  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">1 · Fills stay readable</p>'
+  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">1 · Fills transmit colour</p>'
          '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
-         '0.66 standard, 0.82 strong — never the 0.2–0.3 of design shots. Below ~0.6 the wash shows '
-         'through body text and contrast collapses.</p>')}
+         '0.44 light, 0.50 dark — low enough to transmit the aurora. The number is not sacred; '
+         'the measured audit is. Change a fill, re-run it.</p>')}
   {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">2 · Copy sits on solid</p>'
          '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
          'Long text and form fields use glass-solid — 92% opaque. Keeps the blur, takes no chances.</p>')}
   {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">3 · Primary is never glass</p>'
          '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
          'Solid viridian-600. The one element whose contrast may not depend on what is behind it.</p>')}
-  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">4 · Border + top edge</p>'
+  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">4 · Chrome is an object</p>'
          '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
-         'Without them a panel over a flat area stops reading as glass and becomes a pale rectangle.</p>')}
+         'The header is a floating capsule with content flowing underneath, not a bar pinned to the edge.</p>')}
 </div>
 
 <div style="margin-top:20px;border:1px solid var(--kc-border);border-radius:10px;padding:18px 22px">
@@ -319,7 +319,7 @@ SHEETS.append(f"""
             color:var(--kc-brandText);margin:0 0 8px">Measured on composited pixels, both schemes</p>
   <p style="font:400 12px/1.6 var(--font-body);color:var(--kc-textMuted);margin:0;max-width:96ch">
     Declared CSS colours lie once translucency is involved. Every text role was sampled from the
-    rendered page and checked against its WCAG threshold: all pass, the tightest at 6.52:1 against a
+    rendered page and checked against its WCAG threshold: all pass, the tightest at 6.44:1 against a
     4.5 requirement. Re-run the audit after any change to fill opacity or aurora strength.</p>
 </div>
 """)

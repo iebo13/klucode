@@ -81,47 +81,100 @@
     --node-dot: var(--kc-viridian-200);
   }
 
-  /* ---------------------------------------------------------------------
-     Glass
-     ---------------------------------------------------------------------
-     Frosted panels, layered over the aurora field below. Two rules keep this
-     from becoming the usual unreadable glassmorphism demo:
+  /* Liquid glass, not flat frosted glass. The difference is three things a
+     plain backdrop-blur panel does not have:
 
-     1. The fill stays at 0.62–0.82 opacity, not the 0.2–0.3 you see in
-        dribbble shots. Below ~0.6 the gradient behind starts showing through
-        body text and contrast collapses. Glass buys depth here, not
-        legibility.
-     2. Every panel keeps a real border and a hairline top highlight, so the
-        edge reads even where the panel sits over a flat area.
-     --------------------------------------------------------------------- */
+       a) a SPECULAR SWEEP — a directional highlight raking across the surface,
+          as if one light source is hitting a curved lens;
+       b) an EDGE REFRACTION BAND — a bright ring hugging the border where a
+          real lens bends and concentrates light;
+       c) THICKNESS — paired inset highlights top and bottom plus an inset
+          shadow, so the panel reads as a slab with depth rather than a hole
+          cut in a sheet.
+
+     The blur is deliberately lower than before (12px, not 16px) and the
+     saturation higher: liquid glass transmits colour, it does not fog it. */
   .glass {
     position: relative;
+    isolation: isolate;
+    border-radius: var(--lg-radius, 1.75rem);
     background: var(--kc-glass-fill);
-    border: 1px solid var(--kc-glass-border);
-    box-shadow: var(--kc-glass-shadow);
-    backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
-    -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
+    backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate)) brightness(1.04);
+    -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate))
+      brightness(1.04);
+    box-shadow:
+      /* ambient — the panel floats */
+      0 14px 40px -12px var(--kc-glass-cast),
+      0 3px 10px -4px var(--kc-glass-cast),
+      /* thickness: rim light along the top, bounce along the bottom */ inset 0 1.5px 0 -0.5px
+        var(--kc-glass-rim),
+      inset 0 -1px 0 -0.5px var(--kc-glass-rimLow),
+      /* the pane's own edge */ inset 0 0 0 1px var(--kc-glass-border),
+      /* interior depth, so the slab has a bottom */ inset 0 -22px 30px -28px var(--kc-glass-depth);
   }
 
-  /* The specular top edge that makes a panel read as glass rather than as a
-     translucent rectangle. */
+  /* Content must sit above both pseudo-element layers. */
+  .glass > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* (a) the specular sweep */
   .glass::before {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 1;
     border-radius: inherit;
-    padding-top: 1px;
-    background: linear-gradient(to bottom, var(--kc-glass-edge), transparent 42%);
+    pointer-events: none;
+    background:
+      linear-gradient(
+        142deg,
+        var(--kc-glass-spec) 0%,
+        transparent 34%,
+        transparent 68%,
+        var(--kc-glass-specLow) 100%
+      ),
+      radial-gradient(120% 80% at 12% -10%, var(--kc-glass-specLow), transparent 58%);
+  }
+
+  /* (b) the edge refraction band — a ring, not a border. Masked to a fixed
+     inset so it hugs the radius exactly. */
+  .glass::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    padding: var(--lg-band, 9px);
+    background: linear-gradient(
+      180deg,
+      var(--kc-glass-rim) 0%,
+      transparent 35%,
+      transparent 62%,
+      var(--kc-glass-rimLow) 100%
+    );
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
     mask-composite: exclude;
-    pointer-events: none;
+    opacity: 0.9;
   }
 
   .glass-strong {
     background: var(--kc-glass-fillStrong);
+  }
+
+  /* Small controls — pills, tags, buttons — need a tighter band or the ring
+     swallows the whole shape. */
+  .glass-sm {
+    --lg-band: 4px;
+    --lg-radius: 9999px;
   }
 
   /* Anything that has to stay readable — long copy, form fields — sits on a
@@ -151,9 +204,10 @@
        give two, and glass needs something behind it or it just reads as a white
        card with a shadow. */
     background:
-      radial-gradient(60rem 34rem at 18% 8%, var(--kc-viridian-100), transparent 70%),
-      radial-gradient(44rem 30rem at 88% 92%, var(--kc-viridian-100), transparent 70%);
-    opacity: 0.85;
+      radial-gradient(58rem 32rem at 16% 4%, var(--kc-viridian-300), transparent 68%),
+      radial-gradient(42rem 28rem at 86% 96%, var(--kc-viridian-300), transparent 68%),
+      radial-gradient(34rem 24rem at 62% 18%, var(--kc-viridian-200), transparent 72%);
+    opacity: 0.95;
   }
 
   .aurora::before,
@@ -170,7 +224,7 @@
     height: 34rem;
     top: -14rem;
     right: -10rem;
-    background: radial-gradient(closest-side, var(--kc-viridian-300), transparent);
+    background: radial-gradient(closest-side, var(--kc-viridian-400), transparent);
   }
 
   .aurora::after {
@@ -178,7 +232,7 @@
     height: 30rem;
     bottom: -16rem;
     left: -12rem;
-    background: radial-gradient(closest-side, var(--kc-viridian-200), transparent);
+    background: radial-gradient(closest-side, var(--kc-viridian-300), transparent);
   }
 
   @media (prefers-color-scheme: dark) {

@@ -66,7 +66,7 @@ export default {
         lg: radius.lg,
         // Glass panels need a softer corner than the flat system did — a
         // frosted panel with a 14px radius reads as a cut-out, not a pane.
-        glass: '1.25rem',
+        glass: '1.75rem',
       },
       maxWidth: {
         measure: layout.measure,

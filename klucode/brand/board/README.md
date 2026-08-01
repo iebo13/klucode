@@ -8,7 +8,7 @@ who is not going to read `03-visual-identity.md`.
 | `klucode-brand-system-1-logo.png` | Every lockup, the mark, favicon at 16–64px, avatar, LinkedIn banner |
 | `klucode-brand-system-2-colour.png` | Full scales with measured contrast, the display-colour rule, proportion |
 | `klucode-brand-system-3-type.png` | Three families with specimens, node textures, spacing, radius |
-| `klucode-brand-system-4-glass.png` | The glass layer in both schemes, its four rules, and the contrast audit |
+| `klucode-brand-system-4-glass.png` | The liquid glass layer in both schemes, its four rules, and the contrast audit |
 
 Use these when sending the brand to a printer, a client, or a collaborator. For
 anything that needs to *change*, go to the source: `../tokens/tokens.json` and

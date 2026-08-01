@@ -61,7 +61,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
             {h.heroProof.map((p) => (
               <li
                 key={p}
-                className="glass flex items-center gap-2.5 rounded-full px-4 py-2 font-mono text-eyebrow uppercase text-muted"
+                className="glass glass-sm flex items-center gap-2.5 px-4 py-2 font-mono text-eyebrow uppercase text-muted"
               >
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brand" />
                 {p}
