@@ -29,7 +29,15 @@ def resolve(ref: str) -> str:
 
 
 def role_vars(mode: str) -> list[str]:
-    return [f"  --kc-{k}: {resolve(v)};" for k, v in tokens["role"][mode].items()]
+    out = [f"  --kc-{k}: {resolve(v)};" for k, v in tokens["role"][mode].items()]
+    # The glass layer flips with the colour scheme alongside the roles, so a
+    # single [data-theme] switch carries the frosted panels too.
+    out += [
+        f"  --kc-glass-{k}: {v};"
+        for k, v in tokens["glass"][mode].items()
+        if not k.startswith("$")
+    ]
+    return out
 
 
 lines = [
@@ -45,7 +53,7 @@ lines = [
     ":root {",
     "  /* --- raw scales ------------------------------------------------- */",
 ]
-for g in ("viridian", "stone", "sand"):
+for g in ("viridian", "stone"):
     lines += scale_vars(g)
 lines += [
     f"  --kc-{k}: {v['value']};"
@@ -59,6 +67,13 @@ for name, f in tokens["font"].items():
 for name, v in tokens["scale"].items():
     if not name.startswith("$"):
         lines.append(f"  --kc-text-{name}: {v};")
+
+lines += [
+    "",
+    "  /* --- glass (scheme-independent parts) --------------------------- */",
+    f"  --kc-glass-blur: {tokens['glass']['blur']};",
+    f"  --kc-glass-saturate: {tokens['glass']['saturate']};",
+]
 
 lines += ["", "  /* --- space, radius, layout, motion ------------------------------ */"]
 for name, v in tokens["space"].items():

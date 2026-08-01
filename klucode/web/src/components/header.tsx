@@ -22,7 +22,7 @@ export function Header({
   const links = NAV_KEYS.map((k) => ({ key: k, href: pathFor(k, lang), label: c.nav[k] }));
 
   return (
-    <header className="bg-surface/90 sticky top-0 z-50 border-b border-line backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-line bg-[color-mix(in_srgb,var(--kc-surface)_72%,transparent)] backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex max-w-container items-center justify-between gap-6 px-6 py-4 md:px-10">
         <Link
           href={pathFor('home', lang)}
@@ -59,7 +59,7 @@ export function Header({
 
           <Link
             href={pathFor('contact', lang)}
-            className="rounded-md bg-brand-action px-5 py-2.5 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
+            className="rounded-full bg-brand-action px-5 py-2.5 text-small font-medium text-on-brand shadow-[0_6px_18px_-6px_rgba(53,108,91,.5)] transition-colors duration-base hover:bg-viridian-700"
           >
             {c.nav.contact}
           </Link>
@@ -70,7 +70,7 @@ export function Header({
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls="mobile-nav"
-          className="rounded-md border border-line px-4 py-2 font-mono text-eyebrow uppercase lg:hidden"
+          className="glass rounded-full px-4 py-2 font-mono text-eyebrow uppercase lg:hidden"
         >
           {open ? c.ui.close : c.ui.menu}
         </button>

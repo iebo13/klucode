@@ -24,9 +24,9 @@ export default {
       colors: {
         viridian: scale(color.viridian),
         stone: scale(color.stone),
-        sand: scale(color.sand),
         success: color.semantic.success.value,
         warning: color.semantic.warning.value,
+        'warning-surface': color.semantic.warningSurface.value,
         danger: color.semantic.danger.value,
 
         // Semantic roles, wired to CSS variables so a single [data-theme]
@@ -64,6 +64,9 @@ export default {
         sm: radius.sm,
         md: radius.md,
         lg: radius.lg,
+        // Glass panels need a softer corner than the flat system did — a
+        // frosted panel with a 14px radius reads as a cut-out, not a pane.
+        glass: '1.25rem',
       },
       maxWidth: {
         measure: layout.measure,

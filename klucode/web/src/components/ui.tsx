@@ -12,19 +12,25 @@ export function Section({
   children,
   className = '',
   tint = false,
+  glow = false,
   id,
 }: {
   children: ReactNode;
   className?: string;
   tint?: boolean;
+  /** Adds an aurora wash behind the section. Use sparingly — it is punctuation. */
+  glow?: boolean;
   id?: string;
 }) {
   return (
     <section
       id={id}
-      className={`${tint ? 'bg-surface-alt' : ''} border-t border-line ${className}`}
+      className={`relative isolate overflow-hidden border-t border-line ${
+        tint ? 'bg-surface-alt' : ''
+      } ${className}`}
     >
-      <div className="mx-auto max-w-container px-6 py-section md:px-10">{children}</div>
+      {glow ? <div aria-hidden="true" className="aurora grain -z-10" /> : null}
+      <div className="relative mx-auto max-w-container px-6 py-section md:px-10">{children}</div>
     </section>
   );
 }
@@ -50,7 +56,7 @@ export function SectionHead({
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 font-display text-[0.95rem] font-medium transition-colors duration-base ease-brand';
+  'inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-display text-[0.95rem] font-medium transition-all duration-base ease-brand';
 
 /**
  * Primary buttons sit on viridian-600, not the brand viridian-500. On 500 the
@@ -66,10 +72,12 @@ export function ButtonLink({
   children: ReactNode;
   variant?: 'primary' | 'secondary';
 }) {
+  // The primary button stays a solid fill, not glass. It is the one element on
+  // the page whose contrast is not allowed to depend on what sits behind it.
   const style =
     variant === 'primary'
-      ? 'bg-brand-action text-on-brand hover:bg-viridian-700'
-      : 'border border-line text-body hover:border-brand-action hover:text-brand-text';
+      ? 'bg-brand-action text-on-brand shadow-[0_6px_20px_-6px_rgba(53,108,91,.55)] hover:bg-viridian-700 hover:shadow-[0_10px_28px_-8px_rgba(53,108,91,.65)]'
+      : 'glass text-body hover:border-brand-action hover:text-brand-text';
   return (
     <Link href={href} className={`${base} ${style}`}>
       {children}
@@ -95,9 +103,24 @@ export function ArrowLink({ href, children }: { href: string; children: ReactNod
   );
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = '',
+  solid = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Near-opaque variant for panels carrying long copy or form fields. */
+  solid?: boolean;
+}) {
   return (
-    <div className={`rounded-lg border border-line bg-surface p-7 ${className}`}>{children}</div>
+    <div
+      className={`rounded-glass p-7 transition-shadow duration-slow ease-brand ${
+        solid ? 'glass-solid' : 'glass'
+      } ${className}`}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -106,10 +129,7 @@ export function Tags({ items }: { items: readonly string[] }) {
   return (
     <ul className="flex flex-wrap gap-2">
       {items.map((t) => (
-        <li
-          key={t}
-          className="rounded-sm border border-line px-2.5 py-1 font-mono text-eyebrow text-muted"
-        >
+        <li key={t} className="glass rounded-full px-3 py-1 font-mono text-eyebrow text-muted">
           {t}
         </li>
       ))}

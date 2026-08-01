@@ -8,8 +8,9 @@ import { pathFor, type Lang } from '@/lib/routes';
 
 function PageHero({ eyebrow, title, lead }: { eyebrow: string; title: string; lead: string }) {
   return (
-    <section className="relative overflow-hidden">
-      <div aria-hidden="true" className="node-field absolute inset-0 opacity-50" />
+    <section className="relative isolate overflow-hidden">
+      <div aria-hidden="true" className="aurora grain -z-10" />
+      <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-40" />
       <div className="relative mx-auto max-w-container px-6 pb-16 pt-20 md:px-10 md:pt-24">
         <Eyebrow>{eyebrow}</Eyebrow>
         <h1 className="mt-6 max-w-4xl text-h1">{title}</h1>
@@ -144,7 +145,7 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
       ))}
 
       <Section>
-        <div className="max-w-narrow rounded-lg border border-line p-8">
+        <div className="glass max-w-narrow rounded-glass p-8">
           <h2 className="font-display text-h3">{w.noteTitle}</h2>
           <p className="mt-3 text-muted">{w.noteBody}</p>
         </div>
@@ -236,7 +237,7 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
           <div>
             {/* Replace with a real photograph before launch — see
                 brand/03-visual-identity.md §8. */}
-            <div className="flex aspect-[4/5] items-end rounded-lg border border-dashed border-line bg-surface-alt p-6">
+            <div className="glass flex aspect-[4/5] items-end rounded-glass border-dashed p-6">
               <p className="text-small text-muted">{a.portraitPlaceholder}</p>
             </div>
 
@@ -330,7 +331,7 @@ export function ImprintPage({ c }: { lang: Lang; c: Content }) {
       {todos.length > 0 ? (
         <div
           role="alert"
-          className="mt-10 rounded-lg border-2 border-warning bg-sand-100 p-7 text-stone-900"
+          className="mt-10 rounded-glass border-2 border-warning bg-warning-surface p-7 text-stone-900"
         >
           <h2 className="font-display text-h3">{c.imprint.todoWarningTitle}</h2>
           <p className="mt-3 text-small">{c.imprint.todoWarningBody}</p>
@@ -387,7 +388,7 @@ export function PrivacyPage({ c }: { lang: Lang; c: Content }) {
 
 function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
   return (
-    <Section tint>
+    <Section tint glow>
       <div className="max-w-narrow">
         <h2 className="text-h2">{c.home.finalTitle}</h2>
         <p className="mt-5 max-w-measure text-lead text-muted">{c.home.finalLead}</p>

@@ -29,10 +29,9 @@
   --kc-stone-700: #35423B;
   --kc-stone-800: #22302A;
   --kc-stone-900: #0C1A15;
-  --kc-sand-100: #F0EBE0;
-  --kc-sand-200: #E4DCCA;
   --kc-success: #2B564A;
   --kc-warning: #8A5A16;
+  --kc-warningSurface: #F6EFE2;
   --kc-danger: #8C2F26;
 
   /* --- type ------------------------------------------------------- */
@@ -47,6 +46,10 @@
   --kc-text-h2: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
   --kc-text-h1: clamp(2.25rem, 1.6rem + 3vw, 4rem);
   --kc-text-display: clamp(2.75rem, 1.7rem + 4.6vw, 5rem);
+
+  /* --- glass (scheme-independent parts) --------------------------- */
+  --kc-glass-blur: 16px;
+  --kc-glass-saturate: 1.4;
 
   /* --- space, radius, layout, motion ------------------------------ */
   --kc-space-1: 0.25rem;
@@ -74,7 +77,7 @@
 
   /* --- semantic roles: light (default) ---------------------------- */
   --kc-surface: var(--kc-stone-50);
-  --kc-surfaceAlt: var(--kc-sand-100);
+  --kc-surfaceAlt: var(--kc-viridian-50);
   --kc-surfaceInverse: var(--kc-stone-900);
   --kc-border: var(--kc-stone-200);
   --kc-text: var(--kc-stone-900);
@@ -83,6 +86,11 @@
   --kc-brandText: var(--kc-viridian-700);
   --kc-brandAction: var(--kc-viridian-600);
   --kc-onBrand: var(--kc-stone-50);
+  --kc-glass-fill: rgba(255, 255, 255, 0.66);
+  --kc-glass-fillStrong: rgba(255, 255, 255, 0.82);
+  --kc-glass-border: rgba(255, 255, 255, 0.75);
+  --kc-glass-edge: rgba(12, 26, 21, 0.07);
+  --kc-glass-shadow: 0 1px 2px rgba(12, 26, 21, 0.03), 0 12px 32px -8px rgba(12, 26, 21, 0.10);
 }
 
 /* Dark mode follows the OS by default, and can be forced with
@@ -90,7 +98,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --kc-surface: var(--kc-stone-900);
-    --kc-surfaceAlt: var(--kc-stone-800);
+    --kc-surfaceAlt: var(--kc-viridian-900);
     --kc-surfaceInverse: var(--kc-stone-50);
     --kc-border: var(--kc-stone-700);
     --kc-text: var(--kc-stone-50);
@@ -99,12 +107,17 @@
     --kc-brandText: var(--kc-viridian-300);
     --kc-brandAction: var(--kc-viridian-400);
     --kc-onBrand: var(--kc-stone-900);
+    --kc-glass-fill: rgba(34, 48, 42, 0.62);
+    --kc-glass-fillStrong: rgba(34, 48, 42, 0.82);
+    --kc-glass-border: rgba(169, 181, 174, 0.16);
+    --kc-glass-edge: rgba(255, 255, 255, 0.06);
+    --kc-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
   }
 }
 
 [data-theme="dark"] {
   --kc-surface: var(--kc-stone-900);
-  --kc-surfaceAlt: var(--kc-stone-800);
+  --kc-surfaceAlt: var(--kc-viridian-900);
   --kc-surfaceInverse: var(--kc-stone-50);
   --kc-border: var(--kc-stone-700);
   --kc-text: var(--kc-stone-50);
@@ -113,11 +126,16 @@
   --kc-brandText: var(--kc-viridian-300);
   --kc-brandAction: var(--kc-viridian-400);
   --kc-onBrand: var(--kc-stone-900);
+  --kc-glass-fill: rgba(34, 48, 42, 0.62);
+  --kc-glass-fillStrong: rgba(34, 48, 42, 0.82);
+  --kc-glass-border: rgba(169, 181, 174, 0.16);
+  --kc-glass-edge: rgba(255, 255, 255, 0.06);
+  --kc-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
 }
 
 [data-theme="light"] {
   --kc-surface: var(--kc-stone-50);
-  --kc-surfaceAlt: var(--kc-sand-100);
+  --kc-surfaceAlt: var(--kc-viridian-50);
   --kc-surfaceInverse: var(--kc-stone-900);
   --kc-border: var(--kc-stone-200);
   --kc-text: var(--kc-stone-900);
@@ -126,4 +144,9 @@
   --kc-brandText: var(--kc-viridian-700);
   --kc-brandAction: var(--kc-viridian-600);
   --kc-onBrand: var(--kc-stone-50);
+  --kc-glass-fill: rgba(255, 255, 255, 0.66);
+  --kc-glass-fillStrong: rgba(255, 255, 255, 0.82);
+  --kc-glass-border: rgba(255, 255, 255, 0.75);
+  --kc-glass-edge: rgba(12, 26, 21, 0.07);
+  --kc-glass-shadow: 0 1px 2px rgba(12, 26, 21, 0.03), 0 12px 32px -8px rgba(12, 26, 21, 0.10);
 }

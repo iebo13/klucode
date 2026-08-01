@@ -40,8 +40,9 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   return (
     <Shell lang={lang} current="home">
       {/* ---------------------------------------------------------------- hero */}
-      <section className="relative overflow-hidden">
-        <div aria-hidden="true" className="node-field absolute inset-0 opacity-60" />
+      <section className="relative isolate overflow-hidden">
+        <div aria-hidden="true" className="aurora grain -z-10" />
+        <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-50" />
         <div className="relative mx-auto max-w-container px-6 pb-section pt-20 md:px-10 md:pt-28">
           <Eyebrow>{h.heroEyebrow}</Eyebrow>
           <h1 className="mt-6 max-w-4xl text-display">
@@ -56,11 +57,11 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
             </ButtonLink>
           </div>
 
-          <ul className="mt-14 flex flex-wrap gap-x-10 gap-y-4 border-t border-line pt-8">
+          <ul className="mt-14 flex flex-wrap gap-3">
             {h.heroProof.map((p) => (
               <li
                 key={p}
-                className="flex items-center gap-2.5 font-mono text-eyebrow uppercase text-muted"
+                className="glass flex items-center gap-2.5 rounded-full px-4 py-2 font-mono text-eyebrow uppercase text-muted"
               >
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brand" />
                 {p}
@@ -71,7 +72,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </section>
 
       {/* ------------------------------------------------------------- problem */}
-      <Section tint>
+      <Section tint glow>
         <SectionHead eyebrow={h.problemEyebrow} title={h.problemTitle} lead={h.problemLead} />
         <div className="mt-14 grid gap-6 md:grid-cols-3">
           {h.problemCards.map((card) => (
@@ -89,11 +90,14 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ------------------------------------------------------------ services */}
-      <Section>
+      <Section glow>
         <SectionHead eyebrow={h.servicesEyebrow} title={h.servicesTitle} />
-        <div className="mt-14 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2">
+        <div className="mt-14 grid gap-5 sm:grid-cols-2">
           {c.services.items.map((s) => (
-            <div key={s.key} className="flex flex-col justify-between gap-6 bg-surface p-8">
+            <div
+              key={s.key}
+              className="glass flex flex-col justify-between gap-6 rounded-glass p-8"
+            >
               <div>
                 <h3 className="text-h3">{s.name}</h3>
                 <p className="mt-2 text-small text-muted">{s.forWhom}</p>
@@ -111,7 +115,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ---------------------------------------------------------------- work */}
-      <Section tint>
+      <Section tint glow>
         <SectionHead eyebrow={h.workEyebrow} title={h.workTitle} lead={h.workLead} />
         <div className="mt-14 space-y-6">
           {c.work.projects.map((p) => (
@@ -170,7 +174,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ----------------------------------------------------------- final cta */}
-      <Section>
+      <Section glow>
         <div className="max-w-narrow">
           <h2 className="text-h1">{h.finalTitle}</h2>
           <p className="mt-6 max-w-measure text-lead text-muted">{h.finalLead}</p>

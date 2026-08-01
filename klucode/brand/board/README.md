@@ -1,6 +1,6 @@
 # Brand system board
 
-Three sheets, 3000×~2400 px at 2× — the visual summary of the system for anyone
+Four sheets, 3000×~2400 px at 2× — the visual summary of the system for anyone
 who is not going to read `03-visual-identity.md`.
 
 | Sheet | Covers |
@@ -8,6 +8,7 @@ who is not going to read `03-visual-identity.md`.
 | `klucode-brand-system-1-logo.png` | Every lockup, the mark, favicon at 16–64px, avatar, LinkedIn banner |
 | `klucode-brand-system-2-colour.png` | Full scales with measured contrast, the display-colour rule, proportion |
 | `klucode-brand-system-3-type.png` | Three families with specimens, node textures, spacing, radius |
+| `klucode-brand-system-4-glass.png` | The glass layer in both schemes, its four rules, and the contrast audit |
 
 Use these when sending the brand to a printer, a client, or a collaborator. For
 anything that needs to *change*, go to the source: `../tokens/tokens.json` and
@@ -27,7 +28,7 @@ cd ../../web && npm install && npm run build
 python3 ../brand/board/build_board.py          # writes web/out/board.html
 ```
 
-Then screenshot the three `#sheet1` / `#sheet2` / `#sheet3` elements at
+Then screenshot the `#sheet1` … `#sheet4` elements at
 `deviceScaleFactor: 2`. Any headless browser will do; the repo used Chromium via
 Playwright.
 

@@ -41,7 +41,6 @@ def swatches(scale, star=None):
     out = []
     for step, hexv, onp, oni in scale:
         mark = " ★" if step == star else ""
-        light = int(step) <= 300
         out.append(
             f'<div style="flex:1;min-width:0">'
             f'<div style="height:74px;background:{hexv};border-radius:6px;'
@@ -144,7 +143,7 @@ SHEETS.append(f"""
 {h2('Colour')}
 {note('Every ratio below was measured, not estimated. The two numbers under each swatch are contrast on paper #F2F4F1 / on ink #0C1A15.')}
 
-<div style="border:2px solid var(--kc-warning);background:var(--kc-sand-100);
+<div style="border:2px solid var(--kc-warning);background:var(--kc-warningSurface, #F6EFE2);
             border-radius:10px;padding:20px 24px;margin-bottom:26px">
   <p style="font:700 17px/1.3 var(--font-display);margin:0 0 6px;color:var(--kc-stone-900)">
     Viridian #40826D is a display colour, not a text colour</p>
@@ -167,9 +166,9 @@ SHEETS.append(f"""
 <div style="display:grid;grid-template-columns:1fr 2fr;gap:18px">
   <div>
     <p style="font:500 11px/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;
-              color:var(--kc-textMuted);margin:0 0 10px">Sand — surfaces only</p>
+              color:var(--kc-textMuted);margin:0 0 10px">Alternating surface · alert surface</p>
     <div style="display:flex;gap:8px">
-      {swatches([('100','#F0EBE0',1.07,15.04),('200','#E4DCCA',1.23,13.11)])}
+      {swatches([('alt','#EDF4F1',1.01,16.02),('warn','#F6EFE2',1.05,14.86)])}
     </div>
   </div>
   <div>
@@ -180,10 +179,9 @@ SHEETS.append(f"""
       <div style="flex:70;background:var(--kc-stone-50)"></div>
       <div style="flex:20;background:var(--kc-stone-200)"></div>
       <div style="flex:8;background:var(--kc-viridian-500)"></div>
-      <div style="flex:2;background:var(--kc-sand-200)"></div>
     </div>
     <p style="font:400 10px/1.4 var(--font-mono);color:var(--kc-textMuted);margin-top:7px">
-      70% paper or ink · 20% stone · 8% viridian · 2% sand</p>
+      72% paper or ink · 20% stone · 8% viridian</p>
   </div>
 </div>
 """)
@@ -252,6 +250,77 @@ SHEETS.append(f"""
       )
     + '</div>' + cap('Radius — restrained; the logo nodes supply the roundness')
   )}
+</div>
+""")
+
+
+# ---------------------------------------------------------------- sheet 4
+def glass_demo(dark: bool) -> str:
+    scheme = "dark" if dark else "light"
+    bg = "var(--kc-stone-900)" if dark else "var(--kc-stone-50)"
+    return f"""
+    <div data-theme="{scheme}" style="position:relative;isolation:isolate;overflow:hidden;
+                border-radius:12px;background:{bg};padding:30px 28px;min-height:250px">
+      <div class="aurora grain" style="z-index:-1"></div>
+      <p style="font:500 10px/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;
+                color:var(--kc-brandText);margin:0 0 12px">{scheme}</p>
+      <div style="display:flex;gap:12px;margin-bottom:14px">
+        <div class="glass" style="flex:1;border-radius:1.25rem;padding:16px 18px">
+          <p style="font:700 15px/1.2 var(--font-display);margin:0 0 5px;color:var(--kc-text)">glass</p>
+          <p style="font:400 12px/1.5 var(--font-body);color:var(--kc-textMuted);margin:0">
+            Standard panel, 0.66 fill.</p>
+        </div>
+        <div class="glass-solid" style="flex:1;border-radius:1.25rem;padding:16px 18px">
+          <p style="font:700 15px/1.2 var(--font-display);margin:0 0 5px;color:var(--kc-text)">glass-solid</p>
+          <p style="font:400 12px/1.5 var(--font-body);color:var(--kc-textMuted);margin:0">
+            Long copy and form fields.</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="background:var(--kc-brandAction);color:var(--kc-onBrand);border-radius:9999px;
+                     padding:9px 18px;font:500 13px/1 var(--font-display);
+                     box-shadow:0 6px 20px -6px rgba(53,108,91,.55)">Projekt besprechen</span>
+        <span class="glass" style="border-radius:9999px;padding:9px 18px;
+                     font:500 13px/1 var(--font-display);color:var(--kc-text)">Projekte ansehen</span>
+        <span class="glass" style="border-radius:9999px;padding:6px 13px;
+                     font:400 10px/1.3 var(--font-mono);color:var(--kc-textMuted)">POSTGRESQL</span>
+      </div>
+    </div>"""
+
+
+SHEETS.append(f"""
+{eyebrow('Brand system · 04')}
+{h2('Glass')}
+{note('Panels are frosted glass over a soft aurora wash. Glassmorphism is the easiest way to ship something beautiful and unreadable, so the system is bounded — fills stay opaque enough to read on, and the composited contrast was measured on rendered pixels, not on declared CSS values.')}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:26px">
+  {glass_demo(False)}
+  {glass_demo(True)}
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">1 · Fills stay readable</p>'
+         '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
+         '0.66 standard, 0.82 strong — never the 0.2–0.3 of design shots. Below ~0.6 the wash shows '
+         'through body text and contrast collapses.</p>')}
+  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">2 · Copy sits on solid</p>'
+         '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
+         'Long text and form fields use glass-solid — 92% opaque. Keeps the blur, takes no chances.</p>')}
+  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">3 · Primary is never glass</p>'
+         '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
+         'Solid viridian-600. The one element whose contrast may not depend on what is behind it.</p>')}
+  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">4 · Border + top edge</p>'
+         '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
+         'Without them a panel over a flat area stops reading as glass and becomes a pale rectangle.</p>')}
+</div>
+
+<div style="margin-top:20px;border:1px solid var(--kc-border);border-radius:10px;padding:18px 22px">
+  <p style="font:500 10px/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;
+            color:var(--kc-brandText);margin:0 0 8px">Measured on composited pixels, both schemes</p>
+  <p style="font:400 12px/1.6 var(--font-body);color:var(--kc-textMuted);margin:0;max-width:96ch">
+    Declared CSS colours lie once translucency is involved. Every text role was sampled from the
+    rendered page and checked against its WCAG threshold: all pass, the tightest at 6.52:1 against a
+    4.5 requirement. Re-run the audit after any change to fill opacity or aurora strength.</p>
 </div>
 """)
 
