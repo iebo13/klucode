@@ -49,7 +49,14 @@ export const profile = {
 
   // --- online ------------------------------------------------------------
   domain: 'klucode.de',
-  siteUrl: 'https://klucode.de',
+
+  /**
+   * Absolute origin used for canonical URLs, hreflang, sitemap.xml, robots.txt
+   * and OG image URLs. Overridable so a preview deploy (GitHub Pages) does not
+   * advertise klucode.de as its canonical home — which would tell search
+   * engines the preview is the real site.
+   */
+  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://klucode.de').replace(/\/$/, ''),
   linkedin: todo('LinkedIn-Profil-URL'),
   github: todo('GitHub-URL (optional — leer lassen, wenn nicht gewünscht)'),
 

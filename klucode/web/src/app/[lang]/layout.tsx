@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { getContent } from '@/content';
 import { profile } from '@/content/profile';
+import { asset } from '@/lib/base-path';
 import { LANGS, isLang, type Lang } from '@/lib/routes';
 
 import '../globals.css';
@@ -70,8 +71,8 @@ export async function generateMetadata({
       ],
     },
     icons: {
-      icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
-      apple: '/apple-touch-icon.png',
+      icon: [{ url: asset('/favicon.svg'), type: 'image/svg+xml' }],
+      apple: asset('/apple-touch-icon.png'),
     },
     robots: { index: true, follow: true },
   };

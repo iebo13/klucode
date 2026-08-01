@@ -116,6 +116,32 @@ server-side language redirect from `/`, a strict CSP, and sane caching.
 **Netlify / Vercel / any static host** — point it at this directory, build
 command `npm run build`, publish directory `out`.
 
+**GitHub Pages (preview)** — `.github/workflows/deploy-klucode.yml` builds and
+publishes on every push to `main` that touches `klucode/`, and can be run by
+hand from the Actions tab. It is a _preview_; the real site is the Plesk upload
+above.
+
+Pages serves a project repo from a **subpath** (`/<repo>/`), which is where
+static exports usually break. Two environment variables handle it, both fed
+from `actions/configure-pages` so a rename or a custom domain needs no edit:
+
+| Variable                | Effect                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_BASE_PATH` | Next's `basePath`; also used by `src/lib/base-path.ts` and the root-redirect script |
+| `NEXT_PUBLIC_SITE_URL`  | Absolute origin for canonical URLs, hreflang, sitemap and OG images                 |
+
+Unset both and you get a domain-root build — which is what the Plesk deploy
+wants, so nothing about that path changed.
+
+⚠️ **The metadata API has two behaviours and they are easy to confuse.**
+`alternates` and `openGraph.images` are resolved against `metadataBase`, which
+already contains the subpath, so they take **plain** paths. `icons` are written
+into the HTML **verbatim**, so they need `asset()`. Prefixing the first group
+produces `/test/test/de/`; not prefixing the second produces 404 favicons.
+Neither is visible until the site is actually served from a subpath — build
+with `NEXT_PUBLIC_BASE_PATH=/x` and read `out/de/index.html` before trusting
+any change here.
+
 `/` works on any host regardless: the build emits an `out/index.html` that
 detects the browser language and forwards. A server-side 301 is better where you
 can configure one, and the `.htaccess` takes precedence when present.

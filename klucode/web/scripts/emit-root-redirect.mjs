@@ -12,21 +12,27 @@ import { join } from 'node:path';
 
 const OUT = join(process.cwd(), 'out');
 
+// When the site is served from a subpath (GitHub Pages on a project repo),
+// the redirect has to target /<base>/de/ or it walks out of the deployment.
+const raw = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+const BASE = raw === '/' ? '' : raw.replace(/\/$/, '');
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://klucode.de').replace(/\/$/, '');
+
 const html = `<!doctype html>
 <html lang="de">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>KluCode</title>
-    <link rel="canonical" href="https://klucode.de/de/" />
-    <link rel="alternate" hreflang="de" href="https://klucode.de/de/" />
-    <link rel="alternate" hreflang="en" href="https://klucode.de/en/" />
-    <link rel="alternate" hreflang="x-default" href="https://klucode.de/de/" />
-    <meta http-equiv="refresh" content="0; url=/de/" />
+    <link rel="canonical" href="${SITE}/de/" />
+    <link rel="alternate" hreflang="de" href="${SITE}/de/" />
+    <link rel="alternate" hreflang="en" href="${SITE}/en/" />
+    <link rel="alternate" hreflang="x-default" href="${SITE}/de/" />
+    <meta http-equiv="refresh" content="0; url=${BASE}/de/" />
     <script>
       (function () {
         var lang = (navigator.language || 'de').toLowerCase();
-        location.replace(lang.indexOf('de') === 0 ? '/de/' : '/en/');
+        location.replace(lang.indexOf('de') === 0 ? '${BASE}/de/' : '${BASE}/en/');
       })();
     </script>
     <style>
@@ -46,7 +52,7 @@ const html = `<!doctype html>
   </head>
   <body>
     <p>
-      <a href="/de/">Weiter zu KluCode</a> · <a href="/en/">Continue in English</a>
+      <a href="${BASE}/de/">Weiter zu KluCode</a> · <a href="${BASE}/en/">Continue in English</a>
     </p>
   </body>
 </html>
