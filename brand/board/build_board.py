@@ -4,8 +4,10 @@ so every specimen is rendered in the real typefaces and the real token values.""
 import re
 from pathlib import Path
 
-WEB = Path("/home/user/test/klucode/web")
-LOGO = Path("/home/user/test/klucode/brand/logo")
+# Resolved from this file, not hard-coded, so the repo can move or be renamed.
+ROOT = Path(__file__).resolve().parents[2]
+WEB = ROOT / "web"
+LOGO = ROOT / "brand" / "logo"
 OUT = WEB / "out"
 
 html_src = (OUT / "de/index.html").read_text()

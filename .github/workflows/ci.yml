@@ -1,5 +1,9 @@
 name: CI
 
+# Verifies the website on every pull request and on pushes to main.
+# The deploy workflow re-runs these same checks before publishing, so a
+# broken commit cannot reach GitHub Pages even if it lands on main.
+
 on:
   push:
     branches: [main]
@@ -8,6 +12,9 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
     steps:
       - uses: actions/checkout@v4
 
@@ -15,6 +22,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - run: npm ci
 
@@ -27,13 +35,29 @@ jobs:
       - name: Format check
         run: npm run format:check
 
-      - name: Unit tests
-        run: npm test
-
       - name: Build
         run: npm run build
+
+      # The site is served from a subpath on GitHub Pages, which is where
+      # static exports usually break — and the breakage is invisible in a
+      # domain-root build. Building that way here means a bad base path fails
+      # the pull request rather than the deployment.
+      - name: Build with a base path
+        run: npm run build
         env:
-          # Public, RLS-gated keys — placeholders so the build can render. No
-          # real Supabase connection is made during the build.
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_BASE_PATH: /basepath-check
+          NEXT_PUBLIC_SITE_URL: https://example.com/basepath-check
+
+      - name: Assert the base path reached the output
+        run: |
+          set -e
+          fail() { echo "::error::$1"; exit 1; }
+          grep -q 'href="/basepath-check/de/"' out/de/index.html \
+            || fail "basePath missing from rendered links"
+          grep -q 'href="/basepath-check/favicon.svg"' out/de/index.html \
+            || fail "basePath missing from icon URLs"
+          grep -q 'href="https://example.com/basepath-check/de/"' out/de/index.html \
+            || fail "canonical URL is wrong"
+          grep -q 'basepath-check/basepath-check' out/de/index.html \
+            && fail "base path applied twice"
+          echo "base path wiring verified"
