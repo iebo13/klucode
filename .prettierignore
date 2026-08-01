@@ -7,3 +7,8 @@ test-results
 playwright-report
 *.tsbuildinfo
 package-lock.json
+
+# klucode/ is a self-contained deliverable with its own prettier setup
+# (klucode/web/package.json → format:check). Formatting it from here would
+# need its plugins resolvable at the repo root, which they are not.
+klucode

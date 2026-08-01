@@ -1,0 +1,83 @@
+/* Generated from brand/tokens/tokens.json — see brand/tokens/build_css.py. */
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* German compounds are long; let the browser break them rather than
+       letting a 24-letter word blow out a narrow column. */
+    hyphens: auto;
+  }
+
+  body {
+    background-color: var(--kc-surface);
+    color: var(--kc-text);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* One visible focus style everywhere. Never remove it — keyboard users are
+     the reason it exists, and it is the cheapest accessibility win there is. */
+  :focus-visible {
+    outline: 2px solid var(--kc-brandAction);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--kc-viridian-200);
+    color: var(--kc-stone-900);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  /* The house graphic device: the logo's node graph, scaled up as a faint
+     background texture. It is the only decoration the brand owns. */
+  .node-field {
+    background-image: radial-gradient(
+      circle at center,
+      var(--kc-viridian-200) 1.5px,
+      transparent 1.6px
+    );
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, black, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

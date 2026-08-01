@@ -1,0 +1,92 @@
+# KluCode — brand kit and website
+
+Everything needed to launch **KluCode**, a one-person software studio in
+Düsseldorf: the strategy the brand rests on, the voice it speaks in, the visual
+system, and a production-ready bilingual website.
+
+```
+klucode/
+├── brand/
+│   ├── 01-strategy.md          positioning, the name, audiences, offers, proof
+│   ├── 02-voice.md             voice & tone, Sie/du, phrase bank, templates
+│   ├── 03-visual-identity.md   logo rules, colour, type, layout, imagery
+│   ├── 04-launch-playbook.md   pricing, German admin checklist, first 90 days
+│   ├── FONTS.md                licensing
+│   ├── logo/                   15 SVGs — all generated, never hand-edited
+│   │   └── _build/             the generator
+│   └── tokens/                 tokens.json (source of truth) + generated CSS
+└── web/                        Next.js 15, static export, DE + EN
+```
+
+---
+
+## Start here
+
+1. **`brand/01-strategy.md`** — every other file is downstream of it. If
+   anything ever contradicts it, that file wins.
+2. **`brand/04-launch-playbook.md` §3** — the 90-day plan, and the four name
+   checks to run *before* spending anything on this identity.
+3. **`web/README.md`** — how to run and deploy the site.
+
+---
+
+## The short version
+
+**Name.** *Klu* is from **Klausmann**, and from German ***klug*** — smart,
+considered — and it reads as English ***clue***. The surname says *who*, *klug*
+says *how*, *clue* says *what you get*. All three point at the same claim: the
+value is the thinking that happens before the typing.
+
+**Positioning.** KluCode builds the one system a business actually runs on — and
+builds it in weeks, not quarters. One engineer, end to end, at a fixed price
+agreed before anything starts.
+
+**Tagline.** „Klug gebaut." (DE) · "Clever, not complicated." (EN)
+
+**The AI question.** All three delivered projects were built with AI-assisted
+development. The site leads with the *outcome* — fixed price, weeks not months —
+and explains the method openly on `/ansatz`, including a head-on answer to
+*„Schreibt das nicht einfach eine KI?"*. Leading with the tooling invites the
+objection before any value is established; hiding it would be worse, because it
+is true, verifiable, and the honest answer to "how are you this fast?".
+
+**Colour.** Viridian `#40826D`, ink `#0C1A15`, paper `#F2F4F1`.
+⚠️ Viridian is a **display colour**: at 4.10:1 on paper it fails WCAG AA for
+normal text, and a white-on-viridian button label fails too. Text and buttons
+use `viridian-600`/`700`. This is measured, not assumed — see
+`brand/03-visual-identity.md` §5.
+
+---
+
+## Regenerating the assets
+
+Nothing under `brand/logo/` or `brand/tokens/tokens.css` is written by hand.
+
+```bash
+pip install fonttools uharfbuzz brotli
+python3 brand/logo/_build/build_logos.py   # 15 SVGs
+python3 brand/tokens/build_css.py          # tokens.css, in both places it is needed
+```
+
+`brand/tokens/tokens.json` is the single source of truth for colour, type and
+spacing. `web/tailwind.config.ts` imports it directly, so a value changed there
+reaches the website with no copy-paste step.
+
+---
+
+## What still needs you
+
+The kit is complete; these are the parts only you can supply.
+
+| What                                   | Where                                  |
+| -------------------------------------- | -------------------------------------- |
+| Name, address, phone, email, VAT ID    | `web/src/content/profile.ts` — the site shows a loud warning until done |
+| A portrait photograph                  | `web/public/portrait.jpg`               |
+| Screenshots of the three projects      | `web/public/`, then the project pages   |
+| Client testimonials and one real number per project | `web/src/content/{de,en}.ts` → `work.projects` |
+| A legal review of Impressum + Datenschutz | before launch                        |
+| The four name checks (domain, DPMA/EUIPO, handles, register) | before anything is printed |
+
+The written material is researched and current as of August 2026, but it is not
+legal or tax advice. `brand/04-launch-playbook.md` is written to be taken into a
+*Steuerberater*'s office so that meeting costs one hour instead of three.
