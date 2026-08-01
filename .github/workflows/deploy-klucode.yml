@@ -12,7 +12,11 @@ name: Deploy KluCode site
 
 on:
   push:
-    branches: [main]
+    # master is here only to test one hypothesis: that the github-pages
+    # environment carries a deployment branch policy naming a branch other
+    # than main, which rejects the deploy job before it runs any step.
+    # Remove it once the cause is known.
+    branches: [main, master]
     paths:
       - 'web/**'
       - 'brand/**'
