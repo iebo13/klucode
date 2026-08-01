@@ -1,4 +1,4 @@
-# klucode.de
+# klucode.de — the website
 
 The KluCode website. Next.js 15 (App Router) exported to static files —
 no server, no database, no runtime dependencies.
@@ -117,7 +117,7 @@ server-side language redirect from `/`, a strict CSP, and sane caching.
 command `npm run build`, publish directory `out`.
 
 **GitHub Pages (preview)** — `.github/workflows/deploy-klucode.yml` builds and
-publishes on every push to `main` that touches `klucode/`, and can be run by
+publishes on every push to `main` that touches `web/` or `brand/`, and can be run by
 hand from the Actions tab. It is a _preview_; the real site is the Plesk upload
 above.
 
