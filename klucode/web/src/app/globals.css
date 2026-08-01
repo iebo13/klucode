@@ -1,0 +1,272 @@
+/* Generated from brand/tokens/tokens.json — see brand/tokens/build_css.py. */
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* German compounds are long; let the browser break them rather than
+       letting a 24-letter word blow out a narrow column. */
+    hyphens: auto;
+  }
+
+  body {
+    background-color: var(--kc-surface);
+    color: var(--kc-text);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* One visible focus style everywhere. Never remove it — keyboard users are
+     the reason it exists, and it is the cheapest accessibility win there is. */
+  :focus-visible {
+    outline: 2px solid var(--kc-brandAction);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--kc-viridian-200);
+    color: var(--kc-stone-900);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  /* The house graphic device: the logo's node graph, scaled up as a faint
+     background texture. It is the only decoration the brand owns. */
+  .node-field {
+    /* The dot colour has to flip with the scheme, not just the background it
+       sits on: viridian-200 is a pale sage that reads as near-white on ink and
+       turns a subtle texture into a loud grid. */
+    --node-dot: var(--kc-viridian-200);
+    background-image: radial-gradient(circle at center, var(--node-dot) 1.5px, transparent 1.6px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, black, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .node-field {
+      --node-dot: var(--kc-viridian-800);
+    }
+  }
+
+  [data-theme='dark'] .node-field {
+    --node-dot: var(--kc-viridian-800);
+  }
+
+  [data-theme='light'] .node-field {
+    --node-dot: var(--kc-viridian-200);
+  }
+
+  /* Liquid glass, not flat frosted glass. The difference is three things a
+     plain backdrop-blur panel does not have:
+
+       a) a SPECULAR SWEEP — a directional highlight raking across the surface,
+          as if one light source is hitting a curved lens;
+       b) an EDGE REFRACTION BAND — a bright ring hugging the border where a
+          real lens bends and concentrates light;
+       c) THICKNESS — paired inset highlights top and bottom plus an inset
+          shadow, so the panel reads as a slab with depth rather than a hole
+          cut in a sheet.
+
+     The blur is deliberately lower than before (12px, not 16px) and the
+     saturation higher: liquid glass transmits colour, it does not fog it. */
+  .glass {
+    position: relative;
+    isolation: isolate;
+    border-radius: var(--lg-radius, 1.75rem);
+    background: var(--kc-glass-fill);
+    backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate)) brightness(1.04);
+    -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate))
+      brightness(1.04);
+    box-shadow:
+      /* ambient — the panel floats */
+      0 14px 40px -12px var(--kc-glass-cast),
+      0 3px 10px -4px var(--kc-glass-cast),
+      /* thickness: rim light along the top, bounce along the bottom */ inset 0 1.5px 0 -0.5px
+        var(--kc-glass-rim),
+      inset 0 -1px 0 -0.5px var(--kc-glass-rimLow),
+      /* the pane's own edge */ inset 0 0 0 1px var(--kc-glass-border),
+      /* interior depth, so the slab has a bottom */ inset 0 -22px 30px -28px var(--kc-glass-depth);
+  }
+
+  /* Content must sit above both pseudo-element layers. */
+  .glass > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* (a) the specular sweep */
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        142deg,
+        var(--kc-glass-spec) 0%,
+        transparent 34%,
+        transparent 68%,
+        var(--kc-glass-specLow) 100%
+      ),
+      radial-gradient(120% 80% at 12% -10%, var(--kc-glass-specLow), transparent 58%);
+  }
+
+  /* (b) the edge refraction band — a ring, not a border. Masked to a fixed
+     inset so it hugs the radius exactly. */
+  .glass::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    padding: var(--lg-band, 9px);
+    background: linear-gradient(
+      180deg,
+      var(--kc-glass-rim) 0%,
+      transparent 35%,
+      transparent 62%,
+      var(--kc-glass-rimLow) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0.9;
+  }
+
+  .glass-strong {
+    background: var(--kc-glass-fillStrong);
+  }
+
+  /* Small controls — pills, tags, buttons — need a tighter band or the ring
+     swallows the whole shape. */
+  .glass-sm {
+    --lg-band: 4px;
+    --lg-radius: 9999px;
+  }
+
+  /* Anything that has to stay readable — long copy, form fields — sits on a
+     near-opaque panel. Depth without gambling on contrast. */
+  .glass-solid {
+    background: color-mix(in srgb, var(--kc-surface) 92%, transparent);
+    border: 1px solid var(--kc-border);
+    box-shadow: var(--kc-glass-shadow);
+    backdrop-filter: blur(var(--kc-glass-blur));
+    -webkit-backdrop-filter: blur(var(--kc-glass-blur));
+  }
+
+  /* ---------------------------------------------------------------------
+     Aurora — the field the glass sits over.
+
+     Earlier this was two free-floating blurred blobs positioned by eye. They
+     put visual weight in places unrelated to the layout, which is what made
+     the page feel unaligned: the eye reads a soft mass at 60% width and finds
+     nothing there.
+
+     Now every wash is ANCHORED to an edge of the section it belongs to —
+     the top boundary and the trailing corner — so the gradient reinforces the
+     structure instead of arguing with it. Also much weaker: glass needs
+     something to refract, not a light show.
+     --------------------------------------------------------------------- */
+  .aurora {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    contain: paint;
+    /* The wash COLOURS have to flip with the scheme, not just the opacity.
+       Light greens laid over a dark ground do not tint it, they haze it. */
+    --aurora-1: var(--kc-viridian-100);
+    --aurora-2: var(--kc-viridian-200);
+    --aurora-3: var(--kc-viridian-50);
+    opacity: var(--aurora-strength, 0.55);
+    background:
+      /* follows the section's top boundary, full width */
+      linear-gradient(to bottom, var(--aurora-1), transparent 58%),
+      /* one wash pinned to the trailing top corner */
+        radial-gradient(120% 92% at 100% 0%, var(--aurora-2), transparent 64%),
+      /* a whisper along the bottom edge, so sections do not end abruptly */
+        linear-gradient(to top, var(--aurora-3), transparent 34%);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .aurora {
+      --aurora-strength: 0.5;
+      --aurora-1: var(--kc-viridian-900);
+      --aurora-2: var(--kc-viridian-800);
+      --aurora-3: var(--kc-stone-900);
+    }
+  }
+
+  [data-theme='dark'] .aurora {
+    --aurora-strength: 0.5;
+    --aurora-1: var(--kc-viridian-900);
+    --aurora-2: var(--kc-viridian-800);
+    --aurora-3: var(--kc-stone-900);
+  }
+
+  [data-theme='light'] .aurora {
+    --aurora-strength: 0.55;
+    --aurora-1: var(--kc-viridian-100);
+    --aurora-2: var(--kc-viridian-200);
+    --aurora-3: var(--kc-viridian-50);
+  }
+
+  /* Grain. A 90px blur over flat colour bands badly on 8-bit displays; a
+     little noise breaks the bands up. Inline SVG, so no extra request. */
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.34;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

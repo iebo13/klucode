@@ -1,0 +1,182 @@
+/* KluCode design tokens — GENERATED from tokens.json by build_css.py.
+ * Do not edit by hand; edit tokens.json and re-run the script.
+ *
+ * Colour rule that matters most: --kc-brand (#40826D) is a DISPLAY colour.
+ * It measures 4.10:1 on paper and 3.94:1 on ink, so it fails WCAG AA for
+ * normal-size text on both. For text and buttons use --kc-brand-text and
+ * --kc-brand-action, which are pre-resolved per colour scheme below.
+ */
+
+:root {
+  /* --- raw scales ------------------------------------------------- */
+  --kc-viridian-50: #F0F9F4;
+  --kc-viridian-100: #DEF3E5;
+  --kc-viridian-200: #BFE5CC;
+  --kc-viridian-300: #9ED3AF;
+  --kc-viridian-400: #7DBD90;
+  --kc-viridian-500: #5EA472;
+  --kc-viridian-600: #488859;
+  --kc-viridian-700: #396C43;
+  --kc-viridian-800: #2B5131;
+  --kc-viridian-900: #1D3720;
+  --kc-viridian-950: #112413;
+  --kc-stone-50: #F5F8F6;
+  --kc-stone-100: #EAEEEB;
+  --kc-stone-200: #D7DBD8;
+  --kc-stone-300: #C1C5C2;
+  --kc-stone-400: #A8ADA9;
+  --kc-stone-500: #8E938F;
+  --kc-stone-600: #757975;
+  --kc-stone-700: #5C605C;
+  --kc-stone-800: #444844;
+  --kc-stone-900: #2D322D;
+  --kc-stone-950: #1C201C;
+  --kc-success: #2B564A;
+  --kc-warning: #8A5A16;
+  --kc-warningSurface: #F6EFE2;
+  --kc-danger: #8C2F26;
+
+  /* --- type ------------------------------------------------------- */
+  --kc-font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --kc-font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --kc-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --kc-text-eyebrow: 0.75rem;
+  --kc-text-small: 0.875rem;
+  --kc-text-body: 1.0625rem;
+  --kc-text-lead: clamp(1.125rem, 0.98rem + 0.6vw, 1.375rem);
+  --kc-text-h3: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
+  --kc-text-h2: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
+  --kc-text-h1: clamp(2.25rem, 1.6rem + 3vw, 4rem);
+  --kc-text-display: clamp(2.75rem, 1.7rem + 4.6vw, 5rem);
+
+  /* --- glass (scheme-independent parts) --------------------------- */
+  --kc-glass-blur: 12px;
+  --kc-glass-saturate: 1.9;
+
+  /* --- space, radius, layout, motion ------------------------------ */
+  --kc-space-1: 0.25rem;
+  --kc-space-2: 0.5rem;
+  --kc-space-3: 0.75rem;
+  --kc-space-4: 1rem;
+  --kc-space-6: 1.5rem;
+  --kc-space-8: 2rem;
+  --kc-space-12: 3rem;
+  --kc-space-16: 4rem;
+  --kc-space-24: 6rem;
+  --kc-space-32: 8rem;
+  --kc-space-section: clamp(4rem, 2.5rem + 7vw, 8rem);
+  --kc-radius-sm: 0.25rem;
+  --kc-radius-md: 0.5rem;
+  --kc-radius-lg: 0.875rem;
+  --kc-radius-full: 9999px;
+  --kc-measure: 68ch;
+  --kc-container: 72rem;
+  --kc-containerNarrow: 48rem;
+  --kc-motion-fast: 120ms;
+  --kc-motion-base: 200ms;
+  --kc-motion-slow: 360ms;
+  --kc-motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* --- semantic roles: light (default) ---------------------------- */
+  --kc-surface: var(--kc-stone-50);
+  --kc-surfaceAlt: var(--kc-viridian-50);
+  --kc-surfaceRaised: var(--kc-stone-50);
+  --kc-surfaceInverse: var(--kc-stone-950);
+  --kc-border: var(--kc-stone-200);
+  --kc-text: var(--kc-stone-950);
+  --kc-textMuted: var(--kc-stone-700);
+  --kc-brand: var(--kc-viridian-500);
+  --kc-brandText: var(--kc-viridian-700);
+  --kc-brandAction: var(--kc-viridian-700);
+  --kc-onBrand: var(--kc-stone-50);
+  --kc-glass-fill: rgba(255, 255, 255, 0.44);
+  --kc-glass-fillStrong: rgba(255, 255, 255, 0.72);
+  --kc-glass-border: rgba(255, 255, 255, 0.65);
+  --kc-glass-edge: rgba(12, 26, 21, 0.07);
+  --kc-glass-rim: rgba(255, 255, 255, 0.95);
+  --kc-glass-rimLow: rgba(255, 255, 255, 0.5);
+  --kc-glass-spec: rgba(255, 255, 255, 0.6);
+  --kc-glass-specLow: rgba(255, 255, 255, 0.26);
+  --kc-glass-cast: rgba(12, 26, 21, 0.16);
+  --kc-glass-depth: rgba(12, 26, 21, 0.32);
+  --kc-glass-shadow: 0 1px 2px rgba(12, 26, 21, 0.03), 0 12px 32px -8px rgba(12, 26, 21, 0.10);
+}
+
+/* Dark mode follows the OS by default, and can be forced with
+   <html data-theme="dark"> for a preview or a screenshot. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --kc-surface: var(--kc-stone-950);
+    --kc-surfaceAlt: var(--kc-viridian-950);
+    --kc-surfaceRaised: var(--kc-stone-900);
+    --kc-surfaceInverse: var(--kc-stone-50);
+    --kc-border: var(--kc-stone-800);
+    --kc-text: var(--kc-stone-100);
+    --kc-textMuted: var(--kc-stone-300);
+    --kc-brand: var(--kc-viridian-400);
+    --kc-brandText: var(--kc-viridian-300);
+    --kc-brandAction: var(--kc-viridian-400);
+    --kc-onBrand: var(--kc-stone-950);
+    --kc-glass-fill: rgba(34, 48, 42, 0.5);
+    --kc-glass-fillStrong: rgba(34, 48, 42, 0.82);
+    --kc-glass-border: rgba(169, 181, 174, 0.2);
+    --kc-glass-edge: rgba(255, 255, 255, 0.06);
+    --kc-glass-rim: rgba(255, 255, 255, 0.34);
+    --kc-glass-rimLow: rgba(255, 255, 255, 0.1);
+    --kc-glass-spec: rgba(255, 255, 255, 0.16);
+    --kc-glass-specLow: rgba(255, 255, 255, 0.06);
+    --kc-glass-cast: rgba(0, 0, 0, 0.55);
+    --kc-glass-depth: rgba(0, 0, 0, 0.6);
+    --kc-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+  }
+}
+
+[data-theme="dark"] {
+  --kc-surface: var(--kc-stone-950);
+  --kc-surfaceAlt: var(--kc-viridian-950);
+  --kc-surfaceRaised: var(--kc-stone-900);
+  --kc-surfaceInverse: var(--kc-stone-50);
+  --kc-border: var(--kc-stone-800);
+  --kc-text: var(--kc-stone-100);
+  --kc-textMuted: var(--kc-stone-300);
+  --kc-brand: var(--kc-viridian-400);
+  --kc-brandText: var(--kc-viridian-300);
+  --kc-brandAction: var(--kc-viridian-400);
+  --kc-onBrand: var(--kc-stone-950);
+  --kc-glass-fill: rgba(34, 48, 42, 0.5);
+  --kc-glass-fillStrong: rgba(34, 48, 42, 0.82);
+  --kc-glass-border: rgba(169, 181, 174, 0.2);
+  --kc-glass-edge: rgba(255, 255, 255, 0.06);
+  --kc-glass-rim: rgba(255, 255, 255, 0.34);
+  --kc-glass-rimLow: rgba(255, 255, 255, 0.1);
+  --kc-glass-spec: rgba(255, 255, 255, 0.16);
+  --kc-glass-specLow: rgba(255, 255, 255, 0.06);
+  --kc-glass-cast: rgba(0, 0, 0, 0.55);
+  --kc-glass-depth: rgba(0, 0, 0, 0.6);
+  --kc-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="light"] {
+  --kc-surface: var(--kc-stone-50);
+  --kc-surfaceAlt: var(--kc-viridian-50);
+  --kc-surfaceRaised: var(--kc-stone-50);
+  --kc-surfaceInverse: var(--kc-stone-950);
+  --kc-border: var(--kc-stone-200);
+  --kc-text: var(--kc-stone-950);
+  --kc-textMuted: var(--kc-stone-700);
+  --kc-brand: var(--kc-viridian-500);
+  --kc-brandText: var(--kc-viridian-700);
+  --kc-brandAction: var(--kc-viridian-700);
+  --kc-onBrand: var(--kc-stone-50);
+  --kc-glass-fill: rgba(255, 255, 255, 0.44);
+  --kc-glass-fillStrong: rgba(255, 255, 255, 0.72);
+  --kc-glass-border: rgba(255, 255, 255, 0.65);
+  --kc-glass-edge: rgba(12, 26, 21, 0.07);
+  --kc-glass-rim: rgba(255, 255, 255, 0.95);
+  --kc-glass-rimLow: rgba(255, 255, 255, 0.5);
+  --kc-glass-spec: rgba(255, 255, 255, 0.6);
+  --kc-glass-specLow: rgba(255, 255, 255, 0.26);
+  --kc-glass-cast: rgba(12, 26, 21, 0.16);
+  --kc-glass-depth: rgba(12, 26, 21, 0.32);
+  --kc-glass-shadow: 0 1px 2px rgba(12, 26, 21, 0.03), 0 12px 32px -8px rgba(12, 26, 21, 0.10);
+}

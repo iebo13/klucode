@@ -1,0 +1,407 @@
+import Link from 'next/link';
+
+import { ContactForm } from '@/components/contact-form';
+import { ButtonLink, Card, Eyebrow, Section, SectionHead, Tags } from '@/components/ui';
+import type { Content } from '@/content';
+import { openTodos, profile } from '@/content/profile';
+import { pathFor, type Lang } from '@/lib/routes';
+
+function PageHero({ eyebrow, title, lead }: { eyebrow: string; title: string; lead: string }) {
+  return (
+    <section className="relative isolate overflow-hidden">
+      <div aria-hidden="true" className="aurora grain -z-10" />
+      <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-40" />
+      <div className="relative mx-auto max-w-container px-6 pb-16 pt-20 md:px-10 md:pt-24">
+        <Eyebrow>{eyebrow}</Eyebrow>
+        <h1 className="mt-6 max-w-4xl text-h1">{title}</h1>
+        <p className="mt-7 max-w-measure text-lead text-muted">{lead}</p>
+      </div>
+    </section>
+  );
+}
+
+/** Reading-width wrapper for the legal pages. */
+function Prose({ children }: { children: React.ReactNode }) {
+  return <div className="mx-auto max-w-narrow px-6 py-section md:px-10">{children}</div>;
+}
+
+/* ------------------------------------------------------------------ services */
+
+export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
+  const s = c.services;
+  return (
+    <>
+      <PageHero eyebrow={s.eyebrow} title={s.title} lead={s.lead} />
+
+      <Section>
+        <div className="space-y-6">
+          {s.items.map((item) => (
+            <Card key={item.key} className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-14">
+              <div>
+                <h2 className="text-h2">{item.name}</h2>
+                <p className="mt-3 max-w-measure text-small font-medium text-brand-text">
+                  {item.forWhom}
+                </p>
+                <p className="mt-5 max-w-measure text-muted">{item.body}</p>
+                <div className="mt-8 flex items-baseline gap-3 border-t border-line pt-6">
+                  <span className="font-mono text-eyebrow uppercase text-muted">{c.ui.from}</span>
+                  <span className="font-display text-h2 text-brand-text">{item.price}</span>
+                </div>
+                <p className="mt-1 text-small text-muted">{item.priceNote}</p>
+              </div>
+              <div>
+                <h3 className="font-mono text-eyebrow uppercase tracking-[0.08em] text-muted">
+                  {c.ui.includes}
+                </h3>
+                <ul className="mt-4 space-y-2.5">
+                  {item.includes.map((i) => (
+                    <li key={i} className="flex gap-3 text-small">
+                      <span
+                        aria-hidden="true"
+                        className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"
+                      />
+                      {i}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      <Section tint>
+        <div className="grid gap-14 md:grid-cols-2 md:gap-20">
+          <div>
+            <SectionHead eyebrow={s.howEyebrow} title={s.howTitle} />
+            <p className="mt-5 max-w-measure text-muted">{s.howBody}</p>
+          </div>
+          <div>
+            <h2 className="font-display text-h2">{s.notTitle}</h2>
+            <p className="mt-5 text-muted">{s.notBody}</p>
+            <ul className="mt-6 space-y-2.5">
+              {s.notItems.map((i) => (
+                <li key={i} className="flex gap-3 text-small text-muted">
+                  <span aria-hidden="true" className="mt-2 h-px w-3 shrink-0 bg-stone-400" />
+                  {i}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </Section>
+
+      <FinalCta lang={lang} c={c} />
+    </>
+  );
+}
+
+/* ---------------------------------------------------------------------- work */
+
+export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
+  const w = c.work;
+  return (
+    <>
+      <PageHero eyebrow={w.eyebrow} title={w.title} lead={w.lead} />
+
+      {w.projects.map((p, i) => (
+        <Section key={p.key} tint={i % 2 === 1}>
+          <div className="grid gap-10 md:grid-cols-[1fr_1.7fr] md:gap-16">
+            <div>
+              <p className="font-mono text-eyebrow uppercase text-brand-text">{p.sector}</p>
+              <h2 className="mt-3 text-h2">{p.title}</h2>
+              <p className="mt-3 font-mono text-eyebrow uppercase text-muted">{p.scope}</p>
+              <div className="mt-8">
+                <h3 className="font-mono text-eyebrow uppercase tracking-[0.08em] text-muted">
+                  {c.ui.stack}
+                </h3>
+                <div className="mt-3">
+                  <Tags items={p.stack} />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="max-w-measure text-lead">{p.summary}</p>
+              <dl className="mt-10 space-y-7">
+                {(
+                  [
+                    [c.ui.before, p.before],
+                    [c.ui.after, p.after],
+                    [c.ui.result, p.result],
+                  ] as const
+                ).map(([label, text]) => (
+                  <div key={label} className="border-l-2 border-line pl-6">
+                    <dt className="font-mono text-eyebrow uppercase tracking-[0.08em] text-brand-text">
+                      {label}
+                    </dt>
+                    <dd className="mt-2 max-w-measure text-muted">{text}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </Section>
+      ))}
+
+      <Section>
+        <div className="glass max-w-narrow rounded-glass p-8">
+          <h2 className="font-display text-h3">{w.noteTitle}</h2>
+          <p className="mt-3 text-muted">{w.noteBody}</p>
+        </div>
+      </Section>
+
+      <FinalCta lang={lang} c={c} />
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ approach */
+
+export function ApproachPage({ lang, c }: { lang: Lang; c: Content }) {
+  const a = c.approach;
+  return (
+    <>
+      <PageHero eyebrow={a.eyebrow} title={a.title} lead={a.lead} />
+
+      <Section>
+        <ol className="grid gap-10 md:grid-cols-2 md:gap-14">
+          {a.steps.map((s, i) => (
+            <li key={s.title} className="border-t border-line pt-7">
+              <span className="font-mono text-eyebrow text-brand-text">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <h2 className="mt-3 font-display text-h3">{s.title}</h2>
+              <p className="mt-3 max-w-measure text-muted">{s.body}</p>
+            </li>
+          ))}
+        </ol>
+      </Section>
+
+      {/* The AI section. Deliberately not the headline of the site, and
+          deliberately not hidden either — see brand/01-strategy.md §6. */}
+      <Section tint>
+        <div className="max-w-narrow">
+          <Eyebrow>{a.aiEyebrow}</Eyebrow>
+          <h2 className="mt-3 text-h2">{a.aiTitle}</h2>
+          {a.aiBody.map((p) => (
+            <p key={p.slice(0, 24)} className="mt-5 max-w-measure text-lead text-muted">
+              {p}
+            </p>
+          ))}
+          <div className="mt-12 border-l-2 border-brand pl-7">
+            <h3 className="font-display text-h3">{a.objection.q}</h3>
+            <p className="mt-4 max-w-measure text-muted">{a.objection.a}</p>
+          </div>
+        </div>
+      </Section>
+
+      <Section>
+        <h2 className="text-h2">{a.principlesTitle}</h2>
+        <div className="mt-12 grid gap-6 sm:grid-cols-2">
+          {a.principles.map((p) => (
+            <Card key={p.title}>
+              <h3 className="text-h3">{p.title}</h3>
+              <p className="mt-3 text-muted">{p.body}</p>
+            </Card>
+          ))}
+        </div>
+      </Section>
+
+      <FinalCta lang={lang} c={c} />
+    </>
+  );
+}
+
+/* --------------------------------------------------------------------- about */
+
+export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
+  const a = c.about;
+  return (
+    <>
+      <PageHero eyebrow={a.eyebrow} title={a.title} lead={a.lead} />
+
+      <Section>
+        <div className="grid gap-14 md:grid-cols-[1.4fr_1fr] md:gap-20">
+          <div>
+            {a.paragraphs.map((p) => (
+              <p key={p.slice(0, 24)} className="mb-6 max-w-measure text-lead">
+                {p}
+              </p>
+            ))}
+            <div className="mt-10 border-l-2 border-brand pl-7">
+              <p className="max-w-measure text-muted">{a.nameNote}</p>
+            </div>
+          </div>
+
+          <div>
+            {/* Replace with a real photograph before launch — see
+                brand/03-visual-identity.md §8. */}
+            <div className="glass flex aspect-[4/5] items-end rounded-glass border-dashed p-6">
+              <p className="text-small text-muted">{a.portraitPlaceholder}</p>
+            </div>
+
+            <dl className="mt-10 divide-y divide-line border-y border-line">
+              {a.facts.map((f) => (
+                <div key={f.label} className="flex flex-col gap-1 py-4">
+                  <dt className="font-mono text-eyebrow uppercase tracking-[0.08em] text-muted">
+                    {f.label}
+                  </dt>
+                  <dd className="text-small">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </Section>
+
+      <FinalCta lang={lang} c={c} />
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------- contact */
+
+export function ContactPage({ c }: { lang: Lang; c: Content }) {
+  const t = c.contact;
+  return (
+    <>
+      <PageHero eyebrow={t.eyebrow} title={t.title} lead={t.lead} />
+
+      <Section>
+        <div className="grid gap-14 md:grid-cols-[1fr_1.3fr] md:gap-20">
+          <div>
+            <h2 className="font-display text-h3">{t.directTitle}</h2>
+            <p className="mt-3 text-muted">{t.directBody}</p>
+            <ul className="mt-6 space-y-3">
+              <li>
+                <a
+                  href={`mailto:${profile.email}`}
+                  className="font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+                >
+                  {profile.email}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`}
+                  className="font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+                >
+                  {profile.phone}
+                </a>
+              </li>
+            </ul>
+
+            <div className="mt-12 border-t border-line pt-8">
+              <h2 className="font-mono text-eyebrow uppercase tracking-[0.08em] text-muted">
+                {t.expectTitle}
+              </h2>
+              <ol className="mt-4 space-y-3">
+                {t.expect.map((e, i) => (
+                  <li key={e} className="flex gap-3 text-small text-muted">
+                    <span className="font-mono text-eyebrow text-brand-text">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    {e}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="mb-8 font-display text-h3">{t.formTitle}</h2>
+            <ContactForm c={c} />
+          </div>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+/* --------------------------------------------------------------------- legal */
+
+export function ImprintPage({ c }: { lang: Lang; c: Content }) {
+  const todos = openTodos();
+  return (
+    <Prose>
+      <h1 className="text-h1">{c.imprint.title}</h1>
+      <p className="mt-5 text-lead text-muted">{c.imprint.lead}</p>
+
+      {todos.length > 0 ? (
+        <div
+          role="alert"
+          className="mt-10 rounded-glass border-2 border-warning bg-warning-surface p-7 text-stone-900"
+        >
+          <h2 className="font-display text-h3">{c.imprint.todoWarningTitle}</h2>
+          <p className="mt-3 text-small">{c.imprint.todoWarningBody}</p>
+          <ul className="mt-4 space-y-1.5">
+            {todos.map((t) => (
+              <li key={t} className="font-mono text-small">
+                — {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="mt-14 space-y-10">
+        {c.imprint.sections.map((s) => (
+          <section key={s.heading}>
+            <h2 className="font-display text-h3">{s.heading}</h2>
+            {s.paragraphs.map((p) => (
+              <p key={p.slice(0, 32)} className="mt-2 text-muted">
+                {p}
+              </p>
+            ))}
+          </section>
+        ))}
+      </div>
+    </Prose>
+  );
+}
+
+export function PrivacyPage({ c }: { lang: Lang; c: Content }) {
+  return (
+    <Prose>
+      <h1 className="text-h1">{c.privacy.title}</h1>
+      <p className="mt-5 text-lead text-muted">{c.privacy.lead}</p>
+      <p className="mt-3 font-mono text-eyebrow uppercase text-muted">{c.privacy.updated}</p>
+
+      <div className="mt-14 space-y-10">
+        {c.privacy.sections.map((s) => (
+          <section key={s.heading}>
+            <h2 className="font-display text-h3">{s.heading}</h2>
+            {s.paragraphs.map((p) => (
+              <p key={p.slice(0, 32)} className="mt-3 max-w-measure text-muted">
+                {p}
+              </p>
+            ))}
+          </section>
+        ))}
+      </div>
+    </Prose>
+  );
+}
+
+/* ----------------------------------------------------------------- shared cta */
+
+function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
+  return (
+    <Section tint glow>
+      <div className="max-w-narrow">
+        <h2 className="text-h2">{c.home.finalTitle}</h2>
+        <p className="mt-5 max-w-measure text-lead text-muted">{c.home.finalLead}</p>
+        <div className="mt-9 flex flex-wrap items-center gap-6">
+          <ButtonLink href={pathFor('contact', lang)}>{c.ui.ctaPrimary}</ButtonLink>
+          <Link
+            href={pathFor('work', lang)}
+            className="font-display font-medium text-brand-text underline decoration-viridian-300 underline-offset-4"
+          >
+            {c.ui.ctaSecondary}
+          </Link>
+        </div>
+      </div>
+    </Section>
+  );
+}

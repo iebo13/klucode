@@ -21,8 +21,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  // klucode/ is a self-contained deliverable with its own package.json,
-  // tsconfig and dependencies. It is typechecked by its own `npm run
-  // typecheck`, not by the CafeTab app's.
-  "exclude": ["node_modules", "klucode"]
+  "exclude": ["node_modules", "out", ".next"]
 }

@@ -1,0 +1,87 @@
+# Apache / Plesk configuration for the KluCode static export.
+#
+# Rename to `.htaccess` and place it in the document root (the folder you
+# uploaded `out/` into). Plesk runs Apache, so this is the relevant file for
+# the server KluCode already administers.
+#
+# Everything here is optional — the site works without it. What it adds:
+# a proper 301 from `/` to a language, real security headers, and caching.
+
+# ---------------------------------------------------------------------------
+# 1. Language redirect from the root.
+#
+# The build also writes an out/index.html that redirects client-side, so `/`
+# works even without this. A server-side 301 is better: it is instant, it
+# survives with JavaScript disabled, and search engines treat it properly.
+# ---------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # German browsers to /de/, everyone else to /en/.
+  RewriteCond %{REQUEST_URI} ^/$
+  RewriteCond %{HTTP:Accept-Language} ^de [NC]
+  RewriteRule ^$ /de/ [R=301,L]
+
+  RewriteCond %{REQUEST_URI} ^/$
+  RewriteRule ^$ /en/ [R=301,L]
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 2. Custom 404
+# ---------------------------------------------------------------------------
+ErrorDocument 404 /404.html
+
+# ---------------------------------------------------------------------------
+# 3. Security headers
+#
+# The CSP is deliberately strict because the site genuinely needs nothing
+# external: no CDN, no analytics, no embedded fonts, no third-party images.
+# If you ever add an embed, this is the line that will block it — that is the
+# point. Update it consciously rather than removing it.
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+  Header always unset X-Powered-By
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 4. Compression
+# ---------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml text/plain
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 5. Caching
+#
+# Next.js fingerprints filenames under /_next/static, so those are safe to
+# cache forever. HTML must not be, or a deploy will not reach returning
+# visitors.
+# ---------------------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 6. Force HTTPS (enable once the certificate is installed in Plesk)
+# ---------------------------------------------------------------------------
+# <IfModule mod_rewrite.c>
+#   RewriteCond %{HTTPS} off
+#   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+# </IfModule>
