@@ -9,26 +9,28 @@
 
 :root {
   /* --- raw scales ------------------------------------------------- */
-  --kc-viridian-50: #EDF4F1;
-  --kc-viridian-100: #D6E7DF;
-  --kc-viridian-200: #AECFC1;
-  --kc-viridian-300: #82B39F;
-  --kc-viridian-400: #5C9781;
-  --kc-viridian-500: #40826D;
-  --kc-viridian-600: #356C5B;
-  --kc-viridian-700: #2B564A;
-  --kc-viridian-800: #214239;
-  --kc-viridian-900: #182F29;
-  --kc-stone-50: #F2F4F1;
-  --kc-stone-100: #E4E8E3;
-  --kc-stone-200: #CBD3CC;
-  --kc-stone-300: #A9B5AE;
-  --kc-stone-400: #7F8E86;
-  --kc-stone-500: #5E6E66;
-  --kc-stone-600: #47564F;
-  --kc-stone-700: #35423B;
-  --kc-stone-800: #22302A;
-  --kc-stone-900: #0C1A15;
+  --kc-viridian-50: #F0F9F4;
+  --kc-viridian-100: #DEF3E5;
+  --kc-viridian-200: #BFE5CC;
+  --kc-viridian-300: #9ED3AF;
+  --kc-viridian-400: #7DBD90;
+  --kc-viridian-500: #5EA472;
+  --kc-viridian-600: #488859;
+  --kc-viridian-700: #396C43;
+  --kc-viridian-800: #2B5131;
+  --kc-viridian-900: #1D3720;
+  --kc-viridian-950: #112413;
+  --kc-stone-50: #F5F8F6;
+  --kc-stone-100: #EAEEEB;
+  --kc-stone-200: #D7DBD8;
+  --kc-stone-300: #C1C5C2;
+  --kc-stone-400: #A8ADA9;
+  --kc-stone-500: #8E938F;
+  --kc-stone-600: #757975;
+  --kc-stone-700: #5C605C;
+  --kc-stone-800: #444844;
+  --kc-stone-900: #2D322D;
+  --kc-stone-950: #1C201C;
   --kc-success: #2B564A;
   --kc-warning: #8A5A16;
   --kc-warningSurface: #F6EFE2;
@@ -78,13 +80,14 @@
   /* --- semantic roles: light (default) ---------------------------- */
   --kc-surface: var(--kc-stone-50);
   --kc-surfaceAlt: var(--kc-viridian-50);
-  --kc-surfaceInverse: var(--kc-stone-900);
+  --kc-surfaceRaised: var(--kc-stone-50);
+  --kc-surfaceInverse: var(--kc-stone-950);
   --kc-border: var(--kc-stone-200);
-  --kc-text: var(--kc-stone-900);
-  --kc-textMuted: var(--kc-stone-600);
+  --kc-text: var(--kc-stone-950);
+  --kc-textMuted: var(--kc-stone-700);
   --kc-brand: var(--kc-viridian-500);
   --kc-brandText: var(--kc-viridian-700);
-  --kc-brandAction: var(--kc-viridian-600);
+  --kc-brandAction: var(--kc-viridian-700);
   --kc-onBrand: var(--kc-stone-50);
   --kc-glass-fill: rgba(255, 255, 255, 0.44);
   --kc-glass-fillStrong: rgba(255, 255, 255, 0.72);
@@ -103,16 +106,17 @@
    <html data-theme="dark"> for a preview or a screenshot. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --kc-surface: var(--kc-stone-900);
-    --kc-surfaceAlt: var(--kc-viridian-900);
+    --kc-surface: var(--kc-stone-950);
+    --kc-surfaceAlt: var(--kc-viridian-950);
+    --kc-surfaceRaised: var(--kc-stone-900);
     --kc-surfaceInverse: var(--kc-stone-50);
-    --kc-border: var(--kc-stone-700);
-    --kc-text: var(--kc-stone-50);
+    --kc-border: var(--kc-stone-800);
+    --kc-text: var(--kc-stone-100);
     --kc-textMuted: var(--kc-stone-300);
-    --kc-brand: var(--kc-viridian-500);
+    --kc-brand: var(--kc-viridian-400);
     --kc-brandText: var(--kc-viridian-300);
     --kc-brandAction: var(--kc-viridian-400);
-    --kc-onBrand: var(--kc-stone-900);
+    --kc-onBrand: var(--kc-stone-950);
     --kc-glass-fill: rgba(34, 48, 42, 0.5);
     --kc-glass-fillStrong: rgba(34, 48, 42, 0.82);
     --kc-glass-border: rgba(169, 181, 174, 0.2);
@@ -128,16 +132,17 @@
 }
 
 [data-theme="dark"] {
-  --kc-surface: var(--kc-stone-900);
-  --kc-surfaceAlt: var(--kc-viridian-900);
+  --kc-surface: var(--kc-stone-950);
+  --kc-surfaceAlt: var(--kc-viridian-950);
+  --kc-surfaceRaised: var(--kc-stone-900);
   --kc-surfaceInverse: var(--kc-stone-50);
-  --kc-border: var(--kc-stone-700);
-  --kc-text: var(--kc-stone-50);
+  --kc-border: var(--kc-stone-800);
+  --kc-text: var(--kc-stone-100);
   --kc-textMuted: var(--kc-stone-300);
-  --kc-brand: var(--kc-viridian-500);
+  --kc-brand: var(--kc-viridian-400);
   --kc-brandText: var(--kc-viridian-300);
   --kc-brandAction: var(--kc-viridian-400);
-  --kc-onBrand: var(--kc-stone-900);
+  --kc-onBrand: var(--kc-stone-950);
   --kc-glass-fill: rgba(34, 48, 42, 0.5);
   --kc-glass-fillStrong: rgba(34, 48, 42, 0.82);
   --kc-glass-border: rgba(169, 181, 174, 0.2);
@@ -154,13 +159,14 @@
 [data-theme="light"] {
   --kc-surface: var(--kc-stone-50);
   --kc-surfaceAlt: var(--kc-viridian-50);
-  --kc-surfaceInverse: var(--kc-stone-900);
+  --kc-surfaceRaised: var(--kc-stone-50);
+  --kc-surfaceInverse: var(--kc-stone-950);
   --kc-border: var(--kc-stone-200);
-  --kc-text: var(--kc-stone-900);
-  --kc-textMuted: var(--kc-stone-600);
+  --kc-text: var(--kc-stone-950);
+  --kc-textMuted: var(--kc-stone-700);
   --kc-brand: var(--kc-viridian-500);
   --kc-brandText: var(--kc-viridian-700);
-  --kc-brandAction: var(--kc-viridian-600);
+  --kc-brandAction: var(--kc-viridian-700);
   --kc-onBrand: var(--kc-stone-50);
   --kc-glass-fill: rgba(255, 255, 255, 0.44);
   --kc-glass-fillStrong: rgba(255, 255, 255, 0.72);

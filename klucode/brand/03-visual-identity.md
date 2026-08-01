@@ -109,90 +109,107 @@ Never:
 
 ## 5. Colour
 
-### The rule that matters most
+Both scales are **generated in OKLCH** by `tokens/build_palette.py`. Never
+hand-pick a hex and paste it in — change the hue, the lightness ladder or the
+chroma curve in that script and re-run.
 
-> **Viridian `#40826D` is a display colour. It is not a text colour.**
+### Why the palette was rebuilt
 
-Measured against the brand's own backgrounds:
+The first palette was hand-picked in hex. Measured in OKLCH it had three
+defects, and they were structural rather than a matter of taste:
 
-| Pair                                    | Ratio     | Verdict                                        |
-| --------------------------------------- | --------- | ---------------------------------------------- |
-| `#40826D` on paper `#F2F4F1`            | **4.10:1** | ✗ fails AA for normal text · ✓ large text & UI |
-| `#40826D` on ink `#0C1A15`              | **3.94:1** | ✗ fails AA for normal text · ✓ large text & UI |
-| paper on `#40826D` (a filled button)    | **4.10:1** | ✗ **a white-on-viridian button label fails AA** |
-| ink `#0C1A15` on paper                  | 16.17:1   | ✓ everywhere                                    |
+| Defect | Evidence | Consequence |
+| --- | --- | --- |
+| Uneven lightness steps | ΔL ranged **0.038 → 0.129** between neighbours | Tints bunched, mid-tones lurched. A scale that is not perceptually even cannot look harmonious. |
+| Chroma starved | brand step at **C = 0.076** where the hue supports ~0.12 | This *is* what "muddy" means — a colour short of chroma reads as dirty grey. |
+| Uncontrolled hue drift | viridian **166°→175°**, neutrals **135°→169°** | The "neutrals" were an inconsistent green fighting the brand green. |
 
-So the brand green is used for: the logo, large display headings (≥ 24px bold),
-rules, borders, icons, and backgrounds. **For anything a person has to read at
-body size, use the darker steps:**
+The third one did the most damage. With the greys carrying up to `C = 0.023`
+there was nowhere for the eye to rest, so every surface belonged to the same
+murky hue family and the page read as one colour.
 
-| Need                            | Light background      | Dark background        |
-| ------------------------------- | --------------------- | ---------------------- |
-| Body text                       | `stone-900` #0C1A15   | `stone-50` #F2F4F1     |
-| Muted / secondary text          | `stone-600` #47564F (7.0:1) | `stone-300` #A9B5AE (8.4:1) |
-| Green text, links               | `viridian-700` #2B564A (7.5:1) | `viridian-300` #82B39F (7.6:1) |
-| Filled button background        | `viridian-600` #356C5B — paper label reads 5.5:1 ✓ | `viridian-400` #5C9781 with an ink label |
-| Large display heading in green  | `viridian-500` #40826D ✓ | `viridian-500` ✓     |
-
-This is not pedantry, and it is worth being precise about why.
-
-Germany's **BFSG (Barrierefreiheitsstärkungsgesetz)** has applied since
-28 June 2025. It almost certainly does **not** bind klucode.de itself: the
-Kleinstunternehmen exemption covers service providers under ten people, and a
-pure information and portfolio site without a sales or booking function falls
-outside the law's scope regardless.
-
-The commercial point is the other direction. **Your clients are frequently in
-scope** — anyone selling or booking online, and anyone who grows past the
-micro-threshold. So accessibility is not overhead for KluCode, it is a service
-line and a differentiator: you can quote WCAG-conformant work with real contrast
-figures while a competitor is still guessing. Building your own site to a
-standard you are not obliged to meet is the cheapest possible proof that you can
-meet it for them.
-
-That is exactly why the ratios above are measured and written down rather than
-eyeballed.
+The generator fixes all three by construction: a fixed perceptual lightness
+ladder, a chroma curve that peaks at 500/600 and **tapers at both ends** (tints
+go pastel-garish and shades go to sludge otherwise), and **deliberate hue
+torsion** — cooler tints, deeper shades — instead of accidental drift.
 
 ### The palette
 
-**Viridian** — the brand hue. `500` is *the* colour.
+**Viridian** — deep forest, hue 152°. `500` is *the* brand colour.
 
-`50 #EDF4F1` · `100 #D6E7DF` · `200 #AECFC1` · `300 #82B39F` · `400 #5C9781` ·
-**`500 #40826D`** · `600 #356C5B` · `700 #2B564A` · `800 #214239` · `900 #182F29`
+`50 #F0F9F4` · `100 #DEF3E5` · `200 #BFE5CC` · `300 #9ED3AF` · `400 #7DBD90` ·
+**`500 #5EA472`** · `600 #488859` · `700 #396C43` · `800 #2B5131` ·
+`900 #1D3720` · `950 #112413`
 
-**Stone** — neutrals, every one carrying a trace of the brand hue so nothing
-reads as generic grey. `50` is paper, `900` is ink.
+**Stone** — near-neutral, hue 150°, chroma `0.004–0.010`. An order of magnitude
+flatter than the old greys, which is the change that lets the green read as
+green.
 
-`50 #F2F4F1` · `100 #E4E8E3` · `200 #CBD3CC` · `300 #A9B5AE` · `400 #7F8E86` ·
-`500 #5E6E66` · `600 #47564F` · `700 #35423B` · `800 #22302A` · **`900 #0C1A15`**
-
-**The alternating surface** is `viridian-50 #EDF4F1` on light, `viridian-900
-#182F29` on dark. It is a whisper of the brand hue rather than a distinct
-colour — and it can be that faint because every section already carries a 1px
-`stone-200` rule at its boundary, so the edge is drawn by the rule and the fill
-only has to supply a tint.
-
-> **There is no warm colour in the brand palette.** An earlier version of this
-> system carried a sand/beige surface. It was the only hue not derived from the
-> brand, and in context it read as bolted on rather than designed in. Everything
-> here is now viridian or a green-shifted neutral.
+`50 #F5F8F6` (paper) · `100 #EAEEEB` · `200 #D7DBD8` · `300 #C1C5C2` ·
+`400 #A8ADA9` · `500 #8E938F` · `600 #757975` · `700 #5C605C` · `800 #444844` ·
+`900 #2D322D` · **`950 #1C201C`** (ink)
 
 **Semantic** — interface states only, never marketing, never the logo.
-success `#2B564A` · warning `#8A5A16` · danger `#8C2F26` ·
-warningSurface `#F6EFE2`.
+success `#396C43` · warning `#8A5A16` · warningSurface `#F6EFE2` ·
+danger `#8C2F26`. `warningSurface` is the only warm value in the system and is
+confined to alert boxes: an alert that is not warm does not read as an alert.
 
-`warningSurface` is the single warm value left in the system and it is confined
-to alert boxes on purpose: an alert that is not warm does not read as an alert.
-It is a UI state, not a brand colour, and it never appears in marketing
-material.
+### The rule that still matters most
+
+> **Viridian `500` is a display colour. It is not a text colour.**
+
+| Pair | Ratio | Verdict |
+| --- | --- | --- |
+| `500 #5EA472` on paper | **2.79:1** | ✗ display only — logo, large headings, fills |
+| `700 #396C43` on paper | **5.78:1** | ✓ green text and links |
+| paper on `700` (filled button) | **5.78:1** | ✓ the button colour |
+| ink on paper | 15.43:1 | ✓ everywhere |
+
+### Two themes, not one theme inverted
+
+Light builds hierarchy by going **darker** as elements recede. Dark builds it by
+going **lighter** as elements are raised — which is how physical light behaves,
+and the single thing most dark modes get wrong by simply flipping the light
+palette.
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| surface | `stone-50` | `stone-950` |
+| surface, raised | `stone-50` | `stone-900` *(lighter, not darker)* |
+| alternating surface | `viridian-50` | `viridian-950` |
+| border | `stone-200` | `stone-800` |
+| body text | `stone-950` | `stone-100` *(off-white, never pure white)* |
+| muted text | `stone-700` (5.98:1) | `stone-300` (9.45:1) |
+| green text | `viridian-700` (5.78:1) | `viridian-300` (9.74:1) |
+| button fill | `viridian-700`, paper label | `viridian-400`, ink label (7.51:1) |
+
+Two dark-mode details that were found by measuring, not by reasoning:
+
+- **Muted text sits at `stone-300`, not `400`.** Against the header capsule over
+  a lit area, `400` measured **4.31:1** — below AA. Dark grounds eat contrast
+  that light grounds do not.
+- **The accent moves *up* the scale in dark**, where the chroma taper has already
+  softened it. Saturated colour on a dark ground vibrates.
 
 ### Proportion
 
-Roughly **72% paper or ink · 20% stone · 8% viridian**. The green is an accent
-that lands hard *because* it is rationed. A page that is 40% green looks like a
-hospital intranet.
+Roughly **72% paper or ink · 20% stone · 8% viridian**. The green lands hard
+*because* it is rationed. A page that is 40% green looks like a hospital
+intranet.
 
----
+### Accessibility is a sales asset here
+
+Germany's **BFSG** has applied since 28 June 2025. It almost certainly does
+**not** bind klucode.de: the Kleinstunternehmen exemption covers service
+providers under ten people, and a pure portfolio site without a sales or booking
+function is outside scope regardless.
+
+The commercial point runs the other way. **Your clients are frequently in
+scope** — anyone selling or booking online, anyone past the micro-threshold. So
+accessibility is a service line, not overhead: you can quote WCAG-conformant
+work with measured figures while a competitor guesses. Building your own site to
+a standard you are not obliged to meet is the cheapest proof you can meet it for
+them.
 
 ## 6. Typography
 

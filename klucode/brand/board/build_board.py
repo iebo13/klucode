@@ -22,18 +22,30 @@ def svg(name, width=None, extra=""):
 
 
 VIRIDIAN = [
-    ("50", "#EDF4F1", 1.01, 16.02), ("100", "#D6E7DF", 1.16, 13.93),
-    ("200", "#AECFC1", 1.52, 10.64), ("300", "#82B39F", 2.13, 7.58),
-    ("400", "#5C9781", 3.06, 5.28), ("500", "#40826D", 4.10, 3.94),
-    ("600", "#356C5B", 5.51, 2.94), ("700", "#2B564A", 7.50, 2.16),
-    ("800", "#214239", 9.98, 1.62), ("900", "#182F29", 12.85, 1.26),
+    ("50", "#F0F9F4", 1.0, 15.37),
+    ("100", "#DEF3E5", 1.09, 14.19),
+    ("200", "#BFE5CC", 1.28, 12.02),
+    ("300", "#9ED3AF", 1.59, 9.74),
+    ("400", "#7DBD90", 2.06, 7.51),
+    ("500", "#5EA472", 2.79, 5.52),
+    ("600", "#488859", 3.97, 3.88),
+    ("700", "#396C43", 5.78, 2.67),
+    ("800", "#2B5131", 8.45, 1.83),
+    ("900", "#1D3720", 12.13, 1.27),
+    ("950", "#112413", 15.28, 1.01),
 ]
 STONE = [
-    ("50", "#F2F4F1", 1.00, 16.17), ("100", "#E4E8E3", 1.12, 14.44),
-    ("200", "#CBD3CC", 1.38, 11.69), ("300", "#A9B5AE", 1.92, 8.44),
-    ("400", "#7F8E86", 3.10, 5.21), ("500", "#5E6E66", 4.87, 3.32),
-    ("600", "#47564F", 7.00, 2.31), ("700", "#35423B", 9.52, 1.70),
-    ("800", "#22302A", 12.46, 1.30), ("900", "#0C1A15", 16.17, 1.00),
+    ("50", "#F5F8F6", 1.0, 15.43),
+    ("100", "#EAEEEB", 1.1, 14.09),
+    ("200", "#D7DBD8", 1.31, 11.8),
+    ("300", "#C1C5C2", 1.63, 9.45),
+    ("400", "#A8ADA9", 2.13, 7.24),
+    ("500", "#8E938F", 2.92, 5.28),
+    ("600", "#757975", 4.14, 3.73),
+    ("700", "#5C605C", 5.98, 2.58),
+    ("800", "#444844", 8.7, 1.77),
+    ("900", "#2D322D", 12.23, 1.26),
+    ("950", "#1C201C", 15.43, 1.0),
 ]
 
 
@@ -141,17 +153,17 @@ SHEETS.append(f"""
 SHEETS.append(f"""
 {eyebrow('Brand system · 02')}
 {h2('Colour')}
-{note('Every ratio below was measured, not estimated. The two numbers under each swatch are contrast on paper #F2F4F1 / on ink #0C1A15.')}
+{note('Both scales are generated in OKLCH — even lightness ladder, chroma peaking at 500/600 and tapering, deliberate hue torsion. Every ratio below was measured, not estimated. The two numbers under each swatch are contrast on paper #F5F8F6 / on ink #1C201C.')}
 
 <div style="border:2px solid var(--kc-warning);background:var(--kc-warningSurface, #F6EFE2);
             border-radius:10px;padding:20px 24px;margin-bottom:26px">
   <p style="font:700 17px/1.3 var(--font-display);margin:0 0 6px;color:var(--kc-stone-900)">
-    Viridian #40826D is a display colour, not a text colour</p>
+    Viridian #5EA472 is a display colour, not a text colour</p>
   <p style="font:400 13px/1.6 var(--font-body);margin:0;color:var(--kc-stone-800);max-width:88ch">
-    It measures <b>4.10:1</b> on paper and <b>3.94:1</b> on ink — both below the 4.5:1 WCAG AA
-    threshold for normal text. A white-on-viridian button label fails too. Use it for the logo,
-    large display headings, rules, icons and fills. For text use <b>viridian-700</b> (7.50:1);
-    for buttons use <b>viridian-600</b>, whose off-white label reads 5.51:1.
+    It measures <b>2.79:1</b> on paper — far below the 4.5:1 WCAG AA threshold for normal text.
+    Use it for the logo, large display headings, rules, icons and fills. For text and for button
+    fills use <b>viridian-700</b> (#396C43), which reads <b>5.78:1</b> both as text on paper
+    and as a fill under a paper label.
   </p>
 </div>
 
@@ -160,7 +172,7 @@ SHEETS.append(f"""
 <div style="display:flex;gap:8px;margin-bottom:26px">{swatches(VIRIDIAN, star='500')}</div>
 
 <p style="font:500 11px/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;
-          color:var(--kc-textMuted);margin:0 0 10px">Stone — neutrals, every one green-shifted. 50 is paper, 900 is ink</p>
+          color:var(--kc-textMuted);margin:0 0 10px">Stone — near-neutral, chroma 0.004-0.010. 50 is paper, 950 is ink</p>
 <div style="display:flex;gap:8px;margin-bottom:26px">{swatches(STONE)}</div>
 
 <div style="display:grid;grid-template-columns:1fr 2fr;gap:18px">
@@ -168,7 +180,7 @@ SHEETS.append(f"""
     <p style="font:500 11px/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;
               color:var(--kc-textMuted);margin:0 0 10px">Alternating surface · alert surface</p>
     <div style="display:flex;gap:8px">
-      {swatches([('alt','#EDF4F1',1.01,16.02),('warn','#F6EFE2',1.05,14.86)])}
+      {swatches([('alt','#F0F9F4',1.0,15.37),('warn','#F6EFE2',1.05,14.86)])}
     </div>
   </div>
   <div>

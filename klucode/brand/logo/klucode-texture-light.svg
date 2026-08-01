@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="KluCode">
   <title>KluCode</title>
-  <rect width="1600" height="900" fill="#F2F4F1"/>
-  <g stroke="#AECFC1" stroke-width="1.6" stroke-linecap="round" opacity="0.85">
+  <rect width="1600" height="900" fill="#F5F8F6"/>
+  <g stroke="#BFE5CC" stroke-width="1.6" stroke-linecap="round" opacity="0.85">
     <line x1="35" y1="65.31" x2="174.41" y2="29.73"/>
     <line x1="174.41" y1="29.73" x2="302.19" y2="157.6"/>
     <line x1="398.08" y1="31.69" x2="525.26" y2="39.64"/>
@@ -53,7 +53,7 @@
     <line x1="1300.86" y1="844.08" x2="1411.76" y2="845.75"/>
     <line x1="1411.76" y1="845.75" x2="1553.6" y2="866.34"/>
   </g>
-  <g fill="#40826D">
+  <g fill="#5EA472">
     <circle cx="35" cy="65.31" r="2.88"/>
     <circle cx="174.41" cy="29.73" r="4.53"/>
     <circle cx="398.08" cy="31.69" r="4.21"/>

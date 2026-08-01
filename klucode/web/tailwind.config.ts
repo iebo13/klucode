@@ -33,6 +33,7 @@ export default {
         // switch flips the whole site. Components should reach for these.
         surface: 'var(--kc-surface)',
         'surface-alt': 'var(--kc-surfaceAlt)',
+        'surface-raised': 'var(--kc-surfaceRaised)',
         'surface-inverse': 'var(--kc-surfaceInverse)',
         line: 'var(--kc-border)',
         body: 'var(--kc-text)',

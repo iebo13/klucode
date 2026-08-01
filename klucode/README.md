@@ -12,7 +12,7 @@ klucode/
 │   ├── 03-visual-identity.md   logo rules, colour, type, layout, imagery
 │   ├── 04-launch-playbook.md   pricing, German admin checklist, first 90 days
 │   ├── FONTS.md                licensing
-│   ├── board/                  the system as three PNG sheets
+│   ├── board/                  the system as four PNG sheets
 │   ├── logo/                   17 SVGs — all generated, never hand-edited
 │   │   └── _build/             the generator
 │   └── tokens/                 tokens.json (source of truth) + generated CSS
@@ -51,11 +51,13 @@ and explains the method openly on `/ansatz`, including a head-on answer to
 objection before any value is established; hiding it would be worse, because it
 is true, verifiable, and the honest answer to "how are you this fast?".
 
-**Colour.** Viridian `#40826D`, ink `#0C1A15`, paper `#F2F4F1`.
-⚠️ Viridian is a **display colour**: at 4.10:1 on paper it fails WCAG AA for
-normal text, and a white-on-viridian button label fails too. Text and buttons
-use `viridian-600`/`700`. This is measured, not assumed — see
-`brand/03-visual-identity.md` §5.
+**Colour.** Deep-forest viridian `#5EA472`, ink `#1C201C`, paper `#F5F8F6`.
+Both scales are **generated in OKLCH** by `brand/tokens/build_palette.py` — never
+hand-pick a hex. The first palette was hand-picked and had uneven lightness
+steps (ΔL 0.038–0.129), a chroma-starved brand step, and "neutrals" carrying
+enough green to fight the brand colour. That is what made it look muddy.
+⚠️ Viridian `500` is a **display colour**: 2.79:1 on paper. Text and buttons use
+`viridian-700`. Measured, not assumed — see `brand/03-visual-identity.md` §5.
 
 ---
 
@@ -65,8 +67,9 @@ Nothing under `brand/logo/` or `brand/tokens/tokens.css` is written by hand.
 
 ```bash
 pip install fonttools uharfbuzz brotli
-python3 brand/logo/_build/build_logos.py   # 17 SVGs
+python3 brand/tokens/build_palette.py      # the OKLCH scales -> tokens.json
 python3 brand/tokens/build_css.py          # tokens.css, in both places it is needed
+python3 brand/logo/_build/build_logos.py   # 17 SVGs, colours read from tokens.json
 ```
 
 `brand/tokens/tokens.json` is the single source of truth for colour, type and

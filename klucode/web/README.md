@@ -132,7 +132,10 @@ can configure one, and the `.htaccess` takes precedence when present.
   Google, which is what LG München I awarded damages over (Az. 3 O 17493/20).
 - **Legal pages are `noindex`.** They carry no marketing value and should not
   compete with real pages in search.
-- **Viridian `#40826D` is never a text or button colour.** It measures 4.10:1 on
-  the off-white background and fails WCAG AA. Buttons use `viridian-600`,
-  green text uses `viridian-700`. See `../brand/03-visual-identity.md` §5.
+- **Viridian `500` (#5EA472) is never a text or button colour.** It measures
+  2.79:1 on the off-white background. Buttons and green text use `viridian-700`.
+  See `../brand/03-visual-identity.md` §5.
+- **Light and dark are two designed themes, not one inverted.** Dark raises
+  surfaces to signal elevation, uses off-white text, and moves the accent up the
+  scale. Colour lives in `../brand/tokens/tokens.json`, generated in OKLCH.
 - **The skip link is the first tab stop**, and focus styles are never removed.

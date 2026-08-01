@@ -21,6 +21,7 @@ licence live in ../FONTS.md.
 
 from __future__ import annotations
 
+import json
 import os
 import random
 import urllib.request
@@ -35,9 +36,14 @@ from fontTools.pens.svgPathPen import SVGPathPen
 # Brand constants — the single source of truth for colour and geometry.
 # --------------------------------------------------------------------------
 
-INK = "#0C1A15"  # near-black, green-shifted
-VIRIDIAN = "#40826D"  # primary
-PAPER = "#F2F4F1"  # off-white
+# Read straight from the design tokens so the logo can never drift from the
+# site. tokens.json is itself generated in OKLCH by tokens/build_palette.py.
+_TOKENS = json.loads(
+    (Path(__file__).resolve().parents[2] / "tokens" / "tokens.json").read_text()
+)["color"]
+INK = _TOKENS["stone"]["950"]["value"]  # near-black, faintly green
+VIRIDIAN = _TOKENS["viridian"]["500"]["value"]  # primary
+PAPER = _TOKENS["stone"]["50"]["value"]  # off-white
 
 FONT_URL = (
     "https://raw.githubusercontent.com/google/fonts/main/"
@@ -240,8 +246,9 @@ def constellation(seed: int, bg: str, on_dark: bool) -> str:
     rng = random.Random(seed)
     W, H = 1600.0, 900.0
     cols, rows = 13, 8
-    node_c = VIRIDIAN if not on_dark else "#5C9781"
-    edge_c = "#AECFC1" if not on_dark else "#2B564A"
+    node_c = VIRIDIAN if not on_dark else _TOKENS["viridian"]["400"]["value"]
+    edge_c = (_TOKENS["viridian"]["200"]["value"] if not on_dark
+              else _TOKENS["viridian"]["700"]["value"])
 
     pts: list[tuple[float, float, float]] = []
     for r in range(rows):
