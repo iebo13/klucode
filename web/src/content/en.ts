@@ -68,6 +68,8 @@ const en = {
     close: 'Close',
     switchLang: 'DE',
     switchLangLabel: 'Auf Deutsch ansehen',
+    themeToDark: 'Dark theme',
+    themeToLight: 'Light theme',
     backHome: 'Back to the homepage',
     stack: 'Stack',
     before: 'Before',

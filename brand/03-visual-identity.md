@@ -191,6 +191,31 @@ Two dark-mode details that were found by measuring, not by reasoning:
 - **The accent moves *up* the scale in dark**, where the chroma taper has already
   softened it. Saturated colour on a dark ground vibrates.
 
+**The ink roles are not `surfaceInverse`.** The footer is the dark slab that
+closes the page, and it is dark *by intent in both themes*. Building it from an
+inverted surface makes it follow the theme in the wrong direction: in dark mode
+`surfaceInverse` resolves to `stone-50`, so the page ended with a white block
+glued under a dark page and light text vanishing into it. `ink*` is a separate
+set of roles — `inkSurface` is `stone-950` in light and lifts to `stone-900` in
+dark, obeying the same raised-is-lighter rule as everything else.
+
+| Ink role | Light | Dark |
+| --- | --- | --- |
+| `inkSurface` | `stone-950` | `stone-900` *(lifts, does not invert)* |
+| `inkText` | `stone-50` | `stone-50` |
+| `inkTextMuted` | `stone-300` (8.91:1) | `stone-300` (6.96:1) |
+| `inkTextFaint` | `stone-400` (7.24:1) | `stone-400` (5.74:1) |
+| `inkAccent` | `viridian-300` | `viridian-300` |
+
+**The switch.** Both themes are reachable — a two-state toggle in the header
+capsule, on desktop and on phones. Two states, not a light/dark/system cycle:
+the third stop looks identical to whichever of the other two the OS is already
+on, so the control appears not to have worked. Following the OS is simply what
+happens before anyone touches it, because nothing is written to storage until a
+choice is actually made. A blocking inline script in `<head>` applies the stored
+choice before first paint; deferring it is what produces the white flash on a
+dark-themed reload.
+
 ### Proportion
 
 Roughly **72% paper or ink · 20% stone · 8% viridian**. The green lands hard
@@ -276,26 +301,38 @@ something to tell clients about.
   ambient shadow that separates a panel from what it floats over. Never a hard
   drop shadow, never on flat elements, never to fake depth where there is none.
 
-### The liquid glass layer
+### The clear glass layer
 
-Panels are **liquid glass** — slabs with thickness floating over an aurora wash —
-not flat frosted rectangles. Three things separate the two, and all three are
-required or the effect collapses back into "a white card with a shadow":
+Panels are **clear glass** — panes you look *through*, floating over an aurora
+wash — not frosted rectangles you look *at*. That distinction is the whole
+specification, and getting it wrong twice taught the two rules that matter.
 
-1. **A specular sweep.** A directional highlight raking across the face, as if
-   one light source is hitting a curved lens.
-2. **An edge refraction band.** A bright ring hugging the border — a *ring*,
-   masked to a fixed inset, not a `border` — where a real lens would bend and
-   concentrate light.
-3. **Thickness.** Paired inset highlights top and bottom plus an interior
-   shadow, so the panel has a bottom and reads as a slab rather than a hole cut
-   in a sheet.
+**The edge is optical, never painted.** An earlier pass built the boundary out
+of a 1px inset ring plus a 9px gradient band. Both were removed, because a
+painted stroke around a translucent box reads as a border no matter how it is
+tuned — the eye knows the difference between a line drawn around a shape and
+light bending through one. What replaces it:
 
-**The fill has to be low enough to transmit colour.** This is the counter-
-intuitive part: at `0.66` the panels read as plain white cards, because glass
-over a near-white background is white. Light fill is `0.44`, dark `0.50`, and
-the blur is *lower* than flat glass would use (12px) with saturation *higher*
-(1.9) — liquid glass transmits colour, it does not fog it.
+1. **Refraction.** The pane's backdrop runs through an SVG `feDisplacementMap`
+   whose map is neutral grey across the interior and ramps only within
+   `--lg-band` (14px panels, 5px pills) of each edge. The page behind genuinely
+   bends as it crosses the boundary. Chromium and Safari support
+   `backdrop-filter: url(…)`; Firefox parses it and declines to render it, so it
+   gets the clear pane without the bending — a difference in degree.
+2. **One sheen.** A single directional highlight, brightest top-left, plus a
+   short arc of rim light along the top edge. Asymmetric on purpose: symmetry
+   closes it back into a ring.
+
+Do **not** mask the refraction to a band. That was the second wrong attempt. A
+hard-edged band of displaced pixels is, visually, a fat blurry border — the
+exact thing being removed. Confinement belongs in the map, where it fades out
+continuously and leaves no seam.
+
+**The fill has to be low enough to transmit.** At `0.44`/`0.50` with a 12px
+blur the panels were milky. Clear glass is `0.10` light / `0.16` dark at 6px,
+and the saturation boost drops with it (`1.45`, was `1.9`) — that boost existed
+to put colour back into an over-fogged pane, and an unfogged pane does not need
+it.
 
 **Which means the aurora is not decoration, it is a requirement.** Glass with
 nothing behind it has nothing to refract. Sections that carry glass panels get
@@ -303,20 +340,28 @@ nothing behind it has nothing to refract. Sections that carry glass panels get
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `glass-fill` | `rgba(255,255,255,.44)` | `rgba(34,48,42,.50)` |
-| `glass-fillStrong` | `rgba(255,255,255,.72)` | `rgba(34,48,42,.82)` |
-| `glass-rim` / `rimLow` | specular edge lights | — |
-| `glass-spec` / `specLow` | the face sweep | — |
-| `glass-cast` / `depth` | ambient float / interior shading | — |
-| `glass-blur` · `saturate` | `12px` · `1.9` | same |
+| `glass-fill` | `rgba(255,255,255,.10)` | `rgba(28,40,34,.16)` |
+| `glass-fillStrong` | `rgba(255,255,255,.55)` | `rgba(28,40,34,.70)` |
+| `glass-rim` / `rimLow` | top rim light / trailing glint | — |
+| `glass-spec` / `specLow` | the face sheen | — |
+| `glass-cast` | ambient float | — |
+| `glass-blur` · `saturate` | `6px` · `1.45` | same |
+| `glass-lensBand` · `lensScale` | `14px` · `38` | same |
 
 **Classes**
 
-- `.glass` — the standard panel. Radius `1.75rem`, 9px refraction band.
-- `.glass-sm` — pills, tags, small buttons. 4px band, full radius. Without it
-  the ring swallows the shape.
+- `.glass` — the standard panel. Radius `1.75rem`, 14px refraction band.
+- `.glass-sm` — pills, tags, small buttons. 5px band, full radius. Without it
+  the ramp never reaches neutral and the whole control refracts.
 - `.glass-strong` — higher fill where a panel overlaps busy content.
-- `.glass-solid` — near-opaque (92%), for long copy and form fields.
+- `.glass-solid` — near-opaque, for long copy and form fields.
+
+The refraction filters are built at runtime by `<GlassLens>`, one per distinct
+panel size, because `feImage` stretches its map to the filter region — a single
+fixed map would ramp across a *percentage* of each panel, giving a 90px edge on
+a hero card and a 3px edge on a pill. It is an enhancement and nothing depends
+on it: without JS, or under `prefers-reduced-motion`, the panes are still clear
+glass with a lit edge.
 
 **The four rules that keep it readable**
 
@@ -325,7 +370,8 @@ nothing behind it has nothing to refract. Sections that carry glass panels get
 2. Long copy and form fields sit on `glass-solid`.
 3. **The primary button is never glass.** Solid `viridian-600`. It is the one
    element whose contrast may not depend on what happens to be behind it.
-4. Every panel keeps its border and rim, or it stops reading as glass.
+4. No panel gets a border. If one stops reading as glass, the aurora behind it
+   is too weak — fix the ground, not the edge.
 
 **The chrome is an object.** The header is a floating capsule with page content
 visibly flowing underneath, not a full-width bar pinned to the top edge. That

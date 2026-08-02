@@ -69,6 +69,8 @@ const de = {
     close: 'Schließen',
     switchLang: 'EN',
     switchLangLabel: 'Switch to English',
+    themeToDark: 'Dunkles Design',
+    themeToLight: 'Helles Design',
     backHome: 'Zur Startseite',
     stack: 'Technik',
     before: 'Vorher',

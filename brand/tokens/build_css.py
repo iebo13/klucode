@@ -73,6 +73,8 @@ lines += [
     "  /* --- glass (scheme-independent parts) --------------------------- */",
     f"  --kc-glass-blur: {tokens['glass']['blur']};",
     f"  --kc-glass-saturate: {tokens['glass']['saturate']};",
+    f"  --kc-glass-lensBand: {tokens['glass']['lensBand']};",
+    f"  --kc-glass-lensScale: {tokens['glass']['lensScale']};",
 ]
 
 lines += ["", "  /* --- space, radius, layout, motion ------------------------------ */"]

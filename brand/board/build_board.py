@@ -282,7 +282,7 @@ def glass_demo(dark: bool) -> str:
         <div class="glass" style="flex:1;border-radius:1.25rem;padding:16px 18px">
           <p style="font:700 15px/1.2 var(--font-display);margin:0 0 5px;color:var(--kc-text)">glass</p>
           <p style="font:400 12px/1.5 var(--font-body);color:var(--kc-textMuted);margin:0">
-            Sweep, refraction band, thickness.</p>
+            Clear pane, refracting edge, one sheen.</p>
         </div>
         <div class="glass-solid" style="flex:1;border-radius:1.25rem;padding:16px 18px">
           <p style="font:700 15px/1.2 var(--font-display);margin:0 0 5px;color:var(--kc-text)">glass-solid</p>
@@ -304,8 +304,8 @@ def glass_demo(dark: bool) -> str:
 
 SHEETS.append(f"""
 {eyebrow('Brand system · 04')}
-{h2('Liquid glass')}
-{note('Slabs with thickness floating over an aurora wash — a specular sweep across the face, an edge refraction band, and paired inset highlights so the panel has a bottom. The fill is deliberately LOW (0.44 light) because liquid glass has to transmit the colour behind it; at 0.66 the panels just read as white cards. The guardrail is not a fixed opacity, it is the audit: composited contrast is sampled from rendered pixels.')}
+{h2('Clear glass')}
+{note('Panes you look THROUGH, floating over an aurora wash — not frosted rectangles you look at. No panel has a border: the edge is optical, an SVG displacement map that bends the backdrop within 14px of the boundary, plus one asymmetric sheen. A painted stroke around a translucent box reads as a border no matter how it is tuned. The fill is LOW (0.10 light, 0.16 dark) at 6px blur, because clear glass transmits; at 0.44 and 12px the panels were milky. The guardrail is not a fixed opacity, it is the audit: composited contrast is sampled from rendered pixels.')}
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:26px">
   {glass_demo(False)}
@@ -315,7 +315,7 @@ SHEETS.append(f"""
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
   {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">1 · Fills transmit colour</p>'
          '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
-         '0.44 light, 0.50 dark — low enough to transmit the aurora. The number is not sacred; '
+         '0.10 light, 0.16 dark — low enough to transmit the aurora. The number is not sacred; '
          'the measured audit is. Change a fill, re-run it.</p>')}
   {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">2 · Copy sits on solid</p>'
          '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
@@ -323,9 +323,9 @@ SHEETS.append(f"""
   {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">3 · Primary is never glass</p>'
          '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
          'Solid viridian-600. The one element whose contrast may not depend on what is behind it.</p>')}
-  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">4 · Chrome is an object</p>'
+  {panel('<p style="font:700 15px/1.25 var(--font-display);margin:0 0 6px;color:var(--kc-text)">4 · No panel gets a border</p>'
          '<p style="font:400 12px/1.55 var(--font-body);color:var(--kc-textMuted);margin:0">'
-         'The header is a floating capsule with content flowing underneath, not a bar pinned to the edge.</p>')}
+         'If one stops reading as glass, the aurora behind it is too weak. Fix the ground, not the edge.</p>')}
 </div>
 
 <div style="margin-top:20px;border:1px solid var(--kc-border);border-radius:10px;padding:18px 22px">
@@ -333,8 +333,10 @@ SHEETS.append(f"""
             color:var(--kc-brandText);margin:0 0 8px">Measured on composited pixels, both schemes</p>
   <p style="font:400 12px/1.6 var(--font-body);color:var(--kc-textMuted);margin:0;max-width:96ch">
     Declared CSS colours lie once translucency is involved. Every text role was sampled from the
-    rendered page and checked against its WCAG threshold: all pass, the tightest at 6.44:1 against a
-    4.5 requirement. Re-run the audit after any change to fill opacity or aurora strength.</p>
+    rendered page and checked against its WCAG threshold in BOTH themes: all pass, the tightest at
+    5.74:1 against a 4.5 requirement. Re-run the audit after any change to fill opacity or aurora
+    strength. Note the panels above render without the runtime lens, so they show the clear pane
+    without its bending — that is exactly the Firefox fallback.</p>
 </div>
 """)
 

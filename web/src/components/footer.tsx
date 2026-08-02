@@ -8,23 +8,30 @@ import { LEGAL_KEYS, NAV_KEYS, pathFor, type Lang } from '@/lib/routes';
 export function Footer({ lang, c }: { lang: Lang; c: Content }) {
   const year = 2026;
 
+  // bg-ink, not bg-surface-inverse. Inverting the surface made the footer
+  // follow the theme in the wrong direction: in dark mode surfaceInverse
+  // resolves to stone.50, so the page ended with a white slab glued under a
+  // dark page while the text on it stayed light and vanished. The footer is
+  // dark by intent in BOTH themes — it is the ink block that closes the page,
+  // not a mirror of whatever the body happens to be. In dark mode it lifts to
+  // stone.900 rather than inverting, so it still separates from the body.
   return (
-    <footer className="border-t border-line bg-surface-inverse text-stone-50">
+    <footer className="border-t border-line bg-ink text-ink-fg">
       <div className="mx-auto max-w-container px-6 py-16 md:px-10">
         <div className="flex flex-col gap-12 md:flex-row md:justify-between">
           <div className="max-w-sm">
-            <Link href={pathFor('home', lang)} className="text-[1.35rem] text-stone-50">
+            <Link href={pathFor('home', lang)} className="text-[1.35rem] text-ink-fg">
               <Logo />
             </Link>
-            <p className="mt-4 font-display text-lead text-viridian-300">{c.footer.tagline}</p>
-            <p className="mt-4 text-small text-stone-300">
+            <p className="mt-4 font-display text-lead text-ink-accent">{c.footer.tagline}</p>
+            <p className="mt-4 text-small text-ink-muted">
               {profile.brand} · {profile.city}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-x-16 gap-y-10">
             <nav aria-label={c.nav.services}>
-              <h2 className="font-mono text-eyebrow uppercase tracking-[0.08em] text-stone-400">
+              <h2 className="font-mono text-eyebrow uppercase tracking-[0.08em] text-ink-faint">
                 {c.meta.siteName}
               </h2>
               <ul className="mt-4 space-y-2.5">
@@ -32,7 +39,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
                   <li key={k}>
                     <Link
                       href={pathFor(k, lang)}
-                      className="text-small text-stone-300 transition-colors duration-base hover:text-stone-50"
+                      className="text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
                     >
                       {c.nav[k]}
                     </Link>
@@ -42,7 +49,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
             </nav>
 
             <nav aria-label={c.nav.imprint}>
-              <h2 className="font-mono text-eyebrow uppercase tracking-[0.08em] text-stone-400">
+              <h2 className="font-mono text-eyebrow uppercase tracking-[0.08em] text-ink-faint">
                 Legal
               </h2>
               <ul className="mt-4 space-y-2.5">
@@ -50,7 +57,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
                   <li key={k}>
                     <Link
                       href={pathFor(k, lang)}
-                      className="text-small text-stone-300 transition-colors duration-base hover:text-stone-50"
+                      className="text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
                     >
                       {c.nav[k]}
                     </Link>
@@ -61,7 +68,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col gap-4 border-t border-stone-700 pt-6 text-small text-stone-400 md:flex-row md:items-center md:justify-between">
+        <div className="mt-14 flex flex-col gap-4 border-t border-ink-line pt-6 text-small text-ink-faint md:flex-row md:items-center md:justify-between">
           <p className="max-w-measure">{c.footer.builtNote}</p>
           <p>
             © {year} {profile.brand}. {c.footer.rights}

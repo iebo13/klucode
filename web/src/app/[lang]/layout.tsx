@@ -6,6 +6,7 @@ import { getContent } from '@/content';
 import { profile } from '@/content/profile';
 import { asset } from '@/lib/base-path';
 import { LANGS, isLang, type Lang } from '@/lib/routes';
+import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
 import '../globals.css';
 
@@ -89,7 +90,19 @@ export default async function LangLayout({
   if (!isLang(lang)) notFound();
 
   return (
-    <html lang={lang as Lang} className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    // suppressHydrationWarning: the script below writes data-theme onto this
+    // element before React sees it, so the client tree legitimately differs
+    // from the server tree by exactly that one attribute.
+    <html
+      lang={lang as Lang}
+      suppressHydrationWarning
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+    >
+      <head>
+        {/* Blocking on purpose, and before any stylesheet. Deferring it is
+            what produces the white flash on a dark-themed reload. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-dvh bg-surface text-body antialiased">{children}</body>
     </html>
   );

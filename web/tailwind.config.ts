@@ -42,6 +42,15 @@ export default {
         'brand-text': 'var(--kc-brandText)',
         'brand-action': 'var(--kc-brandAction)',
         'on-brand': 'var(--kc-onBrand)',
+
+        // The ink slab at the foot of the page. Dark in BOTH themes, which is
+        // why it cannot be surface-inverse — see brand/tokens/tokens.json.
+        ink: 'var(--kc-inkSurface)',
+        'ink-fg': 'var(--kc-inkText)',
+        'ink-muted': 'var(--kc-inkTextMuted)',
+        'ink-faint': 'var(--kc-inkTextFaint)',
+        'ink-line': 'var(--kc-inkBorder)',
+        'ink-accent': 'var(--kc-inkAccent)',
       },
       fontFamily: {
         display: ['var(--font-display)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
