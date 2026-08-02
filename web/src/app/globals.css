@@ -81,6 +81,31 @@
     --node-dot: var(--kc-viridian-200);
   }
 
+  /* The same device, but as CONTENT rather than as background texture.
+     Inside a reserved figure slot the node field is the only thing in the box,
+     so it keeps full density, drops the fade-out mask, and moves one step up
+     the scale — at background strength an empty slot reads as a failed image
+     rather than as a panel waiting for one. */
+  .node-field-fill {
+    --node-dot: var(--kc-viridian-300);
+    background-image: radial-gradient(circle at center, var(--node-dot) 2px, transparent 2.1px);
+    background-size: 32px 32px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .node-field-fill {
+      --node-dot: var(--kc-viridian-800);
+    }
+  }
+
+  [data-theme='dark'] .node-field-fill {
+    --node-dot: var(--kc-viridian-800);
+  }
+
+  [data-theme='light'] .node-field-fill {
+    --node-dot: var(--kc-viridian-300);
+  }
+
   /* ---------------------------------------------------------------------
      .glass-nav — RESERVED FOR THE NAVIGATION LAYER.
 

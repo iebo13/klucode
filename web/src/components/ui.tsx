@@ -13,6 +13,7 @@ export function Section({
   className = '',
   tint = false,
   glow = false,
+  bleed = false,
   id,
 }: {
   children: ReactNode;
@@ -20,6 +21,14 @@ export function Section({
   tint?: boolean;
   /** Adds an aurora wash behind the section. Use sparingly — it is punctuation. */
   glow?: boolean;
+  /**
+   * Drops the 72rem container cap so the section runs nearly to the viewport
+   * edge. This is a STRUCTURAL EXCEPTION and there is exactly one on the
+   * homepage, on the work section. Seven sections sharing one left edge is
+   * what made the page read as a single undifferentiated column; the fix is
+   * punctuation, not variety, so a second one would undo the first.
+   */
+  bleed?: boolean;
   id?: string;
 }) {
   return (
@@ -30,28 +39,90 @@ export function Section({
       } ${className}`}
     >
       {glow ? <div aria-hidden="true" className="aurora grain -z-10" /> : null}
-      <div className="relative mx-auto max-w-container px-6 py-section md:px-10">{children}</div>
+      <div
+        className={`relative mx-auto px-6 py-section md:px-10 ${
+          bleed ? 'max-w-[104rem]' : 'max-w-container'
+        }`}
+      >
+        {children}
+      </div>
     </section>
   );
 }
 
+/**
+ * A section heading, and the column beside it.
+ *
+ * The head is capped at seven of twelve columns for measure. The remaining
+ * ~570px used to be empty above every grid on the page, seven times over —
+ * so `aside` deliberately occupies it. On this site that is the section's
+ * ArrowLink, which also stops it hanging off the bottom-left of every grid.
+ */
 export function SectionHead({
   eyebrow,
   title,
   lead,
+  aside,
   className = '',
 }: {
   eyebrow?: string;
   title: string;
   lead?: string;
+  aside?: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={`max-w-narrow ${className}`}>
-      {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-      <h2 className="mt-3 text-h2">{title}</h2>
-      {lead ? <p className="mt-5 max-w-measure text-lead text-muted">{lead}</p> : null}
+    <div className={`gap-8 md:grid md:grid-cols-12 md:items-end ${className}`}>
+      <div className="md:col-span-7">
+        {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+        <h2 className="mt-3 text-h2">{title}</h2>
+        {lead ? <p className="mt-4 max-w-measure text-lead text-muted">{lead}</p> : null}
+      </div>
+      {aside ? (
+        <div className="mt-6 md:col-span-4 md:col-start-9 md:mt-0 md:text-right">{aside}</div>
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * An inverted slab. Reserved for the one sentence a section is actually
+ * arguing towards.
+ *
+ * This replaces `border-l-2 border-brand pl-7`, which was the weakest emphasis
+ * device in the system and was being used three times across the site, every
+ * time for a punchline. A 2px rule does not carry a punchline.
+ */
+export function InkPanel({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-lg bg-ink p-6 text-ink-fg md:p-8 ${className}`}>
+      <span aria-hidden="true" className="mb-6 block h-1 w-8 rounded-full bg-ink-accent" />
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A reserved slot for imagery that does not exist yet.
+ *
+ * Correct aspect-ratio box, so dropping a screenshot in later is a file drop
+ * and not a layout change. Until then it holds the node field — the brand's own
+ * graphic device — rather than a grey rectangle with the word "placeholder" in
+ * it, because an empty box that looks designed is not the same thing as an
+ * empty box that looks broken. Decorative until it has content, hence
+ * aria-hidden and no caption.
+ */
+export function FigureSlot({ className = '' }: { className?: string }) {
+  return (
+    <figure aria-hidden="true" className={`panel relative overflow-hidden ${className}`}>
+      <div className="node-field-fill absolute inset-0" />
+    </figure>
   );
 }
 

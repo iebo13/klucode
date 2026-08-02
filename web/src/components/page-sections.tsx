@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { ContactForm } from '@/components/contact-form';
-import { ButtonLink, Card, Eyebrow, Section, SectionHead, Tags } from '@/components/ui';
+import { ButtonLink, Card, Eyebrow, InkPanel, Section, SectionHead, Tags } from '@/components/ui';
 import type { Content } from '@/content';
 import { openTodos, profile } from '@/content/profile';
 import { pathFor, type Lang } from '@/lib/routes';
@@ -189,10 +189,13 @@ export function ApproachPage({ lang, c }: { lang: Lang; c: Content }) {
               {p}
             </p>
           ))}
-          <div className="mt-12 border-l-2 border-brand pl-7">
+          {/* The page's punchline, and it now looks like one. Was `border-l-2
+              border-brand pl-7`, the same 2px rule that was doing this job in
+              three places across the site. */}
+          <InkPanel className="mt-12">
             <h3 className="font-display text-h3">{a.objection.q}</h3>
-            <p className="mt-4 max-w-measure text-muted">{a.objection.a}</p>
-          </div>
+            <p className="mt-4 max-w-measure text-ink-muted">{a.objection.a}</p>
+          </InkPanel>
         </div>
       </Section>
 
@@ -229,7 +232,10 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
                 {p}
               </p>
             ))}
-            <div className="mt-10 border-l-2 border-brand pl-7">
+            {/* A quiet aside, not a punchline — so it gets the panel with a
+                brand top-rule rather than the inverted slab. The two are now
+                distinguishable, which the single 2px left rule never was. */}
+            <div className="panel mt-10 border-t-2 border-t-brand p-6 md:p-8">
               <p className="max-w-measure text-muted">{a.nameNote}</p>
             </div>
           </div>

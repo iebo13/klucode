@@ -69,7 +69,7 @@
   --kc-space-16: 4rem;
   --kc-space-24: 6rem;
   --kc-space-32: 8rem;
-  --kc-space-section: clamp(4rem, 2.5rem + 7vw, 8rem);
+  --kc-space-section: clamp(4rem, 2.5rem + 6vw, 6.5rem);
   --kc-radius-sm: 0.25rem;
   --kc-radius-md: 0.5rem;
   --kc-radius-lg: 0.875rem;
