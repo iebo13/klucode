@@ -64,7 +64,7 @@ lines = [
     ":root {",
     "  /* --- raw scales ------------------------------------------------- */",
 ]
-for g in ("viridian", "stone"):
+for g in ("viridian", "stone", "warm"):
     lines += scale_vars(g)
 lines += [
     f"  --kc-{k}: {v['value']};"

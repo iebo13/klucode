@@ -18,7 +18,7 @@ import { pathFor, type Lang } from '@/lib/routes';
 function PageHero({ eyebrow, title, lead }: { eyebrow: string; title: string; lead: string }) {
   return (
     <section className="relative isolate overflow-hidden">
-      <div aria-hidden="true" className="aurora grain -z-10" />
+      <div aria-hidden="true" className="aurora -z-10" />
       <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-40" />
       <div className="relative mx-auto max-w-container px-6 pb-16 pt-16 md:px-8 md:pt-24">
         <Eyebrow>{eyebrow}</Eyebrow>
@@ -393,7 +393,7 @@ export function PrivacyPage({ c }: { lang: Lang; c: Content }) {
 
 function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
   return (
-    <Section tint glow>
+    <Section tint>
       <div className="max-w-narrow">
         <h2 className="text-h2">{c.home.finalTitle}</h2>
         <p className="mt-4 max-w-measure text-lead text-muted">{c.home.finalLead}</p>

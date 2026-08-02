@@ -6,7 +6,10 @@ import { profile } from '@/content/profile';
 import { LEGAL_KEYS, NAV_KEYS, pathFor, type Lang } from '@/lib/routes';
 
 export function Footer({ lang, c }: { lang: Lang; c: Content }) {
-  const year = 2026;
+  // Evaluated at build time — this is a static export, so the footer year is
+  // whatever the site was last built in rather than whatever was hardcoded in
+  // whichever year the file was written.
+  const year = new Date().getFullYear();
 
   // bg-ink, not bg-surface-inverse. Inverting the surface made the footer
   // follow the theme in the wrong direction: in dark mode surfaceInverse

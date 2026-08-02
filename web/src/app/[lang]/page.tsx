@@ -50,7 +50,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
     <Shell lang={lang} current="home">
       {/* ---------------------------------------------------------------- hero */}
       <section className="relative isolate overflow-hidden">
-        <div aria-hidden="true" className="aurora grain -z-10" />
+        <div aria-hidden="true" className="aurora -z-10" />
         <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-50" />
         <div className="relative mx-auto max-w-container px-6 pb-section pt-16 md:px-8 md:pt-24">
           <Eyebrow>{h.heroEyebrow}</Eyebrow>
@@ -248,7 +248,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ----------------------------------------------------------- final cta */}
-      <Section glow>
+      <Section>
         <div className="gap-8 md:grid md:grid-cols-12 md:items-end">
           <div className="md:col-span-7">
             <h2 className="text-h1">{h.finalTitle}</h2>
@@ -260,7 +260,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           {/* The availability line lives in the column that used to be empty. */}
           <p className="mt-8 text-small text-muted md:col-span-4 md:col-start-9 md:mt-0 md:text-right">
             <span className="flex items-center gap-2 md:justify-end">
-              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-brand" />
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-accent-warm" />
               {c.ui.availablePrefix} {profile.availableFrom[lang]}
             </span>
           </p>

@@ -35,6 +35,8 @@
   --kc-stone-800: #444844;
   --kc-stone-900: #2D322D;
   --kc-stone-950: #1C201C;
+  --kc-warm-300: #F2A359;
+  --kc-warm-600: #C16F00;
   --kc-success: #2B564A;
   --kc-warning: #8A5A16;
   --kc-warningSurface: #F6EFE2;
@@ -96,6 +98,7 @@
   --kc-brandAction: var(--kc-viridian-700);
   --kc-onBrand: var(--kc-stone-50);
   --kc-dangerText: var(--kc-danger);
+  --kc-accentWarm: var(--kc-warm-600);
   --kc-inkSurface: var(--kc-stone-950);
   --kc-inkText: var(--kc-stone-50);
   --kc-inkTextMuted: var(--kc-stone-300);
@@ -128,6 +131,7 @@
     --kc-brandAction: var(--kc-viridian-400);
     --kc-onBrand: var(--kc-stone-950);
     --kc-dangerText: var(--kc-dangerOnDark);
+    --kc-accentWarm: var(--kc-warm-300);
     --kc-inkSurface: var(--kc-stone-900);
     --kc-inkText: var(--kc-stone-50);
     --kc-inkTextMuted: var(--kc-stone-300);
@@ -158,6 +162,7 @@
   --kc-brandAction: var(--kc-viridian-400);
   --kc-onBrand: var(--kc-stone-950);
   --kc-dangerText: var(--kc-dangerOnDark);
+  --kc-accentWarm: var(--kc-warm-300);
   --kc-inkSurface: var(--kc-stone-900);
   --kc-inkText: var(--kc-stone-50);
   --kc-inkTextMuted: var(--kc-stone-300);
@@ -187,6 +192,7 @@
   --kc-brandAction: var(--kc-viridian-700);
   --kc-onBrand: var(--kc-stone-50);
   --kc-dangerText: var(--kc-danger);
+  --kc-accentWarm: var(--kc-warm-600);
   --kc-inkSurface: var(--kc-stone-950);
   --kc-inkText: var(--kc-stone-50);
   --kc-inkTextMuted: var(--kc-stone-300);

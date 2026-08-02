@@ -29,10 +29,13 @@
 
   /* One visible focus style everywhere. Never remove it — keyboard users are
      the reason it exists, and it is the cheapest accessibility win there is. */
+  /* border-radius belonged to the ELEMENT, not to the outline, so this was
+     quietly rounding the corners of whatever had focus. It was harmless only
+     because Tailwind's utility and component layers outrank base, i.e. by
+     accident. outline-offset does the job it was there for. */
   :focus-visible {
     outline: 2px solid var(--kc-brandAction);
     outline-offset: 3px;
-    border-radius: 2px;
   }
 
   ::selection {
@@ -230,11 +233,18 @@
     pointer-events: none;
     contain: paint;
     /* The wash COLOURS have to flip with the scheme, not just the opacity.
-       Light greens laid over a dark ground do not tint it, they haze it. */
-    --aurora-1: var(--kc-viridian-100);
-    --aurora-2: var(--kc-viridian-200);
-    --aurora-3: var(--kc-viridian-50);
-    opacity: var(--aurora-strength, 0.55);
+       Light greens laid over a dark ground do not tint it, they haze it.
+
+       They also sit one step further down the scale than they used to. At
+       viridian-100 the wash was the same lightness as the viridian-100 tint it
+       was laid over, so `glow` on a tinted section produced literally nothing
+       while the identical class on an untinted one produced a visible wash. A
+       device that does two different things depending on where it lands is not
+       a device. */
+    --aurora-1: var(--kc-viridian-200);
+    --aurora-2: var(--kc-viridian-300);
+    --aurora-3: var(--kc-viridian-100);
+    opacity: var(--aurora-strength, 0.45);
     background:
       /* follows the section's top boundary, full width */
       linear-gradient(to bottom, var(--aurora-1), transparent 58%),
@@ -261,23 +271,22 @@
   }
 
   [data-theme='light'] .aurora {
-    --aurora-strength: 0.55;
-    --aurora-1: var(--kc-viridian-100);
-    --aurora-2: var(--kc-viridian-200);
-    --aurora-3: var(--kc-viridian-50);
+    --aurora-strength: 0.45;
+    --aurora-1: var(--kc-viridian-200);
+    --aurora-2: var(--kc-viridian-300);
+    --aurora-3: var(--kc-viridian-100);
   }
 
-  /* Grain. A 90px blur over flat colour bands badly on 8-bit displays; a
-     little noise breaks the bands up. Inline SVG, so no extra request. */
-  .grain::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.34;
-    mix-blend-mode: multiply;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
-  }
+  /* GRAIN IS GONE, on the numbers.
+     It was `.grain::after` nested inside `.aurora`, so its effective alpha was
+     0.045 (the SVG rect) x 0.34 (the ::after) x 0.55 (the inherited aurora
+     opacity) = 0.008 — roughly 40x too faint to do its stated job of breaking
+     up gradient banding. The job itself also went away: the note described a
+     90px blur, and there is no blur behind the aurora any more, only plain
+     gradients. It cost a mix-blend-mode compositing layer per glow section, on
+     a pass whose entire point was removing compositing layers that produce
+     nothing. If banding ever does show up, it comes back as ONE element with a
+     measured alpha, not as a third nested opacity. */
 }
 
 @media (prefers-reduced-motion: reduce) {

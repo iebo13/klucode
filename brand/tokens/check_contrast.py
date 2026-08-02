@@ -160,6 +160,11 @@ def pairs(mode: str) -> list[tuple[str, str, str, float, str]]:
         ("focus ring on panel", r("brandAction"), r("surfaceRaised"), NONTEXT, "NONTEXT"),
         ("focus ring on tint", r("brandAction"), r("surfaceAlt"), NONTEXT, "NONTEXT"),
     ]
+    # The availability status dot — the only place the warm counterpoint is
+    # used. Its lightness was chosen to be the brightest step that still clears
+    # this row, so this row is what pins it.
+    for sname, sval in surfaces:
+        out.append((f"accentWarm dot on {sname}", r("accentWarm"), sval, NONTEXT, "NONTEXT"))
 
     # --- the ink slab at the foot of the page -----------------------------
     for t in ("inkText", "inkTextMuted", "inkTextFaint", "inkAccent"):

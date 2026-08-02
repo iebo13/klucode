@@ -42,7 +42,17 @@ export function Section({
   children: ReactNode;
   className?: string;
   tint?: boolean;
-  /** Adds an aurora wash behind the section. Use sparingly — it is punctuation. */
+  /**
+   * Adds an aurora wash behind the section. PUNCTUATION, and rationed like it:
+   * the hero and one section, nothing else.
+   *
+   * It used to say "use sparingly" and then sit on the hero plus four of six
+   * sections, which is not punctuation, it is wallpaper. It also produced two
+   * different results depending on where it landed: on a `tint` section the
+   * wash was viridian-100 over viridian-100, i.e. invisible, so the same device
+   * did nothing in half the places it was used. The wash now sits a step down
+   * the scale so it registers against the page AND against the tint.
+   */
   glow?: boolean;
   /**
    * Drops the 72rem container cap so the section runs nearly to the viewport
@@ -57,11 +67,13 @@ export function Section({
   return (
     <section
       id={id}
-      className={`relative isolate overflow-hidden border-t border-line ${
-        tint ? 'bg-surface-alt' : ''
-      } ${className}`}
+      // ONE separation strategy, not two. Every Section carried `border-t
+      // border-line`: hard flat separation, fighting the soft depth language,
+      // and redundant next to the tint alternation that was already marking the
+      // same boundaries. The tint stays; the rules go.
+      className={`relative isolate overflow-hidden ${tint ? 'bg-surface-alt' : ''} ${className}`}
     >
-      {glow ? <div aria-hidden="true" className="aurora grain -z-10" /> : null}
+      {glow ? <div aria-hidden="true" className="aurora -z-10" /> : null}
       <div
         className={`relative mx-auto px-6 py-section md:px-8 ${
           bleed ? 'max-w-[104rem]' : 'max-w-container'

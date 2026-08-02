@@ -47,6 +47,7 @@ export default {
       colors: {
         viridian: scale(color.viridian),
         stone: scale(color.stone),
+        warm: scale(color.warm),
         success: color.semantic.success.value,
         warning: color.semantic.warning.value,
         'warning-surface': color.semantic.warningSurface.value,
@@ -72,6 +73,10 @@ export default {
         'brand-text': 'var(--kc-brandText)',
         'brand-action': 'var(--kc-brandAction)',
         'on-brand': 'var(--kc-onBrand)',
+        // The one warm counterpoint in a system that is otherwise a single hue.
+        // Used in exactly one place — the availability status dot. If you are
+        // about to use it in a second, read the note in build_palette.py first.
+        'accent-warm': 'var(--kc-accentWarm)',
 
         // The ink slab at the foot of the page. Dark in BOTH themes, which is
         // why it cannot be surface-inverse — see brand/tokens/tokens.json.

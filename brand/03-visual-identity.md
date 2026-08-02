@@ -155,9 +155,28 @@ as a clean sheet laid on a tinted page, not as a slightly brighter patch of the
 same tint.
 
 **Semantic** — interface states only, never marketing, never the logo.
-success `#396C43` · warning `#8A5A16` · warningSurface `#F6EFE2` ·
-danger `#8C2F26`. `warningSurface` is the only warm value in the system and is
-confined to alert boxes: an alert that is not warm does not read as an alert.
+success `#2B564A` · warning `#8A5A16` · warningSurface `#F6EFE2` ·
+danger `#8C2F26` · dangerOnDark `#F19F93`. `warningSurface` is confined to alert
+boxes: an alert that is not warm does not read as an alert.
+
+**Warm** — the one counterpoint, hue 62° against viridian's 152°.
+`300 #F2A359` · `600 #C16F00`
+
+Two steps, because it has exactly one job. The system is otherwise a single hue
+all the way down: the surfaces are green-tinted stone (`#F5F8F6` has G above R
+and B, so there was no true neutral on the ramp at all), the alternating tint is
+viridian, the aurora is viridian, the accents and the footer accent are
+viridian. A palette with one hue has nothing to measure itself against and reads
+as a cast rather than a choice.
+
+It is used in **exactly one place** — the availability status dot — and that is
+the whole point. `600` at L 0.620 is not a taste value: it is the lightest step
+that still clears 1.4.11's 3:1 against the page (3.24:1) as a non-text
+indicator. Anything brighter is a prettier amber and an illegible dot. It sits
+close to `warning` (70°) in hue and separates by value and chroma instead —
+1.56:1 apart, which at dot size is the difference between amber and brown.
+
+> Do not scatter it. A second warm accent and the counterpoint stops being one.
 
 ### The rule that still matters most
 
@@ -355,7 +374,11 @@ something to tell clients about.
 
 - **Grid:** 12 columns, 72rem max container, 48rem for reading-width pages
   (imprint, privacy, long-form).
-- **Spacing:** 4px base grid, section rhythm `clamp(4rem, 2.5rem + 7vw, 8rem)`.
+- **Spacing:** 4px base grid, section rhythm `clamp(4rem, 2.5rem + 6vw, 6.5rem)`.
+  The token scale is the **only** spacing scale — `tailwind.config.ts` replaces
+  `theme.spacing` rather than extending it, so an off-scale utility emits no CSS
+  at all. That failure is silent, so `web/scripts/check-spacing.mjs` asserts it
+  in CI.
 - **Alignment:** left, almost always. Centre only short hero blocks.
 - **Whitespace is the brand.** When a layout feels wrong, the answer is nearly
   always more space, not another element.
@@ -442,6 +465,63 @@ displacement-map builder — is deleted.
 content visibly flowing underneath, not a full-width bar pinned to the top edge.
 That single move does more to signal the register than any amount of blur — and
 it is now the only place paying for the blur.
+
+### Weight, and where it is allowed to go
+
+The copy ranks things. For a while the layout rendered them all at equal weight,
+which is a way of saying nothing.
+
+**`InkPanel` is the emphasis device.** An inverted slab, reserved for the one
+sentence a section is actually arguing towards. It replaced `border-l-2
+border-brand pl-7`, which was the weakest device in the system and was doing
+this job in three places — a 2px rule does not carry a punchline. The quieter
+register, for an aside rather than a conclusion, is a `.panel` with a brand
+top-rule. Two devices, visibly different.
+
+**Exactly two structural exceptions per page, and no more.** Seven sections
+sharing one left edge, one alignment and one internal rhythm is what made the
+homepage read as a single undifferentiated column. The fix is punctuation, not
+variety, so a third exception would undo the first two. On the homepage they
+are:
+
+1. **Full-bleed** — the work section drops the 72rem container cap
+   (`<Section bleed>`). The proof section is the one allowed to break the shared
+   left edge.
+2. **Asymmetric and offset** — the approach section puts a sticky heading in
+   columns 1–4 and the steps in 6–12.
+
+**The right column is not spare.** `SectionHead` is a 12-column grid: head in
+1–7 for measure, `aside` in 9–12. That column used to be ~570px of nothing above
+every grid on the page, seven times over. It now holds the section's ArrowLink.
+
+**Reserve image slots before there are images.** `FigureSlot` is a correct
+aspect-ratio box holding the node field at content strength, so dropping a
+screenshot in later is a file drop rather than a layout change. At *background*
+strength an empty slot reads as a failed image rather than as a panel waiting
+for one — which is why `.node-field-fill` exists alongside `.node-field`.
+
+### One separation strategy, one glow
+
+**Sections separate by tint alternation. There are no rules.** Every `Section`
+used to carry `border-t border-line` *as well* — hard flat separation fighting
+the soft depth language, and redundant next to an alternation already marking
+the same boundaries. Pick one; this system picks the tint.
+
+**`glow` is punctuation and is rationed like it: the hero plus one section.** It
+used to say "use sparingly" and then sit on the hero plus four of six sections,
+which is wallpaper. It also produced two different results depending on where it
+landed — on a `tint` section the wash was `viridian-100` over `viridian-100`,
+i.e. nothing. The wash now sits a step down the scale (`viridian-200/300/100` at
+0.45) so it registers against the page *and* against the tint. A device that
+does two different things depending on where it lands is not a device.
+
+**Grain is gone.** Effective alpha was 0.045 (the SVG rect) × 0.34 (the
+`::after`) × 0.55 (the inherited `.aurora` opacity) = **0.008**, roughly 40×
+too faint to break up the banding it existed for. The job went away too: the
+note described a 90px blur, and there is no blur behind the aurora any more.
+It cost a `mix-blend-mode` compositing layer per glow section. If banding ever
+does appear, it comes back as one element with a measured alpha — not a third
+nested opacity.
 
 **Verify, do not assume.** `brand/tokens/check_contrast.py` is CI-runnable and
 asserts every text pair at 4.5:1, every non-text UI pair at 3:1, every panel
