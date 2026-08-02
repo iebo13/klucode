@@ -48,6 +48,15 @@
     text-wrap: balance;
   }
 
+  /* h3 drops to 500. All three levels were 700, so the hierarchy was
+     size-only — a card title and a section heading differed by nothing but
+     scale, and at the bottom of the ramp there is not much scale left. Space
+     Grotesk 500 is already loaded and paid for; using it gives card titles a
+     different VOICE rather than just a smaller one. */
+  h3 {
+    font-weight: 500;
+  }
+
   p {
     text-wrap: pretty;
   }

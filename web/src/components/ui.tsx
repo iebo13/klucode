@@ -1,12 +1,35 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-/** Small uppercase mono label. The quiet signal that a developer built this. */
+/**
+ * Small uppercase mono label. The quiet signal that a developer built this.
+ *
+ * It stopped being quiet: 12px uppercase mono at 0.08em appeared about 36 times
+ * on the homepage — six section eyebrows, three proof pills, four price labels,
+ * three sector and three scope labels, twelve tags, four step numbers and the
+ * availability line — which made the loudest recurring texture on the page out
+ * of the device meant to whisper, and left no hierarchy inside the small-text
+ * tier at all. Mono-uppercase is now restricted to three roles: SECTION
+ * EYEBROWS (this component), TECH TAGS and STEP NUMBERS. Everything else that
+ * used to reach for it is sentence-case `text-small`.
+ */
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
     <p className="font-mono text-eyebrow uppercase tracking-[0.08em] text-brand-text">{children}</p>
   );
 }
+
+/**
+ * The canonical eyebrow → heading → lead rhythm. ONE definition, used
+ * everywhere the pattern appears.
+ *
+ * It was `mt-3`/`mt-5` in SectionHead, `mt-6`/`mt-7` in PageHero and
+ * `mt-6`/`mt-8` in the homepage hero — three different answers to the same
+ * question, none of them on the token scale twice. The display-size hero uses
+ * the same two values as a 40px section heading: the gap belongs to the
+ * relationship, not to the type size.
+ */
+export const RHYTHM = { heading: 'mt-3', lead: 'mt-4' } as const;
 
 export function Section({
   children,
@@ -40,7 +63,7 @@ export function Section({
     >
       {glow ? <div aria-hidden="true" className="aurora grain -z-10" /> : null}
       <div
-        className={`relative mx-auto px-6 py-section md:px-10 ${
+        className={`relative mx-auto px-6 py-section md:px-8 ${
           bleed ? 'max-w-[104rem]' : 'max-w-container'
         }`}
       >
@@ -75,8 +98,10 @@ export function SectionHead({
     <div className={`gap-8 md:grid md:grid-cols-12 md:items-end ${className}`}>
       <div className="md:col-span-7">
         {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-        <h2 className="mt-3 text-h2">{title}</h2>
-        {lead ? <p className="mt-4 max-w-measure text-lead text-muted">{lead}</p> : null}
+        <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
+        {lead ? (
+          <p className={`${RHYTHM.lead} max-w-measure text-lead text-muted`}>{lead}</p>
+        ) : null}
       </div>
       {aside ? (
         <div className="mt-6 md:col-span-4 md:col-start-9 md:mt-0 md:text-right">{aside}</div>
@@ -127,7 +152,7 @@ export function FigureSlot({ className = '' }: { className?: string }) {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-display text-[0.95rem] font-medium transition-all duration-base ease-brand';
+  'inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-display text-[0.95rem] font-medium transition-all duration-base ease-brand';
 
 /**
  * Primary buttons sit on viridian-600, not the brand viridian-500. On 500 the
@@ -237,7 +262,7 @@ export function Faq({ items }: { items: readonly { q: string; a: string }[] }) {
   return (
     <div className="divide-y divide-line border-y border-line">
       {items.map((item) => (
-        <details key={item.q} className="group py-5">
+        <details key={item.q} className="group py-4">
           <summary className="flex cursor-pointer list-none items-start justify-between gap-6 font-display text-h3 font-medium marker:content-none">
             {item.q}
             <span

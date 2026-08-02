@@ -10,6 +10,7 @@ import {
   Faq,
   FigureSlot,
   InkPanel,
+  RHYTHM,
   Section,
   SectionHead,
   Tags,
@@ -51,7 +52,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       <section className="relative isolate overflow-hidden">
         <div aria-hidden="true" className="aurora grain -z-10" />
         <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-50" />
-        <div className="relative mx-auto max-w-container px-6 pb-section pt-20 md:px-10 md:pt-28">
+        <div className="relative mx-auto max-w-container px-6 pb-section pt-16 md:px-8 md:pt-24">
           <Eyebrow>{h.heroEyebrow}</Eyebrow>
           {/* The headline keeps the full container width — narrowing it to make
               room for the figure cost it two extra line breaks and most of its
@@ -59,11 +60,11 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
               viridian-500 at 2.79:1, so the biggest word on the site failed AA
               for large text, in defiance of the rule tokens.css states in its
               own header comment. viridian-700 measures 5.27:1 here. */}
-          <h1 className="mt-6 max-w-4xl text-display">
+          <h1 className={`${RHYTHM.heading} max-w-4xl text-display`}>
             {h.heroTitle} <span className="text-brand-text">{h.heroTitleAccent}</span>
           </h1>
 
-          <div className="mt-8 grid gap-10 lg:grid-cols-12 lg:gap-14">
+          <div className={`${RHYTHM.lead} grid gap-8 lg:grid-cols-12 lg:gap-12`}>
             <div className="lg:col-span-7">
               <p className="max-w-measure text-lead text-muted">{h.heroLead}</p>
 
@@ -78,7 +79,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
                 {h.heroProof.map((p) => (
                   <li
                     key={p}
-                    className="flex items-center gap-2 rounded-full border border-line bg-surface-raised px-4 py-2 font-mono text-eyebrow uppercase text-muted"
+                    className="flex items-center gap-2 rounded-full border border-line bg-surface-raised px-4 py-2 text-small text-muted"
                   >
                     <span aria-hidden="true" className="h-2 w-2 rounded-full bg-brand" />
                     {p}
@@ -209,11 +210,11 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           so the section is read as one thing with four parts rather than as
           another eyebrow / h2 / lead / grid band. */}
       <Section>
-        <div className="grid gap-10 md:grid-cols-12 md:gap-8">
+        <div className="grid gap-8 md:grid-cols-12 md:gap-8">
           <div className="md:sticky md:top-32 md:col-span-4 md:self-start">
             <Eyebrow>{h.approachEyebrow}</Eyebrow>
-            <h2 className="mt-3 text-h2">{h.approachTitle}</h2>
-            <p className="mt-4 max-w-measure text-lead text-muted">{h.approachLead}</p>
+            <h2 className={`${RHYTHM.heading} text-h2`}>{h.approachTitle}</h2>
+            <p className={`${RHYTHM.lead} max-w-measure text-lead text-muted`}>{h.approachLead}</p>
             <div className="mt-8">
               <ArrowLink href={pathFor('approach', lang)}>{h.approachLink}</ArrowLink>
             </div>

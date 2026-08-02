@@ -16,10 +16,33 @@ const scale = (group: Record<string, unknown>): Record<string, string> =>
 
 const { color, scale: type, space, radius, layout, motion } = tokens;
 
+/**
+ * The token spacing scale, and nothing else.
+ *
+ * This REPLACES Tailwind's default scale rather than extending it, which is the
+ * only way the scale is actually enforced: with the default present, `mt-5`,
+ * `gap-2.5` and `py-3.5` all resolve to real off-grid values and the tokens
+ * become a suggestion. Components were bypassing the scale in about seventy
+ * places, and the same semantic relationship — eyebrow to heading to lead —
+ * differed per component.
+ *
+ * Off-scale utilities now produce no CSS at all, which is silent, so
+ * scripts/check-spacing.mjs fails the build on any that remain.
+ */
+const spacing = {
+  0: '0',
+  px: '1px',
+  ...Object.fromEntries(
+    Object.entries(space).filter(([k]) => !k.startsWith('$') && k !== 'section'),
+  ),
+  section: space.section,
+};
+
 export default {
   content: ['./src/**/*.{ts,tsx}'],
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
+    spacing,
     extend: {
       colors: {
         viridian: scale(color.viridian),
@@ -73,9 +96,6 @@ export default {
         h2: [type.h2, { lineHeight: '1.15', letterSpacing: '-0.02em' }],
         h1: [type.h1, { lineHeight: '1.05', letterSpacing: '-0.03em' }],
         display: [type.display, { lineHeight: '1.0', letterSpacing: '-0.035em' }],
-      },
-      spacing: {
-        section: space.section,
       },
       borderRadius: {
         sm: radius.sm,

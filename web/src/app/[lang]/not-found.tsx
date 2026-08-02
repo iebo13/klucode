@@ -12,7 +12,7 @@ export default function NotFound() {
   const c = getContent(DEFAULT_LANG);
 
   return (
-    <div className="flex min-h-dvh flex-col items-start justify-center px-6 md:px-10">
+    <div className="flex min-h-dvh flex-col items-start justify-center px-6 md:px-8">
       <div className="mx-auto w-full max-w-narrow">
         <Link href={pathFor('home', DEFAULT_LANG)} className="text-[1.35rem]">
           <Logo />
@@ -21,10 +21,10 @@ export default function NotFound() {
           404
         </p>
         <h1 className="mt-4 text-h1">{c.notFound.title}</h1>
-        <p className="mt-5 text-lead text-muted">{c.notFound.body}</p>
+        <p className="mt-4 text-lead text-muted">{c.notFound.body}</p>
         <Link
           href={pathFor('home', DEFAULT_LANG)}
-          className="mt-10 inline-flex rounded-md bg-brand-action px-6 py-3.5 font-display font-medium text-on-brand"
+          className="mt-8 inline-flex rounded-md bg-brand-action px-6 py-3 font-display font-medium text-on-brand"
         >
           {c.ui.backHome}
         </Link>

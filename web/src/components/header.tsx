@@ -23,7 +23,7 @@ export function Header({
   const links = NAV_KEYS.map((k) => ({ key: k, href: pathFor(k, lang), label: c.nav[k] }));
 
   return (
-    <header className="sticky top-0 z-50 px-4 pt-4 md:px-6 md:pt-5">
+    <header className="sticky top-0 z-50 px-4 pt-4 md:px-6">
       {/* A floating capsule rather than a full-width bar: the chrome is an
           object sitting on the page, with content visibly flowing underneath
           it. This is the ONLY element on the site that carries .glass-nav —
@@ -38,7 +38,7 @@ export function Header({
           <Logo />
         </Link>
 
-        <nav aria-label={c.ui.menu} className="hidden items-center gap-7 lg:flex">
+        <nav aria-label={c.ui.menu} className="hidden items-center gap-6 lg:flex">
           {links.map((l) => (
             <Link
               key={l.key}
@@ -58,7 +58,7 @@ export function Header({
             href={alternatePath(current, lang)}
             lang={lang === 'de' ? 'en' : 'de'}
             aria-label={c.ui.switchLangLabel}
-            className="font-mono text-eyebrow uppercase text-muted transition-colors duration-base hover:text-body"
+            className="text-small text-muted transition-colors duration-base hover:text-body"
           >
             {c.ui.switchLang}
           </Link>
@@ -67,7 +67,7 @@ export function Header({
 
           <Link
             href={pathFor('contact', lang)}
-            className="rounded-full bg-brand-action px-5 py-2.5 text-small font-medium text-on-brand shadow-[0_6px_18px_-6px_rgba(53,108,91,.5)] transition-colors duration-base hover:bg-viridian-700"
+            className="rounded-full bg-brand-action px-4 py-3 text-small font-medium text-on-brand shadow-[0_6px_18px_-6px_rgba(53,108,91,.5)] transition-colors duration-base hover:bg-viridian-700"
           >
             {c.nav.contact}
           </Link>
@@ -83,7 +83,7 @@ export function Header({
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav"
-            className="rounded-full border border-line px-4 py-2 font-mono text-eyebrow uppercase transition-colors duration-base hover:border-brand-action"
+            className="rounded-full border border-line px-4 py-2 text-small transition-colors duration-base hover:border-brand-action"
           >
             {open ? c.ui.close : c.ui.menu}
           </button>
@@ -108,22 +108,22 @@ export function Header({
                 <Link
                   href={l.href}
                   onClick={() => setOpen(false)}
-                  className="block py-2.5 font-display text-h3"
+                  className="block py-3 font-display text-h3"
                 >
                   {l.label}
                 </Link>
               </li>
             ))}
           </ul>
-          <div className="mt-6 flex items-center justify-between border-t border-line pt-5">
+          <div className="mt-6 flex items-center justify-between border-t border-line pt-4">
             <Link
               href={alternatePath(current, lang)}
               lang={lang === 'de' ? 'en' : 'de'}
-              className="font-mono text-eyebrow uppercase text-muted"
+              className="text-small text-muted"
             >
               {c.ui.switchLangLabel}
             </Link>
-            <span className="font-mono text-eyebrow uppercase text-muted">
+            <span className="text-small text-muted">
               {c.ui.availablePrefix} {profile.availableFrom[lang]}
             </span>
           </div>

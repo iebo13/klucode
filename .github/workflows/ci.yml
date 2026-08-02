@@ -53,6 +53,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # tailwind.config.ts REPLACES theme.spacing with the token scale, so an
+      # off-scale utility produces no CSS rather than an off-grid value. That
+      # failure is silent — a class that does nothing looks exactly like a class
+      # that was never needed — so it is asserted here instead.
+      - name: Spacing scale
+        run: node scripts/check-spacing.mjs
+
       - name: Format check
         run: npm run format:check
 

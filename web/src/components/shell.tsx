@@ -20,7 +20,7 @@ export function Shell({
     <>
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-brand-action focus:px-5 focus:py-3 focus:text-on-brand"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-brand-action focus:px-4 focus:py-3 focus:text-on-brand"
       >
         {c.ui.skipToContent}
       </a>

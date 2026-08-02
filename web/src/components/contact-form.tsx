@@ -134,13 +134,13 @@ export function ContactForm({ c }: { c: Content }) {
           />
           <span>{t.consent}</span>
         </label>
-        {errors.consent ? <p className="mt-1.5 text-small text-danger">{errors.consent}</p> : null}
+        {errors.consent ? <p className="mt-2 text-small text-danger">{errors.consent}</p> : null}
       </div>
 
       <button
         type="submit"
         disabled={status === 'sending'}
-        className="inline-flex items-center justify-center rounded-md bg-brand-action px-6 py-3.5 font-display font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700 disabled:opacity-60"
+        className="inline-flex items-center justify-center rounded-md bg-brand-action px-6 py-3 font-display font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700 disabled:opacity-60"
       >
         {status === 'sending' ? t.submitting : t.submit}
       </button>
@@ -173,7 +173,7 @@ function Field({
         {label}
       </label>
       {children}
-      {error ? <p className="mt-1.5 text-small text-danger">{error}</p> : null}
+      {error ? <p className="mt-2 text-small text-danger">{error}</p> : null}
     </div>
   );
 }
