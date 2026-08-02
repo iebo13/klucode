@@ -72,12 +72,18 @@ export function ButtonLink({
   children: ReactNode;
   variant?: 'primary' | 'secondary';
 }) {
-  // The primary button stays a solid fill, not glass. It is the one element on
-  // the page whose contrast is not allowed to depend on what sits behind it.
+  // The primary button is a solid fill. It is the one element on the page whose
+  // contrast is not allowed to depend on what sits behind it.
+  //
+  // The secondary was `glass glass-sm`, i.e. a 10% white wash with no border on
+  // a near-white page — invisible next to the primary, which is not what
+  // "secondary" means. It is now an outlined button: a real 1px edge, body text,
+  // and a border that goes brand on hover so the affordance is visible before
+  // the pointer arrives, not after.
   const style =
     variant === 'primary'
       ? 'bg-brand-action text-on-brand shadow-[0_6px_20px_-6px_rgba(53,108,91,.55)] hover:bg-viridian-700 hover:shadow-[0_10px_28px_-8px_rgba(53,108,91,.65)]'
-      : 'glass glass-sm text-body hover:text-brand-text';
+      : 'border border-line bg-transparent text-body hover:border-brand-action hover:text-brand-text';
   return (
     <Link href={href} className={`${base} ${style}`}>
       {children}
@@ -103,20 +109,30 @@ export function ArrowLink({ href, children }: { href: string; children: ReactNod
   );
 }
 
+/**
+ * The standard content surface.
+ *
+ * `panel` is flat: surfaceRaised, a 1px border, one ambient shadow. It replaced
+ * glass because glass had no measurable edge in light mode (1.007:1 against the
+ * page) and its blur had nothing but a smooth gradient to sample.
+ *
+ * `glass` is the navigation material and is reserved for the header capsule.
+ * Nothing on any page uses it; it exists so the one legitimate caller has a
+ * name for it. If you are reaching for it on a card, you want `panel`.
+ */
 export function Card({
   children,
   className = '',
-  solid = false,
+  variant = 'panel',
 }: {
   children: ReactNode;
   className?: string;
-  /** Near-opaque variant for panels carrying long copy or form fields. */
-  solid?: boolean;
+  variant?: 'panel' | 'glass';
 }) {
   return (
     <div
-      className={`rounded-glass p-7 transition-shadow duration-slow ease-brand ${
-        solid ? 'glass-solid' : 'glass'
+      className={`rounded-lg p-6 transition-shadow duration-slow ease-brand md:p-8 ${
+        variant === 'glass' ? 'glass-nav' : 'panel'
       } ${className}`}
     >
       {children}
@@ -124,12 +140,20 @@ export function Card({
   );
 }
 
-/** Monospace technology tags. */
+/**
+ * Monospace technology tags. Flat, and deliberately so: these used to be
+ * `glass glass-sm` sitting inside a `glass` Card, which is a nested
+ * backdrop-filter — two stacked blurs sampling each other, for no visible
+ * gain, twelve times on the homepage.
+ */
 export function Tags({ items }: { items: readonly string[] }) {
   return (
     <ul className="flex flex-wrap gap-2">
       {items.map((t) => (
-        <li key={t} className="glass glass-sm px-3 py-1 font-mono text-eyebrow text-muted">
+        <li
+          key={t}
+          className="rounded-full border border-line bg-surface-raised px-3 py-1 font-mono text-eyebrow text-muted"
+        >
           {t}
         </li>
       ))}

@@ -24,10 +24,12 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-4 md:px-6 md:pt-5">
-      {/* A floating capsule rather than a full-width bar. This is the most
-          recognisable liquid-glass move: the chrome is an object sitting on
-          the page, with the content visibly flowing underneath it. */}
-      <div className="glass mx-auto flex max-w-container items-center justify-between gap-6 rounded-full py-3 pl-6 pr-3 md:pl-8 md:pr-4">
+      {/* A floating capsule rather than a full-width bar: the chrome is an
+          object sitting on the page, with content visibly flowing underneath
+          it. This is the ONLY element on the site that carries .glass-nav —
+          the only one where a backdrop blur has moving content to sample and
+          therefore earns its compositing layer. */}
+      <div className="glass-nav mx-auto flex max-w-container items-center justify-between gap-6 rounded-full py-3 pl-6 pr-3 md:pl-8 md:pr-4">
         <Link
           href={pathFor('home', lang)}
           className="shrink-0 text-[1.35rem]"
@@ -81,7 +83,7 @@ export function Header({
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav"
-            className="glass glass-sm px-4 py-2 font-mono text-eyebrow uppercase"
+            className="rounded-full border border-line px-4 py-2 font-mono text-eyebrow uppercase transition-colors duration-base hover:border-brand-action"
           >
             {open ? c.ui.close : c.ui.menu}
           </button>
@@ -92,7 +94,10 @@ export function Header({
         <nav
           id="mobile-nav"
           aria-label={c.ui.menu}
-          className="glass mx-auto mt-3 max-w-container rounded-glass px-6 py-6 lg:hidden"
+          // A flat panel, not glass. Glass under glass is a nested
+          // backdrop-filter: the drawer would sample a capsule that is itself
+          // sampling the page, which costs two layers and looks like neither.
+          className="panel mx-auto mt-3 max-w-container px-6 py-6 lg:hidden"
         >
           <ul className="flex flex-col gap-1">
             {[

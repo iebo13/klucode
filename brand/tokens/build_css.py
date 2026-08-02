@@ -29,9 +29,13 @@ def resolve(ref: str) -> str:
 
 
 def role_vars(mode: str) -> list[str]:
-    out = [f"  --kc-{k}: {resolve(v)};" for k, v in tokens["role"][mode].items()]
-    # The glass layer flips with the colour scheme alongside the roles, so a
-    # single [data-theme] switch carries the frosted panels too.
+    out = [
+        f"  --kc-{k}: {resolve(v)};"
+        for k, v in tokens["role"][mode].items()
+        if not k.startswith("$")
+    ]
+    # The nav capsule's material flips with the colour scheme alongside the
+    # roles, so a single [data-theme] switch carries the header too.
     out += [
         f"  --kc-glass-{k}: {v};"
         for k, v in tokens["glass"][mode].items()
@@ -44,10 +48,13 @@ lines = [
     "/* KluCode design tokens — GENERATED from tokens.json by build_css.py.",
     " * Do not edit by hand; edit tokens.json and re-run the script.",
     " *",
-    " * Colour rule that matters most: --kc-brand (#40826D) is a DISPLAY colour.",
-    " * It measures 4.10:1 on paper and 3.94:1 on ink, so it fails WCAG AA for",
-    " * normal-size text on both. For text and buttons use --kc-brand-text and",
-    " * --kc-brand-action, which are pre-resolved per colour scheme below.",
+    " * Colour rule that matters most: viridian-500 (#5EA472) is a DISPLAY",
+    " * colour — the mark, and nothing else. It measures 2.79:1 on paper, so it",
+    " * fails WCAG AA for text AND 1.4.11's 3:1 for non-text UI. The --kc-brand",
+    " * ROLE therefore resolves to viridian-600, the lightest step that clears",
+    " * 3:1 for dots, rules and affordances; text uses --kc-brandText and",
+    " * --kc-brandAction, which are pre-resolved per colour scheme below.",
+    " * check_contrast.py asserts all of this and fails the build on regression.",
     " */",
     "",
     ":root {",
@@ -70,11 +77,9 @@ for name, v in tokens["scale"].items():
 
 lines += [
     "",
-    "  /* --- glass (scheme-independent parts) --------------------------- */",
+    "  /* --- nav glass (scheme-independent parts) ----------------------- */",
     f"  --kc-glass-blur: {tokens['glass']['blur']};",
     f"  --kc-glass-saturate: {tokens['glass']['saturate']};",
-    f"  --kc-glass-lensBand: {tokens['glass']['lensBand']};",
-    f"  --kc-glass-lensScale: {tokens['glass']['lensScale']};",
 ]
 
 lines += ["", "  /* --- space, radius, layout, motion ------------------------------ */"]

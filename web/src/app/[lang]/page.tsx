@@ -61,7 +61,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
             {h.heroProof.map((p) => (
               <li
                 key={p}
-                className="glass glass-sm flex items-center gap-2.5 px-4 py-2 font-mono text-eyebrow uppercase text-muted"
+                className="flex items-center gap-2.5 rounded-full border border-line bg-surface-raised px-4 py-2 font-mono text-eyebrow uppercase text-muted"
               >
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brand" />
                 {p}
@@ -94,10 +94,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         <SectionHead eyebrow={h.servicesEyebrow} title={h.servicesTitle} />
         <div className="mt-14 grid gap-5 sm:grid-cols-2">
           {c.services.items.map((s) => (
-            <div
-              key={s.key}
-              className="glass flex flex-col justify-between gap-6 rounded-glass p-8"
-            >
+            <div key={s.key} className="panel flex flex-col justify-between gap-6 p-6 md:p-8">
               <div>
                 <h3 className="text-h3">{s.name}</h3>
                 <p className="mt-2 text-small text-muted">{s.forWhom}</p>

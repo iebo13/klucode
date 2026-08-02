@@ -73,7 +73,7 @@ export function ThemeToggle({ c }: { c: Content }) {
       onClick={toggle}
       title={label}
       aria-label={label}
-      className="glass glass-sm grid h-9 w-9 place-items-center text-muted transition-colors duration-base hover:text-body"
+      className="grid h-9 w-9 place-items-center rounded-full border border-line text-muted transition-colors duration-base hover:border-brand-action hover:text-body"
     >
       {/* Both icons are always in the DOM and cross-faded, so the button never
           reflows and the swap has no flicker. Before hydration neither is

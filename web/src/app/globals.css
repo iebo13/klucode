@@ -82,81 +82,53 @@
   }
 
   /* ---------------------------------------------------------------------
-     CLEAR GLASS.
+     .glass-nav — RESERVED FOR THE NAVIGATION LAYER.
 
-     The previous version drew its edge with paint: a 1px inset ring plus a
-     9px gradient band at 0.9 opacity. That is a border. No amount of tuning
-     stops a painted stroke from reading as a stroke — the eye knows the
-     difference between a line around a shape and light bending through one.
+     Exactly one element on the site may carry this class: the sticky header
+     capsule. It is renamed from `.glass` precisely so it cannot be reused
+     casually — if you find yourself typing it on a card, you want `.panel`.
 
-     So the edge is built optically instead:
+     Why the header keeps it and nothing else does. This material costs a
+     compositing layer and a backdrop sample per element, and it only PRODUCES
+     anything when there is high-frequency content behind it to blur. The
+     header is the one place where that is true: the page scrolls underneath
+     it. Behind every other panel on this site is a flat tint plus a smooth
+     aurora gradient, and blurring a smooth gradient returns the same gradient.
+     Twenty-seven of these were doing nothing but costing layers.
 
-       a) REFRACTION (.glass::before) — a narrow rim whose BACKDROP is run
-          through an SVG displacement map, so the page behind genuinely bends
-          as it passes the boundary. This is the whole effect. Chromium and
-          Safari support backdrop-filter: url(#…); Firefox does not, and
-          simply gets the clear pane without the lensing, which still looks
-          like glass because the fill and blur carry it.
-       b) SHEEN (.glass::after) — one soft directional highlight, brightest
-          top-left, as a single light source on a curved surface would give.
-          Asymmetric on purpose; a symmetric highlight reads as a ring again.
+     The fill is 0.86, not the 0.10 it was. That is not a taste change: the
+     capsule crosses the ink footer on the way down the page, and at 0.10 the
+     nav labels composited to 3.4:1 against it. 0.86 is the measured floor for
+     brand-text — see check_contrast.py, which composites every nav role over
+     the darkest and lightest backdrop the capsule can cross.
 
-     The pane is CLEAR, not frosted: fill 0.10/0.16 and blur 6px, where this
-     was 0.44/0.50 and 12px. Frosted glass is something you look AT, clear
-     glass is something you look THROUGH, and "lucid" is the second one. The
-     saturation boost comes down with the blur — it existed to put colour back
-     into an over-fogged pane, and an under-blurred pane does not need it.
+     It also gets a real 1px border, which the old glass refused on principle.
+     The principle was wrong: an object floating over moving content needs a
+     boundary that survives whatever passes under it, and a shadow alone does
+     not (WCAG 1.4.11 wants a discernible edge on a control surface).
      --------------------------------------------------------------------- */
-  .glass {
+  .glass-nav {
     position: relative;
     isolation: isolate;
-    border-radius: var(--lg-radius, 1.75rem);
     background: var(--kc-glass-fill);
+    border: 1px solid var(--kc-border);
     backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
     -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
-    /* Ambient only. Every inset line that used to live here was the border. */
     box-shadow:
       0 16px 44px -16px var(--kc-glass-cast),
       0 4px 12px -6px var(--kc-glass-cast);
-    /* How far in from each edge the refraction fades out. Read by <GlassLens>
-       to build the map — it is not a padding and draws nothing itself. */
-    --lg-band: var(--kc-glass-lensBand);
   }
 
-  /* Content must sit above both pseudo-element layers. */
-  .glass > * {
+  /* Content sits above the sheen layer. */
+  .glass-nav > * {
     position: relative;
     z-index: 2;
   }
 
-  /* (a) the refracting rim.
-     This layer covers the WHOLE pane and is not masked to a ring. That is the
-     important part, and it was worth one wrong attempt to learn: masking the
-     displacement to a band gives it a hard inner edge, and a hard-edged band
-     of altered pixels is — visually — a fat blurry border. Exactly the thing
-     being removed.
-     Confinement belongs in the displacement map instead. The map is neutral
-     grey across the interior and ramps only within --lg-band of each edge, so
-     the bending fades out continuously with no seam anywhere. The centre of a
-     flat pane refracts nothing, which is also true of real glass. */
-  .glass::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    pointer-events: none;
-    /* Set per panel by <GlassLens>, which sizes the map to the element.
-       Unset — no JS, or reduced motion — this is `none` and the layer is an
-       inert pass-through rather than a broken one. */
-    backdrop-filter: var(--lg-filter, none);
-    -webkit-backdrop-filter: var(--lg-filter, none);
-  }
-
-  /* (b) the sheen. One light source, upper left, falling off fast. The
-     trailing glint at the bottom right is a fifth of the strength — that
-     asymmetry is what stops it closing into a ring. */
-  .glass::after {
+  /* One light source, upper left, falling off fast. The trailing glint at the
+     bottom right is a fifth of the strength — that asymmetry is what stops it
+     closing into a ring. */
+  .glass-nav::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -171,41 +143,33 @@
         transparent 88%,
         var(--kc-glass-specLow) 100%
       ),
-      /* the one highlight that survives: a short arc of rim light where the
-         top edge catches the source, fading out well before the corners */
-        linear-gradient(to right, transparent, var(--kc-glass-rim), transparent 62%) top / 100% 1px
+      linear-gradient(to right, transparent, var(--kc-glass-rim), transparent 62%) top / 100% 1px
         no-repeat,
       linear-gradient(to right, transparent 40%, var(--kc-glass-rimLow), transparent) bottom / 100%
         1px no-repeat;
   }
 
-  .glass-strong {
-    background: var(--kc-glass-fillStrong);
-  }
+  /* ---------------------------------------------------------------------
+     .panel — the material everything that carries content is made of.
 
-  /* Small controls — pills, tags, buttons. The band has to shrink with the
-     shape, or on a 32px-tall pill the ramp never reaches neutral and the whole
-     control refracts instead of just its edge. */
-  .glass-sm {
-    --lg-band: 5px;
-    --lg-radius: 9999px;
-  }
+     Elevation is a real value step (surfaceRaised over surface) plus a real
+     border, not a translucency trick. That is the whole point: the glass it
+     replaces measured 1.007:1 against the page in light mode, which is to say
+     it had no edge, and it existed only to fake an elevation the tokens did
+     not provide. The tokens provide it now (see tokens.json role.light), so
+     the material can be honest and cost one paint instead of two composited
+     layers and a runtime SVG filter.
 
-  /* There is deliberately no @supports fallback for the rim. Firefox parses
-     `backdrop-filter: url(…)` as valid and then declines to render it, so a
-     feature query returns true and any fallback would never fire. It is not
-     needed either: the sheen above draws the top rim light in every browser,
-     so Firefox gets a clear pane with a lit edge and only misses the bending.
-     A difference in degree, not a broken layout. */
-
-  /* Anything that has to stay readable — long copy, form fields — sits on a
-     near-opaque panel. Depth without gambling on contrast. */
-  .glass-solid {
-    background: color-mix(in srgb, var(--kc-surface) 92%, transparent);
+     Shadow is ambient only — it separates the panel from the page, it does
+     not pretend the panel is floating an inch above it.
+     --------------------------------------------------------------------- */
+  .panel {
+    background: var(--kc-surfaceRaised);
     border: 1px solid var(--kc-border);
-    box-shadow: var(--kc-glass-shadow);
-    backdrop-filter: blur(var(--kc-glass-blur));
-    -webkit-backdrop-filter: blur(var(--kc-glass-blur));
+    border-radius: var(--kc-radius-lg);
+    box-shadow:
+      0 1px 2px var(--kc-glass-cast),
+      0 8px 24px -12px var(--kc-glass-cast);
   }
 
   /* ---------------------------------------------------------------------

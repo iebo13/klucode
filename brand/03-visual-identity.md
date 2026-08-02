@@ -294,94 +294,95 @@ something to tell clients about.
 - **Alignment:** left, almost always. Centre only short hero blocks.
 - **Whitespace is the brand.** When a layout feels wrong, the answer is nearly
   always more space, not another element.
-- **Radius:** `0.25`–`0.875rem` for small controls, `1.25rem` (`rounded-glass`)
-  for panels, full pills for buttons and tags. A frosted panel with a 14px
-  radius reads as a cut-out rather than a pane.
-- **Shadows:** only as part of the glass layer below — a soft, wide, low-opacity
-  ambient shadow that separates a panel from what it floats over. Never a hard
-  drop shadow, never on flat elements, never to fake depth where there is none.
+- **Radius:** `0.25`/`0.5rem` for small controls, `0.875rem` (`--kc-radius-lg`)
+  for panels, full pills for buttons and tags. There is no separate panel
+  radius any more; `rounded-glass` (1.75rem) went with the glass.
+- **Shadows:** one soft, wide, low-opacity ambient shadow that separates a panel
+  from the page. Never a hard drop shadow, and never as a substitute for a
+  border — a shadow alone is not a boundary, which is the mistake §7 documents.
 
-### The clear glass layer
+### The material system: one flat panel, one navigation glass
 
-Panels are **clear glass** — panes you look *through*, floating over an aurora
-wash — not frosted rectangles you look *at*. That distinction is the whole
-specification, and getting it wrong twice taught the two rules that matter.
+The site ran on **clear glass** for a while — translucent panes with an optical,
+displacement-mapped edge, on roughly twenty-seven elements per screen. It was
+removed, and it is worth writing down why, because the reasoning was measured
+rather than argued and the same trap is easy to fall back into.
 
-**The edge is optical, never painted.** An earlier pass built the boundary out
-of a 1px inset ring plus a 9px gradient band. Both were removed, because a
-painted stroke around a translucent box reads as a border no matter how it is
-tuned — the eye knows the difference between a line drawn around a shape and
-light bending through one. What replaces it:
+**Glass had no edge in light mode.** `rgba(255,255,255,0.10)` over the stone-50
+page composited to `rgb(246, 248.7, 246.9)` against a page of `rgb(245,248,246)`
+— **1.007:1**. WCAG 1.4.11 asks for 3:1 on a meaningful non-text boundary. The
+panels were held together by an ambient shadow and nothing else. Dark mode
+survived only because its rim light composited to `rgb(87,91,88)` on
+`rgb(28,32,28)`; in light mode that same rim was 72% white on near-white.
 
-1. **Refraction.** The pane's backdrop runs through an SVG `feDisplacementMap`
-   whose map is neutral grey across the interior and ramps only within
-   `--lg-band` (14px panels, 5px pills) of each edge. The page behind genuinely
-   bends as it crosses the boundary. Chromium and Safari support
-   `backdrop-filter: url(…)`; Firefox parses it and declines to render it, so it
-   gets the clear pane without the bending — a difference in degree.
-2. **One sheen.** A single directional highlight, brightest top-left, plus a
-   short arc of rim light along the top edge. Asymmetric on purpose: symmetry
-   closes it back into a ring.
+**The blur and the refraction were no-ops.** `backdrop-filter: blur()` and
+`feDisplacementMap` only produce a visible result over high-frequency content.
+Behind every panel was a flat tint plus an aurora whose peak composite was
+`rgb(232,245,237)` — a smooth gradient. Blur a smooth gradient and you get the
+same gradient back. Bend it and you get the same gradient back.
 
-Do **not** mask the refraction to a band. That was the second wrong attempt. A
-hard-edged band of displaced pixels is, visually, a fat blurry border — the
-exact thing being removed. Confinement belongs in the map, where it fades out
-continuously and leaves no seam.
+**And glass was faking an elevation the tokens should have provided.** In light
+mode `surface` and `surfaceRaised` were *both* stone-50: a 1.0:1 step, i.e. no
+elevation existed. Dark mode had a genuine step and that is the only reason dark
+mode looked better. The fix was in the tokens, not the material — see §5.
 
-**The fill has to be low enough to transmit.** At `0.44`/`0.50` with a 12px
-blur the panels were milky. Clear glass is `0.10` light / `0.16` dark at 6px,
-and the saturation boost drops with it (`1.45`, was `1.9`) — that boost existed
-to put colour back into an over-fogged pane, and an unfogged pane does not need
-it.
+**What replaced it.**
 
-**Which means the aurora is not decoration, it is a requirement.** Glass with
-nothing behind it has nothing to refract. Sections that carry glass panels get
-`glow`; sections that do not, do not.
+`.panel` — the surface everything that carries content is made of.
+`surfaceRaised` background, a real `1px solid var(--kc-border)`, radius
+`--kc-radius-lg`, and one ambient shadow (`0 1px 2px` plus
+`0 8px 24px -12px` of `--kc-glass-cast`). No `backdrop-filter`. Elevation is a
+value step and a border, both measurable, in both themes.
+
+`.glass-nav` — **the navigation layer, and nothing else.** Renamed from `.glass`
+specifically so it cannot be reused casually. It survives on the sticky header
+capsule because that is the one element with real page content moving underneath
+it, so the blur has something to sample and earns its compositing layer. It is
+also the only place Apple's own guidance puts this material — and that guidance
+explicitly forbids nesting it, which the old system did three ways over (tags
+inside cards, a glass drawer under a glass capsule).
+
+The nav fill is **0.86**, not the 0.10 it was, and that is a legibility number
+rather than a taste one: the capsule crosses the ink footer on the way down the
+page, and at 0.10 the active nav link composited to **3.44:1** against it.
+`check_contrast.py` composites every nav text role over the darkest and lightest
+backdrop the capsule can cross and fails the build below 4.5:1.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `glass-fill` | `rgba(255,255,255,.10)` | `rgba(28,40,34,.16)` |
-| `glass-fillStrong` | `rgba(255,255,255,.55)` | `rgba(28,40,34,.70)` |
+| `glass-fill` | `rgba(255,255,255,.86)` | `rgba(28,32,28,.86)` |
 | `glass-rim` / `rimLow` | top rim light / trailing glint | — |
 | `glass-spec` / `specLow` | the face sheen | — |
-| `glass-cast` | ambient float | — |
-| `glass-blur` · `saturate` | `6px` · `1.45` | same |
-| `glass-lensBand` · `lensScale` | `14px` · `38` | same |
+| `glass-cast` | ambient shadow, also used by `.panel` | — |
+| `glass-blur` · `saturate` | `14px` · `1.35` | same |
 
-**Classes**
+`fillStrong`, `border`, `edge`, `depth`, `lensBand` and `lensScale` are gone
+along with the lens and the variants that used them, as are `.glass-sm`,
+`.glass-strong` and `.glass-solid`. `<GlassLens>` — the runtime SVG
+displacement-map builder — is deleted.
 
-- `.glass` — the standard panel. Radius `1.75rem`, 14px refraction band.
-- `.glass-sm` — pills, tags, small buttons. 5px band, full radius. Without it
-  the ramp never reaches neutral and the whole control refracts.
-- `.glass-strong` — higher fill where a panel overlaps busy content.
-- `.glass-solid` — near-opaque, for long copy and form fields.
+**The rules that keep it readable**
 
-The refraction filters are built at runtime by `<GlassLens>`, one per distinct
-panel size, because `feImage` stretches its map to the filter region — a single
-fixed map would ramp across a *percentage* of each panel, giving a 90px edge on
-a hero card and a 3px edge on a pill. It is an enhancement and nothing depends
-on it: without JS, or under `prefers-reduced-motion`, the panes are still clear
-glass with a lit edge.
+1. **`.glass-nav` appears on exactly one element site-wide.** If a second one
+   turns up, the count is a bug.
+2. **Zero nested backdrop-filters. Zero backdrop-filters on content panels.**
+3. Panel-vs-page contrast ≥ 1.15:1, and the panel's 1px border ≥ 1.4:1 against
+   the panel, in both themes. Asserted, not eyeballed.
+4. **The primary button is never translucent.** Solid `viridian-700`. It is the
+   one element whose contrast may not depend on what is behind it.
+5. Every panel gets a border. The old rule said the opposite, and the old rule
+   is what produced a 1.007:1 edge.
 
-**The four rules that keep it readable**
+**The chrome is still an object.** The header is a floating capsule with page
+content visibly flowing underneath, not a full-width bar pinned to the top edge.
+That single move does more to signal the register than any amount of blur — and
+it is now the only place paying for the blur.
 
-1. Fills stay high enough that the audit passes — the number is not sacred, the
-   audit is.
-2. Long copy and form fields sit on `glass-solid`.
-3. **The primary button is never glass.** Solid `viridian-600`. It is the one
-   element whose contrast may not depend on what happens to be behind it.
-4. No panel gets a border. If one stops reading as glass, the aurora behind it
-   is too weak — fix the ground, not the edge.
-
-**The chrome is an object.** The header is a floating capsule with page content
-visibly flowing underneath, not a full-width bar pinned to the top edge. That
-single move does more to signal the register than any amount of blur.
-
-**Verify, do not assume.** Composited contrast is measured on *rendered pixels* —
-declared CSS values lie the moment translucency is involved. Every text role
-clears its WCAG threshold in both schemes, tightest 6.44:1 against a 4.5
-requirement. **Re-run that audit after any change to fill opacity or aurora
-strength**, because both move the number.
+**Verify, do not assume.** `brand/tokens/check_contrast.py` is CI-runnable and
+asserts every text pair at 4.5:1, every non-text UI pair at 3:1, every panel
+boundary at 1.4:1 and every elevation step at 1.15:1, in both themes. Run it
+after any token change. It exists because eyeballing is exactly how a 1.007:1
+"edge" shipped.
 
 ### The house graphic device
 
@@ -427,9 +428,9 @@ Do not introduce illustrations, 3-D renders, gradient meshes, or stock isometric
   carry text, darken a crop of it rather than tinting it green.
 
 **Screenshots** are your strongest image asset and you are under-using them.
-Frame them on a `glass` panel with generous padding and a 1px
-`stone-200` border. Blur or replace real client data — you will need this anyway
-for the DSGVO.
+Frame them on a `.panel` with generous padding — the
+border comes with the material. Blur or replace real client data; you will need
+this anyway for the DSGVO.
 
 **The one photograph the site cannot do without** is you. A one-person brand
 whose About page has no face is asking for trust it has not offered. Plain

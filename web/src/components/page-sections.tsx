@@ -145,7 +145,7 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
       ))}
 
       <Section>
-        <div className="glass max-w-narrow rounded-glass p-8">
+        <div className="panel max-w-narrow p-6 md:p-8">
           <h2 className="font-display text-h3">{w.noteTitle}</h2>
           <p className="mt-3 text-muted">{w.noteBody}</p>
         </div>
@@ -237,7 +237,7 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
           <div>
             {/* Replace with a real photograph before launch — see
                 brand/03-visual-identity.md §8. */}
-            <div className="glass flex aspect-[4/5] items-end rounded-glass border-dashed p-6">
+            <div className="flex aspect-[4/5] items-end rounded-lg border border-dashed border-line bg-surface-raised p-6">
               <p className="text-small text-muted">{a.portraitPlaceholder}</p>
             </div>
 
@@ -331,7 +331,7 @@ export function ImprintPage({ c }: { lang: Lang; c: Content }) {
       {todos.length > 0 ? (
         <div
           role="alert"
-          className="mt-10 rounded-glass border-2 border-warning bg-warning-surface p-7 text-stone-900"
+          className="mt-10 rounded-lg border-2 border-warning bg-warning-surface p-6 text-stone-900 md:p-8"
         >
           <h2 className="font-display text-h3">{c.imprint.todoWarningTitle}</h2>
           <p className="mt-3 text-small">{c.imprint.todoWarningBody}</p>
