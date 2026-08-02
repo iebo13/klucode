@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { Footer } from '@/components/footer';
+import { GlassLens } from '@/components/glass-lens';
 import { Header } from '@/components/header';
 import { getContent } from '@/content';
 import type { Lang, PageKey } from '@/lib/routes';
@@ -27,6 +28,9 @@ export function Shell({
       <Header lang={lang} c={c} current={current} />
       <main id="main">{children}</main>
       <Footer lang={lang} c={c} />
+      {/* Enhancement only — builds the per-panel refraction filters. The glass
+          is fully styled without it. */}
+      <GlassLens />
     </>
   );
 }

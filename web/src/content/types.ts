@@ -66,6 +66,9 @@ export type Content = {
     close: string;
     switchLang: string;
     switchLangLabel: string;
+    /** Action labels, not state labels: they say what the press will do. */
+    themeToDark: string;
+    themeToLight: string;
     backHome: string;
     stack: string;
     before: string;

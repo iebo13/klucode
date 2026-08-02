@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { Logo } from '@/components/logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import type { Content } from '@/content';
 import { profile } from '@/content/profile';
 import { NAV_KEYS, alternatePath, pathFor, type Lang, type PageKey } from '@/lib/routes';
@@ -60,6 +61,8 @@ export function Header({
             {c.ui.switchLang}
           </Link>
 
+          <ThemeToggle c={c} />
+
           <Link
             href={pathFor('contact', lang)}
             className="rounded-full bg-brand-action px-5 py-2.5 text-small font-medium text-on-brand shadow-[0_6px_18px_-6px_rgba(53,108,91,.5)] transition-colors duration-base hover:bg-viridian-700"
@@ -68,15 +71,21 @@ export function Header({
           </Link>
         </nav>
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          className="glass glass-sm px-4 py-2 font-mono text-eyebrow uppercase lg:hidden"
-        >
-          {open ? c.ui.close : c.ui.menu}
-        </button>
+        {/* On phones the toggle sits in the capsule rather than inside the
+            drawer. Changing the theme is a one-tap decision people make on
+            arrival; burying it behind the menu makes it a three-tap one. */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <ThemeToggle c={c} />
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            className="glass glass-sm px-4 py-2 font-mono text-eyebrow uppercase"
+          >
+            {open ? c.ui.close : c.ui.menu}
+          </button>
+        </div>
       </div>
 
       {open ? (

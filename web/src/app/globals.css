@@ -81,36 +81,46 @@
     --node-dot: var(--kc-viridian-200);
   }
 
-  /* Liquid glass, not flat frosted glass. The difference is three things a
-     plain backdrop-blur panel does not have:
+  /* ---------------------------------------------------------------------
+     CLEAR GLASS.
 
-       a) a SPECULAR SWEEP — a directional highlight raking across the surface,
-          as if one light source is hitting a curved lens;
-       b) an EDGE REFRACTION BAND — a bright ring hugging the border where a
-          real lens bends and concentrates light;
-       c) THICKNESS — paired inset highlights top and bottom plus an inset
-          shadow, so the panel reads as a slab with depth rather than a hole
-          cut in a sheet.
+     The previous version drew its edge with paint: a 1px inset ring plus a
+     9px gradient band at 0.9 opacity. That is a border. No amount of tuning
+     stops a painted stroke from reading as a stroke — the eye knows the
+     difference between a line around a shape and light bending through one.
 
-     The blur is deliberately lower than before (12px, not 16px) and the
-     saturation higher: liquid glass transmits colour, it does not fog it. */
+     So the edge is built optically instead:
+
+       a) REFRACTION (.glass::before) — a narrow rim whose BACKDROP is run
+          through an SVG displacement map, so the page behind genuinely bends
+          as it passes the boundary. This is the whole effect. Chromium and
+          Safari support backdrop-filter: url(#…); Firefox does not, and
+          simply gets the clear pane without the lensing, which still looks
+          like glass because the fill and blur carry it.
+       b) SHEEN (.glass::after) — one soft directional highlight, brightest
+          top-left, as a single light source on a curved surface would give.
+          Asymmetric on purpose; a symmetric highlight reads as a ring again.
+
+     The pane is CLEAR, not frosted: fill 0.10/0.16 and blur 6px, where this
+     was 0.44/0.50 and 12px. Frosted glass is something you look AT, clear
+     glass is something you look THROUGH, and "lucid" is the second one. The
+     saturation boost comes down with the blur — it existed to put colour back
+     into an over-fogged pane, and an under-blurred pane does not need it.
+     --------------------------------------------------------------------- */
   .glass {
     position: relative;
     isolation: isolate;
     border-radius: var(--lg-radius, 1.75rem);
     background: var(--kc-glass-fill);
-    backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate)) brightness(1.04);
-    -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate))
-      brightness(1.04);
+    backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
+    /* Ambient only. Every inset line that used to live here was the border. */
     box-shadow:
-      /* ambient — the panel floats */
-      0 14px 40px -12px var(--kc-glass-cast),
-      0 3px 10px -4px var(--kc-glass-cast),
-      /* thickness: rim light along the top, bounce along the bottom */ inset 0 1.5px 0 -0.5px
-        var(--kc-glass-rim),
-      inset 0 -1px 0 -0.5px var(--kc-glass-rimLow),
-      /* the pane's own edge */ inset 0 0 0 1px var(--kc-glass-border),
-      /* interior depth, so the slab has a bottom */ inset 0 -22px 30px -28px var(--kc-glass-depth);
+      0 16px 44px -16px var(--kc-glass-cast),
+      0 4px 12px -6px var(--kc-glass-cast);
+    /* How far in from each edge the refraction fades out. Read by <GlassLens>
+       to build the map — it is not a padding and draws nothing itself. */
+    --lg-band: var(--kc-glass-lensBand);
   }
 
   /* Content must sit above both pseudo-element layers. */
@@ -119,8 +129,34 @@
     z-index: 2;
   }
 
-  /* (a) the specular sweep */
+  /* (a) the refracting rim.
+     This layer covers the WHOLE pane and is not masked to a ring. That is the
+     important part, and it was worth one wrong attempt to learn: masking the
+     displacement to a band gives it a hard inner edge, and a hard-edged band
+     of altered pixels is — visually — a fat blurry border. Exactly the thing
+     being removed.
+     Confinement belongs in the displacement map instead. The map is neutral
+     grey across the interior and ramps only within --lg-band of each edge, so
+     the bending fades out continuously with no seam anywhere. The centre of a
+     flat pane refracts nothing, which is also true of real glass. */
   .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    /* Set per panel by <GlassLens>, which sizes the map to the element.
+       Unset — no JS, or reduced motion — this is `none` and the layer is an
+       inert pass-through rather than a broken one. */
+    backdrop-filter: var(--lg-filter, none);
+    -webkit-backdrop-filter: var(--lg-filter, none);
+  }
+
+  /* (b) the sheen. One light source, upper left, falling off fast. The
+     trailing glint at the bottom right is a fifth of the strength — that
+     asymmetry is what stops it closing into a ring. */
+  .glass::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -129,53 +165,38 @@
     pointer-events: none;
     background:
       linear-gradient(
-        142deg,
+        138deg,
         var(--kc-glass-spec) 0%,
-        transparent 34%,
-        transparent 68%,
+        transparent 26%,
+        transparent 88%,
         var(--kc-glass-specLow) 100%
       ),
-      radial-gradient(120% 80% at 12% -10%, var(--kc-glass-specLow), transparent 58%);
-  }
-
-  /* (b) the edge refraction band — a ring, not a border. Masked to a fixed
-     inset so it hugs the radius exactly. */
-  .glass::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    pointer-events: none;
-    padding: var(--lg-band, 9px);
-    background: linear-gradient(
-      180deg,
-      var(--kc-glass-rim) 0%,
-      transparent 35%,
-      transparent 62%,
-      var(--kc-glass-rimLow) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    opacity: 0.9;
+      /* the one highlight that survives: a short arc of rim light where the
+         top edge catches the source, fading out well before the corners */
+        linear-gradient(to right, transparent, var(--kc-glass-rim), transparent 62%) top / 100% 1px
+        no-repeat,
+      linear-gradient(to right, transparent 40%, var(--kc-glass-rimLow), transparent) bottom / 100%
+        1px no-repeat;
   }
 
   .glass-strong {
     background: var(--kc-glass-fillStrong);
   }
 
-  /* Small controls — pills, tags, buttons — need a tighter band or the ring
-     swallows the whole shape. */
+  /* Small controls — pills, tags, buttons. The band has to shrink with the
+     shape, or on a 32px-tall pill the ramp never reaches neutral and the whole
+     control refracts instead of just its edge. */
   .glass-sm {
-    --lg-band: 4px;
+    --lg-band: 5px;
     --lg-radius: 9999px;
   }
+
+  /* There is deliberately no @supports fallback for the rim. Firefox parses
+     `backdrop-filter: url(…)` as valid and then declines to render it, so a
+     feature query returns true and any fallback would never fire. It is not
+     needed either: the sheen above draws the top rim light in every browser,
+     so Firefox gets a clear pane with a lit edge and only misses the bending.
+     A difference in degree, not a broken layout. */
 
   /* Anything that has to stay readable — long copy, form fields — sits on a
      near-opaque panel. Depth without gambling on contrast. */
