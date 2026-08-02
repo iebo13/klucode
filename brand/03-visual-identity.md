@@ -161,14 +161,43 @@ confined to alert boxes: an alert that is not warm does not read as an alert.
 
 ### The rule that still matters most
 
-> **Viridian `500` is a display colour. It is not a text colour.**
+> **Viridian `500` is the mark's colour. It is not a text colour, and it is not
+> a UI colour either.**
+
+The second half of that sentence is new, and it is new because the first half
+was being quoted while the second was being violated. `500` was `text-brand` on
+the accent span of the 80px hero `h1` — **2.79:1**, so the biggest word on the
+site failed AA — and it was the fill for every bullet dot and the FAQ `+`
+affordance, which WCAG **1.4.11** puts at 3:1 for non-text UI. It missed both.
+
+The fix is structural rather than a set of one-off corrections: the **`brand`
+role** now resolves to `viridian-600`, the lightest step that clears 3:1 as a
+graphical object. `viridian-500` remains *the* brand colour of the logo — the
+mark is drawn in it — but nothing in the interface reaches for it.
 
 | Pair | Ratio | Verdict |
 | --- | --- | --- |
-| `500 #5EA472` on paper | **2.79:1** | ✗ display only — logo, large headings, fills |
-| `700 #396C43` on paper | **5.78:1** | ✓ green text and links |
+| `500 #5EA472` on the page | 2.55:1 | ✗ the mark only. Not text, not UI. |
+| `600 #488859` on the page | **3.63:1** | ✓ dots, rules, affordances (1.4.11) |
+| `600 #488859` on a panel | **4.25:1** | ✓ same |
+| `700 #396C43` on the page | **5.27:1** | ✓ green text and links |
+| `700 #396C43` on a panel | **6.18:1** | ✓ same |
 | paper on `700` (filled button) | **5.78:1** | ✓ the button colour |
 | ink on paper | 15.43:1 | ✓ everywhere |
+
+**`danger` is a role, not a hex.** It was a single deep brick (`#8C2F26`) used
+for form validation messages in both schemes. On the dark page that measures
+**2.00:1** — unreadable, on the one string a user is *required* to be able to
+read. Dark mode gets `#F19F93`: the same colour taken up the OKLCH scale
+(L 0.441 → 0.78, hue held at 28.8°, chroma tapered), obeying the same
+raised-is-lighter rule as every other role. 7.95:1 on the page.
+
+**The nav capsule has its own border role.** `navBorder` is `stone-400` in light
+and `stone-700` in dark, not the page's `border`. The capsule is translucent and
+sticky, so its effective backdrop is whatever is scrolling underneath: composited
+over the ink footer, `stone-300` measures **1.32:1** against the capsule and the
+boundary disappears at exactly the scroll position where it matters most.
+`navBorder` holds 1.72:1 there.
 
 ### Two themes, not one theme inverted
 
@@ -523,8 +552,19 @@ your face, not the logo — people hire people.
 ```bash
 pip install fonttools uharfbuzz brotli
 cd brand/logo/_build && python3 build_logos.py   # 14 SVGs
-cd ../../tokens && python3 build_css.py          # tokens.css
+cd ../../tokens
+python3 build_palette.py                         # regenerates the scales
+python3 build_css.py                             # tokens.css
+python3 check_contrast.py                        # MUST pass — CI runs it too
 ```
+
+`check_contrast.py` needs no dependencies and exits non-zero on any pair below
+threshold. It runs in CI before the site is built, because a contrast
+regression is a defect in the tokens rather than in the site, and the site
+cannot be right if the tokens are wrong. CI also regenerates `tokens.css` and
+fails if the result differs from what is committed — editing the generated file
+by hand, or changing `tokens.json` without re-running the build, silently
+decouples the site from its source of truth.
 
 `tokens/tokens.json` is the single source of truth for colour, type, and spacing.
 The website's `tailwind.config.ts` imports it directly, so a value changed there

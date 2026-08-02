@@ -27,7 +27,10 @@ export default {
         success: color.semantic.success.value,
         warning: color.semantic.warning.value,
         'warning-surface': color.semantic.warningSurface.value,
-        danger: color.semantic.danger.value,
+        // danger is a ROLE, not a raw hex. The raw value is a deep brick that
+        // measures 2.00:1 on the dark page — and it is the colour of form
+        // validation messages, i.e. the one string a user must be able to read.
+        danger: 'var(--kc-dangerText)',
 
         // Semantic roles, wired to CSS variables so a single [data-theme]
         // switch flips the whole site. Components should reach for these.
@@ -36,6 +39,10 @@ export default {
         'surface-raised': 'var(--kc-surfaceRaised)',
         'surface-inverse': 'var(--kc-surfaceInverse)',
         line: 'var(--kc-border)',
+        // The nav capsule floats over unknown content, so its edge cannot use
+        // the page border: composited over the ink footer, stone-300 drops to
+        // 1.32:1 against the capsule and the boundary disappears.
+        'nav-line': 'var(--kc-navBorder)',
         body: 'var(--kc-text)',
         muted: 'var(--kc-textMuted)',
         brand: 'var(--kc-brand)',

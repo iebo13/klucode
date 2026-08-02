@@ -45,8 +45,12 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-50" />
         <div className="relative mx-auto max-w-container px-6 pb-section pt-20 md:px-10 md:pt-28">
           <Eyebrow>{h.heroEyebrow}</Eyebrow>
+          {/* text-brand-text, not text-brand. The accent was viridian-500 —
+              2.79:1 on paper, i.e. the biggest word on the site failed AA for
+              large text, in defiance of the rule tokens.css states in its own
+              header comment. viridian-700 measures 5.27:1 here. */}
           <h1 className="mt-6 max-w-4xl text-display">
-            {h.heroTitle} <span className="text-brand">{h.heroTitleAccent}</span>
+            {h.heroTitle} <span className="text-brand-text">{h.heroTitleAccent}</span>
           </h1>
           <p className="mt-8 max-w-measure text-lead text-muted">{h.heroLead}</p>
 

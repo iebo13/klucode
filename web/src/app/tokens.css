@@ -39,6 +39,7 @@
   --kc-warning: #8A5A16;
   --kc-warningSurface: #F6EFE2;
   --kc-danger: #8C2F26;
+  --kc-dangerOnDark: #F19F93;
 
   /* --- type ------------------------------------------------------- */
   --kc-font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
@@ -87,12 +88,14 @@
   --kc-surfaceRaised: var(--kc-stone-0);
   --kc-surfaceInverse: var(--kc-stone-950);
   --kc-border: var(--kc-stone-300);
+  --kc-navBorder: var(--kc-stone-400);
   --kc-text: var(--kc-stone-950);
   --kc-textMuted: var(--kc-stone-700);
-  --kc-brand: var(--kc-viridian-500);
+  --kc-brand: var(--kc-viridian-600);
   --kc-brandText: var(--kc-viridian-700);
   --kc-brandAction: var(--kc-viridian-700);
   --kc-onBrand: var(--kc-stone-50);
+  --kc-dangerText: var(--kc-danger);
   --kc-inkSurface: var(--kc-stone-950);
   --kc-inkText: var(--kc-stone-50);
   --kc-inkTextMuted: var(--kc-stone-300);
@@ -117,12 +120,14 @@
     --kc-surfaceRaised: var(--kc-stone-900);
     --kc-surfaceInverse: var(--kc-stone-50);
     --kc-border: var(--kc-stone-800);
+    --kc-navBorder: var(--kc-stone-700);
     --kc-text: var(--kc-stone-100);
     --kc-textMuted: var(--kc-stone-300);
     --kc-brand: var(--kc-viridian-400);
     --kc-brandText: var(--kc-viridian-300);
     --kc-brandAction: var(--kc-viridian-400);
     --kc-onBrand: var(--kc-stone-950);
+    --kc-dangerText: var(--kc-dangerOnDark);
     --kc-inkSurface: var(--kc-stone-900);
     --kc-inkText: var(--kc-stone-50);
     --kc-inkTextMuted: var(--kc-stone-300);
@@ -145,12 +150,14 @@
   --kc-surfaceRaised: var(--kc-stone-900);
   --kc-surfaceInverse: var(--kc-stone-50);
   --kc-border: var(--kc-stone-800);
+  --kc-navBorder: var(--kc-stone-700);
   --kc-text: var(--kc-stone-100);
   --kc-textMuted: var(--kc-stone-300);
   --kc-brand: var(--kc-viridian-400);
   --kc-brandText: var(--kc-viridian-300);
   --kc-brandAction: var(--kc-viridian-400);
   --kc-onBrand: var(--kc-stone-950);
+  --kc-dangerText: var(--kc-dangerOnDark);
   --kc-inkSurface: var(--kc-stone-900);
   --kc-inkText: var(--kc-stone-50);
   --kc-inkTextMuted: var(--kc-stone-300);
@@ -172,12 +179,14 @@
   --kc-surfaceRaised: var(--kc-stone-0);
   --kc-surfaceInverse: var(--kc-stone-950);
   --kc-border: var(--kc-stone-300);
+  --kc-navBorder: var(--kc-stone-400);
   --kc-text: var(--kc-stone-950);
   --kc-textMuted: var(--kc-stone-700);
-  --kc-brand: var(--kc-viridian-500);
+  --kc-brand: var(--kc-viridian-600);
   --kc-brandText: var(--kc-viridian-700);
   --kc-brandAction: var(--kc-viridian-700);
   --kc-onBrand: var(--kc-stone-50);
+  --kc-dangerText: var(--kc-danger);
   --kc-inkSurface: var(--kc-stone-950);
   --kc-inkText: var(--kc-stone-50);
   --kc-inkTextMuted: var(--kc-stone-300);

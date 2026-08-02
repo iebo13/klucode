@@ -25,6 +25,10 @@ def scale_vars(group: str) -> list[str]:
 
 def resolve(ref: str) -> str:
     group, step = ref.split(".")
+    # The semantic group is emitted unprefixed (--kc-danger, not
+    # --kc-semantic-danger) because those names are already unambiguous.
+    if group == "semantic":
+        return f"var(--kc-{step})"
     return f"var(--kc-{group}-{step})"
 
 

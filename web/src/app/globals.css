@@ -111,7 +111,11 @@
     position: relative;
     isolation: isolate;
     background: var(--kc-glass-fill);
-    border: 1px solid var(--kc-border);
+    /* --kc-navBorder, not --kc-border. The capsule floats over content it does
+       not control: composited over the ink footer, the page border measures
+       1.32:1 against the capsule and the boundary vanishes at exactly the
+       scroll position where it matters most. */
+    border: 1px solid var(--kc-navBorder);
     backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
     -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
     box-shadow:
