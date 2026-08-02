@@ -10,8 +10,10 @@ type Errors = Partial<Record<'name' | 'email' | 'message' | 'consent', string>>;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Flat, like every other content surface. A form field is the last place that
+// should gamble its legibility on what happens to be behind it.
 const field =
-  'glass-solid w-full rounded-md px-4 py-3 text-body outline-none transition-colors duration-base placeholder:text-muted/70 focus:border-brand-action';
+  'w-full rounded-md border border-line bg-surface-raised px-4 py-3 text-body outline-none transition-colors duration-base placeholder:text-muted/70 focus:border-brand-action';
 
 /**
  * On a static site there is no server to post to. Rather than quietly routing
@@ -77,7 +79,7 @@ export function ContactForm({ c }: { c: Content }) {
 
   if (status === 'sent') {
     return (
-      <p role="status" className="glass rounded-glass border-brand p-7 text-body">
+      <p role="status" className="panel p-6 text-body md:p-8">
         {t.sent}
       </p>
     );
@@ -132,13 +134,13 @@ export function ContactForm({ c }: { c: Content }) {
           />
           <span>{t.consent}</span>
         </label>
-        {errors.consent ? <p className="mt-1.5 text-small text-danger">{errors.consent}</p> : null}
+        {errors.consent ? <p className="mt-2 text-small text-danger">{errors.consent}</p> : null}
       </div>
 
       <button
         type="submit"
         disabled={status === 'sending'}
-        className="inline-flex items-center justify-center rounded-md bg-brand-action px-6 py-3.5 font-display font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700 disabled:opacity-60"
+        className="inline-flex items-center justify-center rounded-md bg-brand-action px-6 py-3 font-display font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700 disabled:opacity-60"
       >
         {status === 'sending' ? t.submitting : t.submit}
       </button>
@@ -171,7 +173,7 @@ function Field({
         {label}
       </label>
       {children}
-      {error ? <p className="mt-1.5 text-small text-danger">{error}</p> : null}
+      {error ? <p className="mt-2 text-small text-danger">{error}</p> : null}
     </div>
   );
 }

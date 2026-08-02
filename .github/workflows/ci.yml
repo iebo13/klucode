@@ -24,6 +24,27 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
+      # Colour is checked before anything is built, because a contrast
+      # regression is a defect in the tokens rather than in the site, and the
+      # site cannot be right if the tokens are wrong. Three shipped bugs —
+      # a hero heading at 2.79:1, bullet dots below 1.4.11's 3:1, and a 1.0:1
+      # "elevation" step — would each have been caught here on the day they
+      # were written. Needs no dependencies; it is stdlib Python.
+      - name: Contrast audit
+        working-directory: .
+        run: python3 brand/tokens/check_contrast.py
+
+      # tokens.css is GENERATED from tokens.json. Editing it by hand, or
+      # editing tokens.json and forgetting to re-run the build, silently
+      # decouples the site from its source of truth — so regenerate and fail
+      # if anything moved.
+      - name: Tokens are in sync with tokens.json
+        working-directory: .
+        run: |
+          python3 brand/tokens/build_css.py
+          git diff --exit-code -- brand/tokens/tokens.css web/src/app/tokens.css \
+            || { echo "::error::tokens.css is stale — run brand/tokens/build_css.py and commit"; exit 1; }
+
       - run: npm ci
 
       - name: Typecheck
@@ -31,6 +52,13 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # tailwind.config.ts REPLACES theme.spacing with the token scale, so an
+      # off-scale utility produces no CSS rather than an off-grid value. That
+      # failure is silent — a class that does nothing looks exactly like a class
+      # that was never needed — so it is asserted here instead.
+      - name: Spacing scale
+        run: node scripts/check-spacing.mjs
 
       - name: Format check
         run: npm run format:check
