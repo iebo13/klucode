@@ -60,6 +60,18 @@ jobs:
       - name: Spacing scale
         run: node scripts/check-spacing.mjs
 
+      # Page titles and descriptions have a length budget and have to stay
+      # distinct across sixteen strings in two languages. Three descriptions had
+      # already drifted over it before this was asserted.
+      - name: Page metadata budget
+        run: npm run check:meta
+
+      # The copy sits in slots the layout does not let it overflow — the mono
+      # eyebrows, the price notes, the one-line "for whom" strings. A copy edit
+      # that breaks 375px should fail here rather than on a phone.
+      - name: Copy fits its slots
+        run: npm run check:copy
+
       - name: Format check
         run: npm run format:check
 
@@ -89,3 +101,24 @@ jobs:
           grep -q 'basepath-check/basepath-check' out/de/index.html \
             && fail "base path applied twice"
           echo "base path wiring verified"
+
+      # JSON-LD @ids are absolute and built from profile.siteUrl, which already
+      # contains the subpath — so they must NOT also go through asset(). That
+      # mistake is invisible at a domain root and poisons every @id on a subpath
+      # deploy, which is exactly the failure mode this build reproduces.
+      - name: Assert the structured data is addressed correctly
+        run: |
+          set -e
+          fail() { echo "::error::$1"; exit 1; }
+          grep -q '"@id":"https://example.com/basepath-check/#business"' out/de/index.html \
+            || fail "JSON-LD @id is not the production origin"
+          grep -q '"item":"https://example.com/basepath-check/de/leistungen/"' \
+            out/de/leistungen/index.html \
+            || fail "breadcrumb item URL is wrong on a subpath build"
+          grep -q 'basepath-check/basepath-check' out/de/leistungen/index.html \
+            && fail "base path applied twice inside the structured data"
+          [ "$(grep -c 'application/ld+json' out/de/index.html)" = 1 ] \
+            || fail "expected exactly one JSON-LD block per page"
+          grep -q 'application/ld+json' out/de/impressum/index.html \
+            && fail "legal pages are noindex and should carry no structured data"
+          echo "structured data wiring verified"

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { JsonLd } from '@/components/json-ld';
 import { Shell } from '@/components/shell';
 import {
   ArrowLink,
@@ -18,6 +19,7 @@ import {
 import { getContent } from '@/content';
 import { profile } from '@/content/profile';
 import { LANGS, isLang, pathFor } from '@/lib/routes';
+import { pageSchema } from '@/lib/schema';
 
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
@@ -31,7 +33,16 @@ export async function generateMetadata({
   const { lang } = await params;
   if (!isLang(lang)) return {};
   const { meta } = getContent(lang);
-  return { title: meta.pages.home.title, description: meta.pages.home.description };
+  const page = meta.pages.home;
+
+  return {
+    title: page.title,
+    description: page.description,
+    // The layout supplies siteName, locale and the image; a page that sets
+    // neither title nor description here inherits the site-level pair, which
+    // is how every sub-page ended up sharing one OG card.
+    openGraph: { title: page.title, description: page.description, url: `/${lang}/` },
+  };
 }
 
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
@@ -48,6 +59,8 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
   return (
     <Shell lang={lang} current="home">
+      <JsonLd data={pageSchema(lang, c, 'home')} />
+
       {/* ---------------------------------------------------------------- hero */}
       <section className="relative isolate overflow-hidden">
         <div aria-hidden="true" className="aurora -z-10" />

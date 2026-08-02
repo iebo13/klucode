@@ -62,6 +62,10 @@ export async function generateMetadata({
       type: 'website',
       siteName: c.meta.siteName,
       locale: lang === 'de' ? 'de_DE' : 'en_GB',
+      alternateLocale: lang === 'de' ? 'en_GB' : 'de_DE',
+      url: `/${lang}/`,
+      title: c.meta.title,
+      description: c.meta.description,
       images: [
         {
           url: '/og.png',
@@ -70,6 +74,14 @@ export async function generateMetadata({
           alt: `${c.meta.siteName} — ${c.footer.tagline}`,
         },
       ],
+    },
+    // Resolved against metadataBase like openGraph.images, so a plain path.
+    // Without this block a shared link renders as a bare text card.
+    twitter: {
+      card: 'summary_large_image',
+      title: c.meta.title,
+      description: c.meta.description,
+      images: ['/og.png'],
     },
     icons: {
       icon: [{ url: asset('/favicon.svg'), type: 'image/svg+xml' }],

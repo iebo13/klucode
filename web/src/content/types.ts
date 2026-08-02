@@ -18,6 +18,14 @@ export type Service = {
   includes: string[];
   price: string;
   priceNote: string;
+  /**
+   * The unit `price` is charged in, where it is not a one-off project fee.
+   * Omitted for the two fixed-price lines; 'day' and 'month' for the two
+   * supporting ones. The prose in `priceNote` already says this to a reader —
+   * this says it to a machine, so lib/schema.ts can emit 680 €/day as a
+   * UnitPriceSpecification rather than as a flat 680 € project price.
+   */
+  priceUnit?: 'day' | 'month';
 };
 
 export type Project = {
@@ -172,7 +180,16 @@ export type Content = {
     consent: string;
     submit: string;
     submitting: string;
+    /** Only reachable when profile.formEndpoint is set and the POST succeeded. */
     sent: string;
+    /**
+     * The mailto path. Assigning `window.location.href` hands off to whatever
+     * mail client the device has — which may be none. Nothing was sent, so this
+     * copy must not say it was; it says what should have happened and repeats
+     * the address for the case where it did not.
+     */
+    handoffTitle: string;
+    handoffBody: string;
     failed: string;
     errorRequired: string;
     errorEmail: string;

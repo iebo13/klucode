@@ -5,7 +5,14 @@ import { useState } from 'react';
 import type { Content } from '@/content';
 import { profile } from '@/content/profile';
 
-type Status = 'idle' | 'sending' | 'sent' | 'failed';
+/**
+ * 'handoff' is not 'sent'. The mailto path assigns window.location.href and the
+ * browser either opens a mail client or does nothing at all — we never learn
+ * which, and on a device with no client configured the visitor is left staring
+ * at a page that claimed to have sent something. The two outcomes therefore get
+ * two states and two pieces of copy.
+ */
+type Status = 'idle' | 'sending' | 'sent' | 'handoff' | 'failed';
 type Errors = Partial<Record<'name' | 'email' | 'message' | 'consent', string>>;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,6 +28,11 @@ const field =
  * new processor to disclose in the privacy policy — the default path opens the
  * visitor's own mail client with the message prepared. They can see exactly what
  * is sent and to whom.
+ *
+ * This is a decision, not a stopgap (issue #11): the cost is that a device with
+ * no configured mail client reaches a dead end, which is why the contact page
+ * puts the address and phone number above the form and why the hand-off state
+ * below repeats the address in selectable text rather than claiming success.
  *
  * Set profile.formEndpoint to switch to a real POST; remember to update the
  * privacy policy at the same time.
@@ -59,7 +71,7 @@ export function ContactForm({ c }: { c: Content }) {
       const subject = encodeURIComponent(`${c.meta.siteName} — ${name}`);
       const body = encodeURIComponent(bodyLines.join('\n'));
       window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
-      setStatus('sent');
+      setStatus('handoff');
       return;
     }
 
@@ -82,6 +94,23 @@ export function ContactForm({ c }: { c: Content }) {
       <p role="status" className="panel p-6 text-body md:p-8">
         {t.sent}
       </p>
+    );
+  }
+
+  if (status === 'handoff') {
+    return (
+      <div role="status" className="panel p-6 md:p-8">
+        <h3 className="font-display text-h3">{t.handoffTitle}</h3>
+        <p className="mt-3 max-w-measure text-muted">{t.handoffBody}</p>
+        {/* Selectable plain text, not just a second mailto — a visitor whose
+            device has no mail client cannot use another mailto link either. */}
+        <a
+          href={`mailto:${profile.email}`}
+          className="mt-4 inline-block select-all font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+        >
+          {profile.email}
+        </a>
+      </div>
     );
   }
 
