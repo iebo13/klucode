@@ -23,6 +23,7 @@
   --kc-viridian-800: #2B5131;
   --kc-viridian-900: #1D3720;
   --kc-viridian-950: #112413;
+  --kc-stone-0: #FFFFFF;
   --kc-stone-50: #F5F8F6;
   --kc-stone-100: #EAEEEB;
   --kc-stone-200: #D7DBD8;
@@ -81,11 +82,11 @@
   --kc-motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* --- semantic roles: light (default) ---------------------------- */
-  --kc-surface: var(--kc-stone-50);
-  --kc-surfaceAlt: var(--kc-viridian-50);
-  --kc-surfaceRaised: var(--kc-stone-50);
+  --kc-surface: var(--kc-stone-100);
+  --kc-surfaceAlt: var(--kc-viridian-100);
+  --kc-surfaceRaised: var(--kc-stone-0);
   --kc-surfaceInverse: var(--kc-stone-950);
-  --kc-border: var(--kc-stone-200);
+  --kc-border: var(--kc-stone-300);
   --kc-text: var(--kc-stone-950);
   --kc-textMuted: var(--kc-stone-700);
   --kc-brand: var(--kc-viridian-500);
@@ -166,11 +167,11 @@
 }
 
 [data-theme="light"] {
-  --kc-surface: var(--kc-stone-50);
-  --kc-surfaceAlt: var(--kc-viridian-50);
-  --kc-surfaceRaised: var(--kc-stone-50);
+  --kc-surface: var(--kc-stone-100);
+  --kc-surfaceAlt: var(--kc-viridian-100);
+  --kc-surfaceRaised: var(--kc-stone-0);
   --kc-surfaceInverse: var(--kc-stone-950);
-  --kc-border: var(--kc-stone-200);
+  --kc-border: var(--kc-stone-300);
   --kc-text: var(--kc-stone-950);
   --kc-textMuted: var(--kc-stone-700);
   --kc-brand: var(--kc-viridian-500);

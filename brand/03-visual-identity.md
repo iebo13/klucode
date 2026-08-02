@@ -145,9 +145,14 @@ torsion** — cooler tints, deeper shades — instead of accidental drift.
 flatter than the old greys, which is the change that lets the green read as
 green.
 
-`50 #F5F8F6` (paper) · `100 #EAEEEB` · `200 #D7DBD8` · `300 #C1C5C2` ·
-`400 #A8ADA9` · `500 #8E938F` · `600 #757975` · `700 #5C605C` · `800 #444844` ·
-`900 #2D322D` · **`950 #1C201C`** (ink)
+`0 #FFFFFF` (raised) · `50 #F5F8F6` (paper) · `100 #EAEEEB` · `200 #D7DBD8` ·
+`300 #C1C5C2` · `400 #A8ADA9` · `500 #8E938F` · `600 #757975` · `700 #5C605C` ·
+`800 #444844` · `900 #2D322D` · **`950 #1C201C`** (ink)
+
+Step `0` is pure white and carries no chroma at all — the one true neutral in
+the system, and the light-mode raised-panel surface. A raised panel should read
+as a clean sheet laid on a tinted page, not as a slightly brighter patch of the
+same tint.
 
 **Semantic** — interface states only, never marketing, never the logo.
 success `#396C43` · warning `#8A5A16` · warningSurface `#F6EFE2` ·
@@ -174,14 +179,45 @@ palette.
 
 | Role | Light | Dark |
 | --- | --- | --- |
-| surface | `stone-50` | `stone-950` |
-| surface, raised | `stone-50` | `stone-900` *(lighter, not darker)* |
-| alternating surface | `viridian-50` | `viridian-950` |
-| border | `stone-200` | `stone-800` |
+| surface | `stone-100` | `stone-950` |
+| surface, raised | `stone-0` (white) | `stone-900` *(lighter, not darker)* |
+| alternating surface | `viridian-100` | `viridian-950` |
+| border | `stone-300` | `stone-800` |
 | body text | `stone-950` | `stone-100` *(off-white, never pure white)* |
-| muted text | `stone-700` (5.98:1) | `stone-300` (9.45:1) |
-| green text | `viridian-700` (5.78:1) | `viridian-300` (9.74:1) |
+| muted text | `stone-700` | `stone-300` |
+| green text | `viridian-700` | `viridian-300` |
+| green fill, non-text | `viridian-600` | `viridian-400` |
 | button fill | `viridian-700`, paper label | `viridian-400`, ink label (7.51:1) |
+
+### Light mode has a real elevation step, and this is the load-bearing change
+
+`surface` and `surfaceRaised` used to *both* be `stone-50`. A **1.0:1** step —
+which is to say no elevation existed. Dark mode had a genuine one (`stone-900`
+over `stone-950`, 1.26:1) and that is the only reason dark mode looked better
+than light. The glass material was invented in this codebase to fake the
+elevation these tokens were not providing.
+
+| Measured, light mode | Ratio |
+| --- | --- |
+| panel (`stone-0`) vs page (`stone-100`) | **1.17:1** |
+| panel border (`stone-300`) vs panel | **1.75:1** |
+| panel border vs page | 1.49:1 |
+| body text on page | 14.09:1 |
+| body text on panel | **16.50:1** |
+| muted on page | 5.46:1 |
+| muted on panel | **6.40:1** |
+| brand text on page | 5.27:1 |
+| brand text on panel | **6.18:1** |
+| button label on `brandAction` | 5.78:1 |
+
+`textMuted` stays at `stone-700`: on the new `stone-100` page it measures
+5.46:1, comfortably above AA, so there was no need to darken it.
+
+`surfaceAlt` moved `viridian-50` → `viridian-100` for a structural reason.
+`viridian-50` is *lighter* than the new page, so tinted bands read as **raised**
+— competing with the panels for the same signal. `viridian-100` sits at the
+page's own lightness (1.01:1) and separates by chroma instead: a hue change, not
+a second elevation.
 
 Two dark-mode details that were found by measuring, not by reasoning:
 
