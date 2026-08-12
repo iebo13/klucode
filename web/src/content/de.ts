@@ -4,12 +4,16 @@ import type { Content } from './types';
 const de = {
   meta: {
     siteName: 'KluCode',
-    title: 'KluCode — Individuelle Software aus Düsseldorf',
+    // „Webentwicklung Düsseldorf" is what a local owner actually types into
+    // Google; the old title left the query term entirely to the description.
+    // „Individuelle" moved there — the 60-char budget check-meta.mjs enforces
+    // does not fit all three of brand, positioning word and query term.
+    title: 'KluCode — Software & Webentwicklung in Düsseldorf',
     description:
       'Ich baue die Software, mit der Ihr Betrieb tatsächlich arbeitet: Web-Anwendungen, interne Tools und Websites. Ein Ansprechpartner, Festpreis, vom ersten Klick bis zum laufenden Server.',
     pages: {
       home: {
-        title: 'KluCode — Individuelle Software aus Düsseldorf',
+        title: 'KluCode — Software & Webentwicklung in Düsseldorf',
         description:
           'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis — Frontend, Backend und Server von einer Person.',
       },
@@ -72,6 +76,9 @@ const de = {
     switchLangLabel: 'Switch to English',
     themeToDark: 'Dunkles Design',
     themeToLight: 'Helles Design',
+    footerNavLabel: 'Seiten',
+    footerLegalLabel: 'Rechtliches',
+    footerSocialLabel: 'Profile',
     backHome: 'Zur Startseite',
     stack: 'Technik',
     before: 'Vorher',
@@ -534,6 +541,7 @@ const de = {
         heading: '2. Was diese Website nicht tut',
         paragraphs: [
           'Diese Website setzt keine Cookies und verwendet keine vergleichbaren Techniken wie Local Storage zur Wiedererkennung. Aus diesem Grund gibt es hier auch kein Einwilligungsbanner.',
+          'Eine einzige Einstellung wird lokal in Ihrem Browser gespeichert, und nur dann, wenn Sie sie selbst treffen: Ihre Wahl zwischen hellem und dunklem Design (Local Storage, Schlüssel „kc-theme“). Sie enthält keine personenbezogenen Daten, verlässt Ihr Gerät nicht und dient nicht der Wiedererkennung. Die Speicherung ist unbedingt erforderlich, um die von Ihnen ausdrücklich gewünschte Darstellung bereitzustellen (§ 25 Abs. 2 Nr. 2 TDDDG).',
           'Es findet keine Reichweitenmessung und keine Analyse Ihres Nutzungsverhaltens statt. Es sind keine Dienste Dritter eingebunden — keine Analysewerkzeuge, keine Kartendienste, keine sozialen Netzwerke, keine externen Videos.',
           'Insbesondere werden keine Schriftarten von fremden Servern nachgeladen. Alle verwendeten Schriften werden vom Server dieser Website ausgeliefert. Ihre IP-Adresse wird dadurch an keinen Dritten übermittelt.',
         ],

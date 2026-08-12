@@ -24,7 +24,9 @@ export function Shell({
       >
         {c.ui.skipToContent}
       </a>
-      <Header lang={lang} c={c} current={current} />
+      {/* Header is a client component: it gets the strings it renders, not
+          the whole Content object, so the flight payload stays small. */}
+      <Header lang={lang} nav={c.nav} ui={c.ui} siteName={c.meta.siteName} current={current} />
       <main id="main">{children}</main>
       <Footer lang={lang} c={c} />
     </>

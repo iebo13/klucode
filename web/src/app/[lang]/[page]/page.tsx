@@ -13,6 +13,8 @@ import {
 } from '@/components/page-sections';
 import { Shell } from '@/components/shell';
 import { getContent } from '@/content';
+import { isPreviewDeploy } from '@/content/profile';
+import { openGraphFor, twitterFor } from '@/lib/og';
 import { LANGS, PAGE_KEYS, isLang, keyForSlug, slugs, type PageKey } from '@/lib/routes';
 import { pageSchema } from '@/lib/schema';
 
@@ -42,24 +44,34 @@ export async function generateMetadata({
   const c = getContent(lang);
   const m = c.meta.pages[key];
   const other = lang === 'de' ? 'en' : 'de';
+  const path = `/${lang}/${page}/`;
 
   return {
+    // Short title; the layout template appends "— KluCode".
     title: m.title,
     description: m.description,
     alternates: {
-      canonical: `/${lang}/${page}/`,
+      canonical: path,
+      // The same full set (both languages + x-default) the homepage declares:
+      // hreflang annotations that differ in shape across a site are a known
+      // reason for Google to ignore them.
       languages: {
-        [lang]: `/${lang}/${page}/`,
+        [lang]: path,
         [other]: `/${other}/${slugs[key][other]}/`,
+        'x-default': `/de/${slugs[key].de}/`,
       },
     },
-    // Without these the layout's site-level OG title and description are
-    // reused, so every sub-page shared one card. Merged with the layout's
-    // siteName / locale / image rather than replacing them.
-    openGraph: { title: m.title, description: m.description, url: `/${lang}/${page}/` },
-    // Legal pages carry no marketing value and should not compete in search.
-    robots:
-      key === 'imprint' || key === 'privacy'
+    // The page's own card, not the site-level pair every sub-page once
+    // shared. Built whole through the helper — Next replaces a parent's
+    // openGraph rather than merging it, so a partial override here would
+    // drop the image, siteName and locale.
+    openGraph: openGraphFor(c, lang, path, m),
+    twitter: twitterFor(c, m),
+    // Legal pages carry no marketing value and should not compete in search;
+    // a preview deploy must stay out of the index entirely.
+    robots: isPreviewDeploy
+      ? { index: false, follow: false }
+      : key === 'imprint' || key === 'privacy'
         ? { index: false, follow: true }
         : { index: true, follow: true },
   };

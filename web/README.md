@@ -189,17 +189,22 @@ silently lost. Three things follow from that:
 - The form has a `handoff` state, not a `sent` state. Assigning
   `window.location.href` tells you nothing about whether a mail client opened,
   so the copy says what _should_ have happened and repeats the address in
-  selectable text. It must never claim a message was sent.
+  selectable text. It must never claim a message was sent — and the form stays
+  rendered through the hand-off, so the typed message is never lost to a
+  success screen.
 - The address and phone number sit above the form in DOM order, so on a phone
   the guaranteed path is the one you meet first.
 - `mailtoNote` says plainly what the form does and does not do.
 
-To switch to a real endpoint (Formspree, Basin, your own handler): set
-`profile.formEndpoint`. **Update `privacy.sections` §5 in `de.ts` and `en.ts` at
-the same time** — you will have added a processor, and the policy currently says
-you have not. Note that Plesk runs PHP, so a same-origin handler is the one
-option that adds no processor at all: the host is already named under Art. 28 in
-§3 of the policy, and the CSP already permits `form-action 'self'`.
+To switch to a real endpoint: **`deploy/contact.php` is a ready-made
+same-origin handler** for the Plesk server — the one option that adds no
+processor at all: the host is already named under Art. 28 in §3 of the policy,
+and the CSP already permits `form-action 'self'`. The header of that file lists
+the enable steps (recipient, upload, `profile.formEndpoint: '/contact.php'`,
+privacy §5 update). A hosted service (Formspree, Basin, …) also works via
+`profile.formEndpoint` — but then **update `privacy.sections` §5 in `de.ts` and
+`en.ts` in the same change**: you will have added a processor, and the policy
+currently says you have not.
 
 ---
 

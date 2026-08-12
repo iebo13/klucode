@@ -224,24 +224,14 @@ export function ArrowLink({ href, children }: { href: string; children: ReactNod
  * glass because glass had no measurable edge in light mode (1.007:1 against the
  * page) and its blur had nothing but a smooth gradient to sample.
  *
- * `glass` is the navigation material and is reserved for the header capsule.
- * Nothing on any page uses it; it exists so the one legitimate caller has a
- * name for it. If you are reaching for it on a card, you want `panel`.
+ * Glass (`glass-nav`) is the navigation material and is reserved for the
+ * header capsule, which applies the class itself. There is deliberately no
+ * glass variant here: if you are reaching for it on a card, you want `panel`.
  */
-export function Card({
-  children,
-  className = '',
-  variant = 'panel',
-}: {
-  children: ReactNode;
-  className?: string;
-  variant?: 'panel' | 'glass';
-}) {
+export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`rounded-lg p-6 transition-shadow duration-slow ease-brand md:p-8 ${
-        variant === 'glass' ? 'glass-nav' : 'panel'
-      } ${className}`}
+      className={`panel rounded-lg p-6 transition-shadow duration-slow ease-brand md:p-8 ${className}`}
     >
       {children}
     </div>

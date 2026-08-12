@@ -10,6 +10,17 @@
     color-scheme: light dark;
   }
 
+  /* A forced theme must also force the UA's own rendering — checkboxes,
+     scrollbars, autofill. Without this, forcing light on a dark OS leaves
+     dark form widgets sitting on a light page (and vice versa). */
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
   html {
     scroll-behavior: smooth;
     /* German compounds are long; let the browser break them rather than

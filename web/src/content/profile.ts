@@ -21,6 +21,9 @@
  * Kleinunternehmer with no USt-IdNr. could otherwise never make it go away.
  */
 
+/** The origin the real site lives on. Everything else is a preview. */
+const PRODUCTION_ORIGIN = 'https://klucode.de';
+
 /** Marks a value that still has to be supplied. */
 const todo = (label: string): string => `«${label}»`;
 
@@ -88,15 +91,13 @@ export const profile = {
   },
 
   // --- online ------------------------------------------------------------
-  domain: 'klucode.de',
-
   /**
    * Absolute origin used for canonical URLs, hreflang, sitemap.xml, robots.txt,
    * JSON-LD @ids and OG image URLs. Overridable so a preview deploy (GitHub
    * Pages) does not advertise klucode.de as its canonical home — which would
    * tell search engines the preview is the real site.
    */
-  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://klucode.de').replace(/\/$/, ''),
+  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL ?? PRODUCTION_ORIGIN).replace(/\/$/, ''),
 
   /**
    * Public profiles, emitted as schema.org `sameAs`. Optional by design: null
@@ -119,13 +120,14 @@ export const profile = {
   policyUpdated: '2026-08-02',
 
   /**
-   * Optional endpoint for the contact form (Formspree, Basin, your own
-   * handler, …). Left empty — the decided path (issue #11) is the mailto
-   * hand-off, which keeps a static site honest: no hidden third party, and no
-   * processor to name in the privacy policy.
+   * Optional endpoint for the contact form. Left empty — the decided path
+   * (issue #11) is the mailto hand-off, which keeps a static site honest: no
+   * hidden third party, and no processor to name in the privacy policy.
    *
-   * Setting this switches the form to a real POST. Update privacy.sections § 5
-   * in de.ts and en.ts in the same change if you ever do.
+   * If server-side sending is ever wanted, deploy/contact.php is a ready-made
+   * FIRST-party handler for the Plesk server (set this to '/contact.php') —
+   * still no third-party processor. Setting this switches the form to a real
+   * POST. Update privacy.sections § 5 in de.ts and en.ts in the same change.
    */
   formEndpoint: '' as string,
 } as const;
@@ -158,6 +160,14 @@ export function openTodos(): string[] {
 export function filled(v: string | null | undefined): string | undefined {
   return typeof v === 'string' && v.length > 0 && !isTodo(v) ? v : undefined;
 }
+
+/**
+ * True on any deploy that is not klucode.de — i.e. the GitHub Pages preview,
+ * whose workflow feeds NEXT_PUBLIC_SITE_URL from configure-pages. Previews
+ * must be noindex: they would otherwise be indexed as a full duplicate of the
+ * production site.
+ */
+export const isPreviewDeploy = profile.siteUrl !== PRODUCTION_ORIGIN;
 
 /** Formats profile.policyUpdated for display, e.g. "2. August 2026". */
 export function policyDate(lang: 'de' | 'en'): string {

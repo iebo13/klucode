@@ -18,8 +18,8 @@
  *
  *     node scripts/check-spacing.mjs
  */
-import { readFileSync } from 'node:fs';
-import { globSync } from 'node:fs';
+// globSync from node:fs needs Node >= 22 — package.json `engines` says so.
+import { globSync, readFileSync } from 'node:fs';
 
 // Mirrors the `spacing` key in tailwind.config.ts, which is built from
 // tokens.json. Keep them in step; this list is the assertion, not the source.

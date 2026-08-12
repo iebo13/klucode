@@ -48,7 +48,6 @@ export default {
         viridian: scale(color.viridian),
         stone: scale(color.stone),
         warm: scale(color.warm),
-        success: color.semantic.success.value,
         warning: color.semantic.warning.value,
         'warning-surface': color.semantic.warningSurface.value,
         // danger is a ROLE, not a raw hex. The raw value is a deep brick that
@@ -119,15 +118,6 @@ export default {
         fast: motion.fast.replace('ms', ''),
         base: motion.base.replace('ms', ''),
         slow: motion.slow.replace('ms', ''),
-      },
-      keyframes: {
-        rise: {
-          from: { opacity: '0', transform: 'translateY(8px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
-        },
-      },
-      animation: {
-        rise: `rise ${motion.slow} ${motion.ease} both`,
       },
     },
   },

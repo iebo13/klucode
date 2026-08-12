@@ -10,10 +10,16 @@ import { profile } from '@/content/profile';
  * browser either opens a mail client or does nothing at all — we never learn
  * which, and on a device with no client configured the visitor is left staring
  * at a page that claimed to have sent something. The two outcomes therefore get
- * two states and two pieces of copy.
+ * two states and two pieces of copy — and the form stays rendered through the
+ * hand-off, so a visitor whose mail client never opened still has their typed
+ * message in front of them instead of losing it to a success screen.
  */
 type Status = 'idle' | 'sending' | 'sent' | 'handoff' | 'failed';
-type Errors = Partial<Record<'name' | 'email' | 'message' | 'consent', string>>;
+type FieldKey = 'name' | 'email' | 'message' | 'consent';
+type Errors = Partial<Record<FieldKey, string>>;
+
+/** Validation order — also the focus order after a failed submit. */
+const FIELD_ORDER: FieldKey[] = ['name', 'email', 'message', 'consent'];
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,11 +40,17 @@ const field =
  * puts the address and phone number above the form and why the hand-off state
  * below repeats the address in selectable text rather than claiming success.
  *
- * Set profile.formEndpoint to switch to a real POST; remember to update the
- * privacy policy at the same time.
+ * Set profile.formEndpoint to switch to a real POST (deploy/contact.php is a
+ * ready-made first-party handler for the Plesk server, if server-side sending
+ * is ever wanted without a third-party processor); update the privacy policy
+ * in the same change.
+ *
+ * Props are the contact strings only, not the whole Content object: client
+ * component props are serialized into every page's HTML, and this component
+ * once dragged the full Impressum and Datenschutzerklärung into the homepage
+ * payload that way.
  */
-export function ContactForm({ c }: { c: Content }) {
-  const t = c.contact;
+export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: string }) {
   const [status, setStatus] = useState<Status>('idle');
   const [errors, setErrors] = useState<Errors>({});
 
@@ -60,16 +72,18 @@ export function ContactForm({ c }: { c: Content }) {
     if (!consent) next.consent = t.errorRequired;
 
     setErrors(next);
-    if (Object.keys(next).length > 0) {
-      form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    const firstInvalid = FIELD_ORDER.find((k) => next[k]);
+    if (firstInvalid) {
+      // By id from the freshly computed error set — not by querying
+      // [aria-invalid], which reads the previous render's DOM and therefore
+      // finds nothing on the first failed submit.
+      document.getElementById(firstInvalid)?.focus();
       return;
     }
 
-    const bodyLines = [name, company, email, '', message].filter((l) => l !== undefined);
-
     if (!profile.formEndpoint) {
-      const subject = encodeURIComponent(`${c.meta.siteName} — ${name}`);
-      const body = encodeURIComponent(bodyLines.join('\n'));
+      const subject = encodeURIComponent(`${siteName} — ${name}`);
+      const body = encodeURIComponent([name, company, email, '', message].join('\n'));
       window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
       setStatus('handoff');
       return;
@@ -97,23 +111,6 @@ export function ContactForm({ c }: { c: Content }) {
     );
   }
 
-  if (status === 'handoff') {
-    return (
-      <div role="status" className="panel p-6 md:p-8">
-        <h3 className="font-display text-h3">{t.handoffTitle}</h3>
-        <p className="mt-3 max-w-measure text-muted">{t.handoffBody}</p>
-        {/* Selectable plain text, not just a second mailto — a visitor whose
-            device has no mail client cannot use another mailto link either. */}
-        <a
-          href={`mailto:${profile.email}`}
-          className="mt-4 inline-block select-all font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
-        >
-          {profile.email}
-        </a>
-      </div>
-    );
-  }
-
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-6">
       <div className="grid gap-6 sm:grid-cols-2">
@@ -122,8 +119,11 @@ export function ContactForm({ c }: { c: Content }) {
             id="name"
             name="name"
             autoComplete="name"
+            required
+            aria-required="true"
             className={field}
             aria-invalid={!!errors.name}
+            aria-describedby={errors.name ? 'name-error' : undefined}
           />
         </Field>
         <Field id="email" label={t.fields.email} error={errors.email}>
@@ -132,8 +132,11 @@ export function ContactForm({ c }: { c: Content }) {
             name="email"
             type="email"
             autoComplete="email"
+            required
+            aria-required="true"
             className={field}
             aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
           />
         </Field>
       </div>
@@ -148,22 +151,33 @@ export function ContactForm({ c }: { c: Content }) {
           name="message"
           rows={6}
           placeholder={t.fields.messagePlaceholder}
+          required
+          aria-required="true"
           className={`${field} resize-y`}
           aria-invalid={!!errors.message}
+          aria-describedby={errors.message ? 'message-error' : undefined}
         />
       </Field>
 
       <div>
         <label className="flex cursor-pointer items-start gap-3 text-small text-muted">
           <input
+            id="consent"
             type="checkbox"
             name="consent"
+            required
+            aria-required="true"
             className="mt-1 h-4 w-4 shrink-0 accent-[--kc-brandAction]"
             aria-invalid={!!errors.consent}
+            aria-describedby={errors.consent ? 'consent-error' : undefined}
           />
           <span>{t.consent}</span>
         </label>
-        {errors.consent ? <p className="mt-2 text-small text-danger">{errors.consent}</p> : null}
+        {errors.consent ? (
+          <p id="consent-error" className="mt-2 text-small text-danger">
+            {errors.consent}
+          </p>
+        ) : null}
       </div>
 
       <button
@@ -173,6 +187,21 @@ export function ContactForm({ c }: { c: Content }) {
       >
         {status === 'sending' ? t.submitting : t.submit}
       </button>
+
+      {status === 'handoff' ? (
+        <div role="status" className="panel p-6 md:p-8">
+          <h3 className="font-display text-h3">{t.handoffTitle}</h3>
+          <p className="mt-3 max-w-measure text-muted">{t.handoffBody}</p>
+          {/* Selectable plain text, not just a second mailto — a visitor whose
+              device has no mail client cannot use another mailto link either. */}
+          <a
+            href={`mailto:${profile.email}`}
+            className="mt-4 inline-block select-all font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+          >
+            {profile.email}
+          </a>
+        </div>
+      ) : null}
 
       {status === 'failed' ? (
         <p role="alert" className="text-small text-danger">
@@ -202,7 +231,11 @@ function Field({
         {label}
       </label>
       {children}
-      {error ? <p className="mt-2 text-small text-danger">{error}</p> : null}
+      {error ? (
+        <p id={`${id}-error`} className="mt-2 text-small text-danger">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

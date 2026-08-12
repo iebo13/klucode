@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-import type { Content } from '@/content';
 import { THEME_STORAGE_KEY } from '@/lib/theme';
 
 type ThemeChoice = 'light' | 'dark' | 'system';
@@ -22,7 +21,8 @@ function resolve(choice: ThemeChoice): 'light' | 'dark' {
  * touch it — the stored value is only written once the user has expressed a
  * preference, so an untouched browser keeps tracking the system.
  */
-export function ThemeToggle({ c }: { c: Content }) {
+/** Props are the two action labels only — see the Header note on payload. */
+export function ThemeToggle({ labels }: { labels: { toDark: string; toLight: string } }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   // Rendered markup must match the server's, so the icon and the pressed state
   // only appear once we know what the browser actually resolved to.
@@ -65,7 +65,7 @@ export function ThemeToggle({ c }: { c: Content }) {
     }
   };
 
-  const label = theme === 'dark' ? c.ui.themeToLight : c.ui.themeToDark;
+  const label = theme === 'dark' ? labels.toLight : labels.toDark;
 
   return (
     <button

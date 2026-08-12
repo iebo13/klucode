@@ -11,8 +11,13 @@
 # 1. Language redirect from the root.
 #
 # The build also writes an out/index.html that redirects client-side, so `/`
-# works even without this. A server-side 301 is better: it is instant, it
+# works even without this. A server-side redirect is better: it is instant, it
 # survives with JavaScript disabled, and search engines treat it properly.
+#
+# 302, not 301: the target depends on the Accept-Language header, and browsers
+# cache a 301 unconditionally — a visitor who ever opened `/` with an English
+# browser would keep landing on /en/ forever, even after switching their
+# system language. The Vary header tells shared caches the same thing.
 # ---------------------------------------------------------------------------
 <IfModule mod_rewrite.c>
   RewriteEngine On
@@ -36,10 +41,16 @@
   # 1. German browsers to /de/, everyone else to /en/.
   RewriteCond %{REQUEST_URI} ^/$
   RewriteCond %{HTTP:Accept-Language} ^de [NC]
-  RewriteRule ^$ /de/ [R=301,L]
+  RewriteRule ^$ /de/ [R=302,L]
 
   RewriteCond %{REQUEST_URI} ^/$
-  RewriteRule ^$ /en/ [R=301,L]
+  RewriteRule ^$ /en/ [R=302,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  <If "%{REQUEST_URI} == '/'">
+    Header append Vary "Accept-Language"
+  </If>
 </IfModule>
 
 # ---------------------------------------------------------------------------
@@ -54,9 +65,16 @@ ErrorDocument 404 /404.html
 # external: no CDN, no analytics, no embedded fonts, no third-party images.
 # If you ever add an embed, this is the line that will block it — that is the
 # point. Update it consciously rather than removing it.
+#
+# script-src needs 'unsafe-inline': a Next.js static export hydrates through
+# inline scripts (the theme-init snippet and the self.__next_f payload in every
+# page). With bare 'self' the site renders but never hydrates — menu, theme
+# toggle and contact form all dead. Nonces are impossible on static hosting
+# and per-build hashes break on every deploy, so 'unsafe-inline' is the honest
+# option; external script sources stay locked to 'self'.
 # ---------------------------------------------------------------------------
 <IfModule mod_headers.c>
-  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
@@ -75,20 +93,27 @@ ErrorDocument 404 /404.html
 # 5. Caching
 #
 # Next.js fingerprints filenames under /_next/static, so those are safe to
-# cache forever. HTML must not be, or a deploy will not reach returning
-# visitors.
+# cache forever. Everything else — og.png, favicon.svg, apple-touch-icon.png —
+# keeps its name across deploys, so a year-long lifetime would pin the old
+# favicon or OG card on returning visitors (and on link-preview caches) long
+# after a replacement ships. Those get days, not a year. HTML must not be
+# cached at all, or a deploy will not reach returning visitors.
 # ---------------------------------------------------------------------------
 <IfModule mod_expires.c>
   ExpiresActive On
-  ExpiresByType image/svg+xml "access plus 1 year"
-  ExpiresByType image/png "access plus 1 year"
-  ExpiresByType font/woff2 "access plus 1 year"
-  ExpiresByType text/css "access plus 1 year"
-  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 7 days"
+  ExpiresByType image/png "access plus 7 days"
+  ExpiresByType font/woff2 "access plus 7 days"
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
   ExpiresByType text/html "access plus 0 seconds"
 </IfModule>
 
 <IfModule mod_headers.c>
+  # Fingerprinted build output: immutable, cache forever.
+  <If "%{REQUEST_URI} =~ m#^/_next/static/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
   <FilesMatch "\.(html)$">
     Header set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
