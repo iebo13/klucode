@@ -7,10 +7,14 @@
  * problem, it is an Abmahnung waiting to happen (§ 5 DDG).
  */
 
+/** The origin the real site lives on. Everything else is a preview. */
+const PRODUCTION_ORIGIN = 'https://klucode.de';
+
 /** Marks a value that still has to be supplied. */
 const todo = (label: string): string => `«${label}»`;
 
-const isTodo = (v: string): boolean => v.startsWith('«') && v.endsWith('»');
+/** True while a value is still the todo() placeholder. */
+export const isTodo = (v: string): boolean => v.startsWith('«') && v.endsWith('»');
 
 export const profile = {
   // --- identity ----------------------------------------------------------
@@ -48,17 +52,19 @@ export const profile = {
   },
 
   // --- online ------------------------------------------------------------
-  domain: 'klucode.de',
-
   /**
    * Absolute origin used for canonical URLs, hreflang, sitemap.xml, robots.txt
    * and OG image URLs. Overridable so a preview deploy (GitHub Pages) does not
    * advertise klucode.de as its canonical home — which would tell search
    * engines the preview is the real site.
    */
-  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://klucode.de').replace(/\/$/, ''),
-  linkedin: todo('LinkedIn-Profil-URL'),
-  github: todo('GitHub-URL (optional — leer lassen, wenn nicht gewünscht)'),
+  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL ?? PRODUCTION_ORIGIN).replace(/\/$/, ''),
+  // Optional, so NOT todo()-wrapped: todo() feeds the Impressum warning
+  // banner, which calls its list "Pflichtangaben" — and a missing LinkedIn
+  // URL is not something anyone can send an Abmahnung over. Fill them in and
+  // the footer renders the links; leave them empty and it renders nothing.
+  linkedin: '' as string,
+  github: '' as string,
 
   // --- commercial --------------------------------------------------------
   /** Shown in the header. Update it; a stale availability line is worse than none. */
@@ -74,6 +80,14 @@ export const profile = {
 } as const;
 
 export const fullName = `${profile.firstName} ${profile.lastName}`;
+
+/**
+ * True on any deploy that is not klucode.de — i.e. the GitHub Pages preview,
+ * whose workflow feeds NEXT_PUBLIC_SITE_URL from configure-pages. Previews
+ * must be noindex: they would otherwise be indexed as a full duplicate of the
+ * production site.
+ */
+export const isPreviewDeploy = profile.siteUrl !== PRODUCTION_ORIGIN;
 
 /** Every unfilled field, for the Impressum warning banner. */
 export function openTodos(): string[] {

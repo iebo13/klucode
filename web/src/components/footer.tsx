@@ -33,7 +33,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
           </div>
 
           <div className="flex flex-wrap gap-x-16 gap-y-8">
-            <nav aria-label={c.nav.services}>
+            <nav aria-label={c.ui.footerNavLabel}>
               <h2 className="text-small font-medium text-ink-faint">{c.meta.siteName}</h2>
               <ul className="mt-4 space-y-3">
                 {[...NAV_KEYS, 'contact' as const].map((k) => (
@@ -49,8 +49,8 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
               </ul>
             </nav>
 
-            <nav aria-label={c.nav.imprint}>
-              <h2 className="text-small font-medium text-ink-faint">Legal</h2>
+            <nav aria-label={c.ui.footerLegalLabel}>
+              <h2 className="text-small font-medium text-ink-faint">{c.ui.footerLegalLabel}</h2>
               <ul className="mt-4 space-y-3">
                 {LEGAL_KEYS.map((k) => (
                   <li key={k}>
@@ -64,6 +64,38 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
                 ))}
               </ul>
             </nav>
+
+            {/* Profiles render only once profile.ts carries real URLs — an
+                empty column would just advertise their absence. */}
+            {profile.linkedin || profile.github ? (
+              <div>
+                <h2 className="text-small font-medium text-ink-faint">{c.ui.footerSocialLabel}</h2>
+                <ul className="mt-4 space-y-3">
+                  {profile.linkedin ? (
+                    <li>
+                      <a
+                        href={profile.linkedin}
+                        rel="me noopener"
+                        className="text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
+                      >
+                        LinkedIn
+                      </a>
+                    </li>
+                  ) : null}
+                  {profile.github ? (
+                    <li>
+                      <a
+                        href={profile.github}
+                        rel="me noopener"
+                        className="text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
+                      >
+                        GitHub
+                      </a>
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
+            ) : null}
           </div>
         </div>
 

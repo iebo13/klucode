@@ -12,7 +12,7 @@ import {
   Tags,
 } from '@/components/ui';
 import type { Content } from '@/content';
-import { openTodos, profile } from '@/content/profile';
+import { isTodo, openTodos, profile } from '@/content/profile';
 import { pathFor, type Lang } from '@/lib/routes';
 
 function PageHero({ eyebrow, title, lead }: { eyebrow: string; title: string; lead: string }) {
@@ -142,6 +142,25 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
                   </div>
                 ))}
               </dl>
+
+              {/* Slots for the client-approved evidence. Empty until the
+                  approvals from brand/01-strategy.md §7 arrive; then filling
+                  de.ts/en.ts is the entire change. */}
+              {p.metric ? (
+                <p className="mt-8 max-w-measure font-display text-h3 text-brand-text">
+                  {p.metric}
+                </p>
+              ) : null}
+              {p.quote ? (
+                <figure className="panel mt-8 border-t-2 border-t-brand p-6 md:p-8">
+                  {/* Quotation marks belong to the content, not the markup:
+                      German copy quotes „so", English copy "so". */}
+                  <blockquote className="max-w-measure text-lead">{p.quote.text}</blockquote>
+                  <figcaption className="mt-4 text-small text-muted">
+                    — {p.quote.attribution}
+                  </figcaption>
+                </figure>
+              ) : null}
             </div>
           </div>
         </Section>
@@ -250,7 +269,8 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
               <p className="text-small text-muted">{a.portraitPlaceholder}</p>
             </div>
 
-            <dl className="mt-8 divide-y divide-line border-y border-line">
+            <h2 className="mt-8 text-small font-medium text-muted">{a.factsTitle}</h2>
+            <dl className="mt-4 divide-y divide-line border-y border-line">
               {a.facts.map((f) => (
                 <div key={f.label} className="flex flex-col gap-1 py-4">
                   <dt className="text-small text-muted">{f.label}</dt>
@@ -271,6 +291,16 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
 
 export function ContactPage({ c }: { lang: Lang; c: Content }) {
   const t = c.contact;
+  // The Impressum gets a loud warning while profile.ts is unfilled; the
+  // contact page must not instead silently ship mailto:«E-Mail-Adresse» and an
+  // empty tel: link — on the one page whose whole job is being reachable.
+  const direct = [
+    isTodo(profile.email) ? null : { href: `mailto:${profile.email}`, label: profile.email },
+    isTodo(profile.phone)
+      ? null
+      : { href: `tel:${profile.phone.replace(/[^\d+]/g, '')}`, label: profile.phone },
+  ].filter((l): l is { href: string; label: string } => l !== null);
+
   return (
     <>
       <PageHero eyebrow={t.eyebrow} title={t.title} lead={t.lead} />
@@ -278,28 +308,26 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
       <Section>
         <div className="grid gap-12 md:grid-cols-[1fr_1.3fr] md:gap-16">
           <div>
-            <h2 className="font-display text-h3">{t.directTitle}</h2>
-            <p className="mt-3 text-muted">{t.directBody}</p>
-            <ul className="mt-6 space-y-3">
-              <li>
-                <a
-                  href={`mailto:${profile.email}`}
-                  className="font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
-                >
-                  {profile.email}
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`}
-                  className="font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
-                >
-                  {profile.phone}
-                </a>
-              </li>
-            </ul>
+            {direct.length > 0 ? (
+              <>
+                <h2 className="font-display text-h3">{t.directTitle}</h2>
+                <p className="mt-3 text-muted">{t.directBody}</p>
+                <ul className="mt-6 space-y-3">
+                  {direct.map((l) => (
+                    <li key={l.href}>
+                      <a
+                        href={l.href}
+                        className="font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+                      >
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
 
-            <div className="mt-12 border-t border-line pt-8">
+            <div className={`${direct.length > 0 ? 'mt-12 border-t border-line pt-8' : ''}`}>
               <h2 className="text-small font-medium text-muted">{t.expectTitle}</h2>
               <ol className="mt-4 space-y-3">
                 {t.expect.map((e, i) => (
@@ -316,7 +344,7 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
 
           <div>
             <h2 className="mb-8 font-display text-h3">{t.formTitle}</h2>
-            <ContactForm c={c} />
+            <ContactForm t={t} siteName={c.meta.siteName} />
           </div>
         </div>
       </Section>
@@ -406,6 +434,19 @@ function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
             {c.ui.ctaSecondary}
           </Link>
         </div>
+        {/* The reader who is already convinced should not need the contact
+            page as an intermediate stop. Renders only with real data. */}
+        {!isTodo(profile.email) ? (
+          <p className="mt-6 text-small text-muted">
+            <a
+              href={`mailto:${profile.email}`}
+              className="text-brand-text underline decoration-viridian-300 underline-offset-4"
+            >
+              {profile.email}
+            </a>
+            {!isTodo(profile.phone) ? <> · {profile.phone}</> : null}
+          </p>
+        ) : null}
       </div>
     </Section>
   );

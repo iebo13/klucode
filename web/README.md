@@ -99,11 +99,22 @@ it.
 There is no server, so the form does **not** silently post to a third-party
 service. It opens the visitor's own mail client with the message prepared —
 they see exactly what is sent and to whom, and the privacy policy stays true.
+The form stays on screen afterwards with an honest "your mail program should
+have opened" note, so a machine without a mail handler cannot silently eat the
+message.
 
-To switch to a real endpoint (Formspree, Basin, your own handler): set
-`profile.formEndpoint`. **Update `privacy.sections` §5 in `de.ts` and `en.ts` at
-the same time** — you will have added a processor, and the policy currently says
-you have not.
+The mailto path is a fallback, not a plan: on desktop browsers without a
+configured mail client it is a dead end, and every extra step costs enquiries.
+**`deploy/contact.php` is a ready-made first-party handler** for the Plesk
+server — it emails you directly from your own domain, so no third-party
+processor enters the privacy policy. The header of that file lists the four
+enable steps (recipient, upload, `profile.formEndpoint: '/contact.php'`,
+privacy §5 update).
+
+To use a hosted service instead (Formspree, Basin, …): set
+`profile.formEndpoint` to its URL. **Update `privacy.sections` §5 in `de.ts` and
+`en.ts` at the same time** — you will have added a processor, and the policy
+currently says you have not.
 
 ---
 

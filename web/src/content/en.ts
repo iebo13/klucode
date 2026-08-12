@@ -1,48 +1,55 @@
 import { profile } from './profile';
 import type { Content } from './types';
 
+// The English side is NOT a translation of the German one — deliberately.
+// brand/01-strategy.md §4: /de speaks to owner-run SMBs (segment A); /en
+// exists for remote product teams and agencies (segments B and C), who buy
+// velocity on a defined slice and want stack, day rate and availability up
+// front. Same structure, different argument.
 const en = {
   meta: {
     siteName: 'KluCode',
     title: 'KluCode — Custom software, built in Düsseldorf',
     description:
-      'I build the system your business actually runs on: web applications, internal tools and websites. One engineer, a fixed price, front end to server.',
+      'Senior React and Next.js capacity for product teams and agencies, and complete web applications at a fixed price. One engineer, front end to server, based in Düsseldorf.',
+    // Sub-page titles are short — the layout's title template appends
+    // "— KluCode" exactly once. Only the home title is used as-is.
     pages: {
       home: {
         title: 'KluCode — Custom software, built in Düsseldorf',
         description:
-          'Freelance software developer in Düsseldorf. Web applications, internal tools and websites at a fixed price — front end, back end, database and server from one person.',
+          'Freelance software developer in Düsseldorf. Senior React and Next.js capacity for product teams and agencies, plus complete web applications at a fixed price — front end to server, one person.',
       },
       services: {
-        title: 'Services — KluCode',
+        title: 'Services',
         description:
-          'Websites from €2,500, custom web applications from €9,000, development capacity from €680/day, maintenance from €90/month.',
+          'Development capacity from €680/day, custom web applications from €9,000, websites from €2,500, maintenance from €90/month.',
       },
       work: {
-        title: 'Work — KluCode',
+        title: 'Work',
         description:
           'Three delivered systems in production: a CRM with commission management and a comparison portal, a POS system for hospitality, and a landing page with campaign.',
       },
       approach: {
-        title: 'Approach — KluCode',
+        title: 'Approach',
         description:
           'How a project runs: four steps, one price, one person. Plus an honest account of what role AI plays in it.',
       },
       about: {
-        title: 'About — KluCode',
+        title: 'About',
         description:
           'Computer science graduate, four years of frontend development, now freelancing in Düsseldorf. What KluCode means and why I work the way I do.',
       },
       contact: {
-        title: 'Contact — KluCode',
+        title: 'Contact',
         description: 'Tell me what is not working. 30 minutes, no pitch.',
       },
       imprint: {
-        title: 'Imprint — KluCode',
+        title: 'Imprint',
         description: 'Legal information under § 5 DDG.',
       },
       privacy: {
-        title: 'Privacy — KluCode',
+        title: 'Privacy',
         description: 'What this website processes — and what it does not.',
       },
     },
@@ -70,6 +77,9 @@ const en = {
     switchLangLabel: 'Auf Deutsch ansehen',
     themeToDark: 'Dark theme',
     themeToLight: 'Light theme',
+    footerNavLabel: 'Pages',
+    footerLegalLabel: 'Legal',
+    footerSocialLabel: 'Profiles',
     backHome: 'Back to the homepage',
     stack: 'Stack',
     before: 'Before',
@@ -80,38 +90,38 @@ const en = {
   },
 
   home: {
-    heroEyebrow: 'Software development · Düsseldorf',
-    heroTitle: 'The system your business',
-    heroTitleAccent: 'actually runs on.',
+    heroEyebrow: 'Software development · Düsseldorf & remote',
+    heroTitle: 'One senior engineer.',
+    heroTitleAccent: 'Front end to server.',
     heroLead:
-      'Web applications, internal tools and websites — front end to running server. One point of contact, a fixed price, and the person in the meeting is the person writing the code.',
+      'React, Next.js, TypeScript, Node.js. I take a defined slice of your product and ship it — or slot into your team as capacity that does not need managing. Day rate or fixed price, agreed before anything starts.',
     heroProof: [
       'Three systems in production',
       'BSc Computer Science · 4 years professional',
-      'Fixed price before anything starts',
+      'From €680/day · bookable from five days',
     ],
 
     problemEyebrow: 'The situation',
-    problemTitle: 'Two options, and neither one fits.',
+    problemTitle: 'Three ways to add capacity. Each costs more than it looks.',
     problemLead:
-      'Most teams I speak to have picked this up twice already and put it back down. For good reasons.',
+      'When a product team or an agency needs more hands, the standard options all carry a hidden invoice.',
     problemCards: [
       {
+        title: 'The hire',
+        body: 'Months of sourcing and onboarding for work that needed shipping this quarter — and a permanent seat on the payroll for what was a temporary peak.',
+      },
+      {
         title: 'The agency',
-        body: 'Four months, five figures, three points of contact. You are also paying for the distance between the person who understood the problem and the person who builds it. Most of the understanding is lost on that trip.',
+        body: 'Capacity on paper, overhead in practice: account managers, briefing rounds, and the distance between the person who understood your product and the person who writes the code.',
       },
       {
-        title: 'The site builder',
-        body: 'Looks finished in two days and stops exactly where your business starts: the commission logic, the shift handover, the one report you actually need.',
-      },
-      {
-        title: 'So, no change',
-        body: 'Spreadsheets, chat threads and a folder only one person understands. It works — until that person is on holiday, or the file exists in three versions.',
+        title: 'The stretched team',
+        body: 'The roadmap absorbs it. Features slip, the refactoring waits, and the people you hired for product thinking spend their sprints working through the backlog.',
       },
     ],
-    answerTitle: 'The third option',
+    answerTitle: 'The fourth option',
     answerBody:
-      'A qualified engineer who talks to you directly, understands how you actually work, and builds the whole system — interface, logic, database, server. At a fixed price you know before anything begins.',
+      'A senior engineer who is productive in your codebase within days — follows your conventions, communicates in your rhythm, and can own a defined slice end to end: interface, logic, database, deployment. At a day rate or a fixed price you know before the start.',
 
     servicesEyebrow: 'Services',
     servicesTitle: 'Four ways to work together.',
@@ -133,7 +143,7 @@ const en = {
     faq: [
       {
         q: 'What does it cost?',
-        a: 'A website starts at €2,500, a custom web application at €9,000. You get the exact fixed price after a 30-minute call and a written scope — not before, because a number without a scope is worthless.',
+        a: 'Development capacity is €680 a day, bookable from five days, with a framework agreement for longer runs. Fixed-price work starts at €2,500 for a website and €9,000 for a custom web application — the exact number after a 30-minute call and a written scope, not before, because a number without a scope is worthless.',
       },
       {
         q: 'How long does it take?',
@@ -157,7 +167,7 @@ const en = {
       },
     ],
 
-    finalTitle: 'Tell me what is not working.',
+    finalTitle: 'Tell me what needs shipping.',
     finalLead: `30 minutes, no obligation, no slide deck. If I am not the right fit I will say so — and point you at someone who is, where I can. Reply within ${profile.responseTime.en}.`,
   },
 
@@ -165,22 +175,24 @@ const en = {
     eyebrow: 'Services',
     title: 'Four services. That is enough.',
     lead: 'Prices are starting points for the scope described. You get the binding fixed price in writing before I start.',
+    // Order is priority for segments B and C: capacity first. The home page
+    // features the first two items large — on /en that must be capacity and
+    // the app work, not the SMB website package.
     items: [
       {
-        key: 'website',
-        name: 'Website & landing page',
-        forWhom: 'For businesses that need to be found and to receive enquiries.',
-        body: 'A page that loads, works on a phone and can be found. Hand-built, without site-builder weight — which is why it is fast, and why it can grow later.',
+        key: 'capacity',
+        name: 'Development capacity',
+        forWhom: 'For agencies and product teams that need frontend capacity.',
+        body: 'React, Next.js, TypeScript, Node.js. I pick up existing code, follow your conventions, and can join a client call without embarrassing you.',
         includes: [
-          'Structure, copy architecture and design',
-          'Responsive from 320px to desktop',
-          'Technical SEO, sub-second load',
-          'Legally compliant imprint and privacy pages',
-          'No cookie banner, because no tracking',
-          'A handover session so you can maintain the content',
+          'React · Next.js · TypeScript · Node.js · PostgreSQL',
+          'Onboarding into existing codebases',
+          'Code review and pull requests to your standards',
+          'Remote, on-site within the Rhineland',
+          'Bookable from five days',
         ],
-        price: '€2,500',
-        priceNote: '2 to 3 weeks · fixed price',
+        price: '€680',
+        priceNote: 'per day · framework agreement available',
       },
       {
         key: 'app',
@@ -199,19 +211,20 @@ const en = {
         priceNote: '4 to 10 weeks · fixed price',
       },
       {
-        key: 'capacity',
-        name: 'Development capacity',
-        forWhom: 'For agencies and product teams that need frontend capacity.',
-        body: 'React, Next.js, TypeScript, Node.js. I pick up existing code, follow your conventions, and can join a client call without embarrassing you.',
+        key: 'website',
+        name: 'Website & landing page',
+        forWhom: 'For businesses that need to be found and to receive enquiries.',
+        body: 'A page that loads, works on a phone and can be found. Hand-built, without site-builder weight — which is why it is fast, and why it can grow later.',
         includes: [
-          'React · Next.js · TypeScript · Node.js · PostgreSQL',
-          'Onboarding into existing codebases',
-          'Code review and pull requests to your standards',
-          'Remote, on-site within the Rhineland',
-          'Bookable from five days',
+          'Structure, copy architecture and design',
+          'Responsive from 320px to desktop',
+          'Technical SEO, sub-second load',
+          'Legally compliant imprint and privacy pages',
+          'No cookie banner, because no tracking',
+          'A handover session so you can maintain the content',
         ],
-        price: '€680',
-        priceNote: 'per day · framework agreement available',
+        price: '€2,500',
+        priceNote: '2 to 3 weeks · fixed price',
       },
       {
         key: 'care',
@@ -400,6 +413,8 @@ const en = {
       'I agree that my details may be processed in order to handle my enquiry. They will not be passed on. Withdrawable at any time by email.',
     submit: 'Send message',
     submitting: 'Sending …',
+    mailtoOpened:
+      'Your email program should have opened with the message ready. If it did not, write directly to',
     sent: `Got it. You will hear from me within ${profile.responseTime.en}.`,
     failed: 'That did not work. Please email me directly.',
     errorRequired: 'Required.',
@@ -499,6 +514,7 @@ const en = {
         heading: '2. What this website does not do',
         paragraphs: [
           'This website sets no cookies and uses no comparable techniques such as local storage for recognition. For that reason there is no consent banner here.',
+          'One single setting is stored locally in your browser, and only if you choose it yourself: your preference for the light or dark theme (local storage, key "kc-theme"). It contains no personal data, never leaves your device and is not used to recognise you. Storing it is strictly necessary to provide the presentation you explicitly asked for (§ 25 (2) no. 2 TDDDG).',
           'There is no reach measurement and no analysis of your usage behaviour. No third-party services are embedded — no analytics, no maps, no social networks, no external video.',
           'In particular, no fonts are loaded from third-party servers. All typefaces are served from this website’s own server, so your IP address is not transmitted to any third party.',
         ],

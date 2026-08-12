@@ -4,46 +4,50 @@ import type { Content } from './types';
 const de = {
   meta: {
     siteName: 'KluCode',
-    title: 'KluCode — Individuelle Software aus Düsseldorf',
+    // „Webentwicklung Düsseldorf" is what a local owner actually types into
+    // Google; the old title left the query term to the meta description.
+    title: 'KluCode — Individuelle Software & Webentwicklung in Düsseldorf',
     description:
       'Ich baue die Software, mit der Ihr Betrieb tatsächlich arbeitet: Web-Anwendungen, interne Tools und Websites. Ein Ansprechpartner, Festpreis, vom ersten Klick bis zum laufenden Server.',
+    // Sub-page titles are short — the layout's title template appends
+    // "— KluCode" exactly once. Only the home title is used as-is.
     pages: {
       home: {
-        title: 'KluCode — Individuelle Software aus Düsseldorf',
+        title: 'KluCode — Individuelle Software & Webentwicklung in Düsseldorf',
         description:
           'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis — Frontend, Backend, Datenbank und Server von einer Person.',
       },
       services: {
-        title: 'Leistungen — KluCode',
+        title: 'Leistungen',
         description:
           'Website und Landingpage ab 2.500 €, individuelle Web-Anwendungen ab 9.000 €, Entwickler-Kapazität ab 680 €/Tag, Betrieb und Wartung ab 90 €/Monat.',
       },
       work: {
-        title: 'Projekte — KluCode',
+        title: 'Projekte',
         description:
           'Drei ausgelieferte Systeme im Produktivbetrieb: CRM mit Provisionsverwaltung und Vergleichsportal, ein Kassensystem für die Gastronomie und eine Landingpage samt Kampagne.',
       },
       approach: {
-        title: 'Ansatz — KluCode',
+        title: 'Ansatz',
         description:
           'Wie ein Projekt bei mir abläuft: vier Schritte, ein Festpreis, ein Ansprechpartner. Und eine ehrliche Antwort auf die Frage, welche Rolle KI dabei spielt.',
       },
       about: {
-        title: 'Über mich — KluCode',
+        title: 'Über mich',
         description:
           'Informatiker (B.Sc.), vier Jahre Frontend-Entwicklung, jetzt freiberuflich in Düsseldorf. Was KluCode heißt und warum ich so arbeite, wie ich arbeite.',
       },
       contact: {
-        title: 'Kontakt — KluCode',
+        title: 'Kontakt',
         description:
           'Erzählen Sie mir, was gerade nicht läuft. 30 Minuten, unverbindlich, ohne Präsentation.',
       },
       imprint: {
-        title: 'Impressum — KluCode',
+        title: 'Impressum',
         description: 'Angaben gemäß § 5 DDG.',
       },
       privacy: {
-        title: 'Datenschutzerklärung — KluCode',
+        title: 'Datenschutzerklärung',
         description: 'Welche Daten diese Website verarbeitet — und welche nicht.',
       },
     },
@@ -71,6 +75,9 @@ const de = {
     switchLangLabel: 'Switch to English',
     themeToDark: 'Dunkles Design',
     themeToLight: 'Helles Design',
+    footerNavLabel: 'Seiten',
+    footerLegalLabel: 'Rechtliches',
+    footerSocialLabel: 'Profile',
     backHome: 'Zur Startseite',
     stack: 'Technik',
     before: 'Vorher',
@@ -404,6 +411,8 @@ const de = {
     submit: 'Nachricht senden',
     submitting: 'Wird gesendet …',
     sent: `Angekommen. Ich melde mich werktags innerhalb von ${profile.responseTime.de}.`,
+    mailtoOpened:
+      'Ihr E-Mail-Programm sollte sich jetzt mit der fertigen Nachricht geöffnet haben. Falls nicht: Schreiben Sie direkt an',
     failed: 'Das hat nicht geklappt. Schreiben Sie mir bitte direkt.',
     errorRequired: 'Bitte ausfüllen.',
     errorEmail: 'Diese Adresse stimmt so nicht.',
@@ -502,6 +511,7 @@ const de = {
         heading: '2. Was diese Website nicht tut',
         paragraphs: [
           'Diese Website setzt keine Cookies und verwendet keine vergleichbaren Techniken wie Local Storage zur Wiedererkennung. Aus diesem Grund gibt es hier auch kein Einwilligungsbanner.',
+          'Eine einzige Einstellung wird lokal in Ihrem Browser gespeichert, und nur dann, wenn Sie sie selbst treffen: Ihre Wahl zwischen hellem und dunklem Design (Local Storage, Schlüssel „kc-theme“). Sie enthält keine personenbezogenen Daten, verlässt Ihr Gerät nicht und dient nicht der Wiedererkennung. Die Speicherung ist unbedingt erforderlich, um die von Ihnen ausdrücklich gewünschte Darstellung bereitzustellen (§ 25 Abs. 2 Nr. 2 TDDDG).',
           'Es findet keine Reichweitenmessung und keine Analyse Ihres Nutzungsverhaltens statt. Es sind keine Dienste Dritter eingebunden — keine Analysewerkzeuge, keine Kartendienste, keine sozialen Netzwerke, keine externen Videos.',
           'Insbesondere werden keine Schriftarten von fremden Servern nachgeladen. Alle verwendeten Schriften werden vom Server dieser Website ausgeliefert. Ihre IP-Adresse wird dadurch an keinen Dritten übermittelt.',
         ],

@@ -7,6 +7,11 @@ import { DEFAULT_LANG, pathFor } from '@/lib/routes';
 /**
  * A 404 is not the place for a joke about broken software — see
  * brand/02-voice.md §7. It says what happened and offers the way out.
+ *
+ * Scope note: on the static export this component is unreachable — it only
+ * serves `notFound()` calls inside the [lang] segment, which the dev server
+ * can hit but a deployed export cannot. The 404 real visitors see is
+ * out/404.html, written by scripts/emit-404.mjs with the same copy.
  */
 export default function NotFound() {
   const c = getContent(DEFAULT_LANG);

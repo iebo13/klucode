@@ -2,9 +2,12 @@ import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import { notFound } from 'next/navigation';
 
+import { JsonLd } from '@/components/json-ld';
 import { getContent } from '@/content';
-import { profile } from '@/content/profile';
+import { isPreviewDeploy, profile } from '@/content/profile';
 import { asset } from '@/lib/base-path';
+import { openGraphFor } from '@/lib/og';
+import { businessJsonLd } from '@/lib/schema';
 import { LANGS, isLang, type Lang } from '@/lib/routes';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
@@ -52,30 +55,23 @@ export async function generateMetadata({
 
   return {
     metadataBase: new URL(profile.siteUrl),
-    title: { default: c.meta.title, template: `%s` },
+    // Sub-pages set short titles ('Leistungen') and get the suffix from this
+    // template — one place for the pattern instead of eight hand-appended
+    // copies that can drift. The home page opts out with `absolute`.
+    title: { default: c.meta.title, template: `%s — ${c.meta.siteName}` },
     description: c.meta.description,
     alternates: {
       canonical: `/${lang}/`,
       languages: { de: '/de/', en: '/en/', 'x-default': '/de/' },
     },
-    openGraph: {
-      type: 'website',
-      siteName: c.meta.siteName,
-      locale: lang === 'de' ? 'de_DE' : 'en_GB',
-      images: [
-        {
-          url: '/og.png',
-          width: 1200,
-          height: 630,
-          alt: `${c.meta.siteName} — ${c.footer.tagline}`,
-        },
-      ],
-    },
+    openGraph: openGraphFor(c, lang, `/${lang}/`),
     icons: {
       icon: [{ url: asset('/favicon.svg'), type: 'image/svg+xml' }],
       apple: asset('/apple-touch-icon.png'),
     },
-    robots: { index: true, follow: true },
+    // A preview deploy is a full duplicate of the production site on another
+    // origin; letting it into the index would make it compete with klucode.de.
+    robots: isPreviewDeploy ? { index: false, follow: false } : { index: true, follow: true },
   };
 }
 
@@ -88,6 +84,9 @@ export default async function LangLayout({
 }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
+
+  // null while profile.ts still carries todo() placeholders — see lib/schema.ts.
+  const business = businessJsonLd(getContent(lang), lang);
 
   return (
     // suppressHydrationWarning: the script below writes data-theme onto this
@@ -103,7 +102,10 @@ export default async function LangLayout({
             what produces the white flash on a dark-themed reload. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-dvh bg-surface text-body antialiased">{children}</body>
+      <body className="min-h-dvh bg-surface text-body antialiased">
+        {business ? <JsonLd data={business} /> : null}
+        {children}
+      </body>
     </html>
   );
 }

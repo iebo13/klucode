@@ -15,9 +15,11 @@ import {
   SectionHead,
   Tags,
 } from '@/components/ui';
+import { JsonLd } from '@/components/json-ld';
 import { getContent } from '@/content';
-import { profile } from '@/content/profile';
+import { isTodo, profile } from '@/content/profile';
 import { LANGS, isLang, pathFor } from '@/lib/routes';
+import { faqJsonLd } from '@/lib/schema';
 
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
@@ -31,7 +33,9 @@ export async function generateMetadata({
   const { lang } = await params;
   if (!isLang(lang)) return {};
   const { meta } = getContent(lang);
-  return { title: meta.pages.home.title, description: meta.pages.home.description };
+  // `absolute`: the home title already leads with the brand, so the layout's
+  // "%s — KluCode" template would double it.
+  return { title: { absolute: meta.pages.home.title }, description: meta.pages.home.description };
 }
 
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
@@ -48,6 +52,10 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
   return (
     <Shell lang={lang} current="home">
+      {/* FAQ rich-result markup for the six questions below. No personal
+          data involved, so unlike the business schema it is not gated. */}
+      <JsonLd data={faqJsonLd(c)} />
+
       {/* ---------------------------------------------------------------- hero */}
       <section className="relative isolate overflow-hidden">
         <div aria-hidden="true" className="aurora -z-10" />
@@ -181,6 +189,11 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
               <h3 className="mt-2 text-h2">{flagship.title}</h3>
               <p className="mt-2 text-small text-muted">{flagship.scope}</p>
               <p className="mt-6 max-w-measure text-lead text-muted">{flagship.summary}</p>
+              {/* The client-approved number, once it exists — the strongest
+                  line in the section the moment de.ts/en.ts carry it. */}
+              {flagship.metric ? (
+                <p className="mt-6 font-display text-h3 text-brand-text">{flagship.metric}</p>
+              ) : null}
               <div className="mt-8">
                 <Tags items={flagship.stack} />
               </div>
@@ -256,6 +269,19 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
             <div className="mt-8">
               <ButtonLink href={pathFor('contact', lang)}>{c.ui.ctaPrimary}</ButtonLink>
             </div>
+            {/* The last step should not cost a page load: the reader who is
+                already convinced gets the address here. Real data only. */}
+            {!isTodo(profile.email) ? (
+              <p className="mt-6 text-small text-muted">
+                <a
+                  href={`mailto:${profile.email}`}
+                  className="text-brand-text underline decoration-viridian-300 underline-offset-4"
+                >
+                  {profile.email}
+                </a>
+                {!isTodo(profile.phone) ? <> · {profile.phone}</> : null}
+              </p>
+            ) : null}
           </div>
           {/* The availability line lives in the column that used to be empty. */}
           <p className="mt-8 text-small text-muted md:col-span-4 md:col-start-9 md:mt-0 md:text-right">

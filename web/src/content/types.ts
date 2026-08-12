@@ -30,6 +30,16 @@ export type Project = {
   after: string;
   result: string;
   stack: string[];
+  /**
+   * One client-approved number, as a complete sentence fragment the reader
+   * can verify — „Aus drei Tagen Abrechnung wurden ein paar Minuten." The
+   * strategy's rule: one real number outperforms every adjective. Optional so
+   * the site can ship before approvals arrive; the layout renders a slot the
+   * moment the value exists.
+   */
+  metric?: string;
+  /** A written, client-released testimonial. Same deal: add when approved. */
+  quote?: { text: string; attribution: string };
 };
 
 export type LegalSection = { heading: string; paragraphs: string[] };
@@ -69,6 +79,11 @@ export type Content = {
     /** Action labels, not state labels: they say what the press will do. */
     themeToDark: string;
     themeToLight: string;
+    /** Footer navigation landmarks — one for the pages, one for the legal pair. */
+    footerNavLabel: string;
+    footerLegalLabel: string;
+    /** Heading over the LinkedIn/GitHub links, shown only once they exist. */
+    footerSocialLabel: string;
     backHome: string;
     stack: string;
     before: string;
@@ -173,6 +188,13 @@ export type Content = {
     submit: string;
     submitting: string;
     sent: string;
+    /**
+     * Shown after the mailto fallback fired. Deliberately NOT `sent`: nothing
+     * has been sent yet — the visitor's mail client opened (or silently
+     * failed to), and claiming "received" here would be a lie on the one site
+     * that sells honesty.
+     */
+    mailtoOpened: string;
     failed: string;
     errorRequired: string;
     errorEmail: string;
