@@ -12,7 +12,7 @@ import {
   Tags,
 } from '@/components/ui';
 import type { Content } from '@/content';
-import { isTodo, openTodos, profile } from '@/content/profile';
+import { filled, openTodos, profile } from '@/content/profile';
 import { pathFor, type Lang } from '@/lib/routes';
 
 function PageHero({ eyebrow, title, lead }: { eyebrow: string; title: string; lead: string }) {
@@ -295,10 +295,10 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
   // contact page must not instead silently ship mailto:«E-Mail-Adresse» and an
   // empty tel: link — on the one page whose whole job is being reachable.
   const direct = [
-    isTodo(profile.email) ? null : { href: `mailto:${profile.email}`, label: profile.email },
-    isTodo(profile.phone)
-      ? null
-      : { href: `tel:${profile.phone.replace(/[^\d+]/g, '')}`, label: profile.phone },
+    filled(profile.email) ? { href: `mailto:${profile.email}`, label: profile.email } : null,
+    filled(profile.phone)
+      ? { href: `tel:${profile.phone.replace(/[^\d+]/g, '')}`, label: profile.phone }
+      : null,
   ].filter((l): l is { href: string; label: string } => l !== null);
 
   return (
@@ -436,7 +436,7 @@ function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
         </div>
         {/* The reader who is already convinced should not need the contact
             page as an intermediate stop. Renders only with real data. */}
-        {!isTodo(profile.email) ? (
+        {filled(profile.email) ? (
           <p className="mt-6 text-small text-muted">
             <a
               href={`mailto:${profile.email}`}
@@ -444,7 +444,7 @@ function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
             >
               {profile.email}
             </a>
-            {!isTodo(profile.phone) ? <> · {profile.phone}</> : null}
+            {filled(profile.phone) ? <> · {profile.phone}</> : null}
           </p>
         ) : null}
       </div>

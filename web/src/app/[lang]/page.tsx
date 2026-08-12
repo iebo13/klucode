@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { JsonLd } from '@/components/json-ld';
 import { Shell } from '@/components/shell';
 import {
   ArrowLink,
@@ -15,11 +16,11 @@ import {
   SectionHead,
   Tags,
 } from '@/components/ui';
-import { JsonLd } from '@/components/json-ld';
 import { getContent } from '@/content';
-import { isTodo, profile } from '@/content/profile';
+import { filled, profile } from '@/content/profile';
+import { openGraphFor, twitterFor } from '@/lib/og';
 import { LANGS, isLang, pathFor } from '@/lib/routes';
-import { faqJsonLd } from '@/lib/schema';
+import { pageSchema } from '@/lib/schema';
 
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
@@ -32,10 +33,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   if (!isLang(lang)) return {};
-  const { meta } = getContent(lang);
-  // `absolute`: the home title already leads with the brand, so the layout's
-  // "%s — KluCode" template would double it.
-  return { title: { absolute: meta.pages.home.title }, description: meta.pages.home.description };
+  const c = getContent(lang);
+  const page = c.meta.pages.home;
+
+  return {
+    title: page.title,
+    description: page.description,
+    // The full blocks, not just the page pair — Next replaces a parent's
+    // openGraph wholesale, so a partial override here would drop the image,
+    // siteName and locale. See lib/og.ts.
+    openGraph: openGraphFor(c, lang, `/${lang}/`, page),
+    twitter: twitterFor(c, page),
+  };
 }
 
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
@@ -52,9 +61,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
   return (
     <Shell lang={lang} current="home">
-      {/* FAQ rich-result markup for the six questions below. No personal
-          data involved, so unlike the business schema it is not gated. */}
-      <JsonLd data={faqJsonLd(c)} />
+      <JsonLd data={pageSchema(lang, c, 'home')} />
 
       {/* ---------------------------------------------------------------- hero */}
       <section className="relative isolate overflow-hidden">
@@ -271,7 +278,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
             </div>
             {/* The last step should not cost a page load: the reader who is
                 already convinced gets the address here. Real data only. */}
-            {!isTodo(profile.email) ? (
+            {filled(profile.email) ? (
               <p className="mt-6 text-small text-muted">
                 <a
                   href={`mailto:${profile.email}`}
@@ -279,7 +286,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
                 >
                   {profile.email}
                 </a>
-                {!isTodo(profile.phone) ? <> · {profile.phone}</> : null}
+                {filled(profile.phone) ? <> · {profile.phone}</> : null}
               </p>
             ) : null}
           </div>

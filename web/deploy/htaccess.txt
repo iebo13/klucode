@@ -22,7 +22,23 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # German browsers to /de/, everyone else to /en/.
+  # 0. One canonical origin, before anything else.
+  #
+  # https://klucode.de is the canonical host — it is what profile.siteUrl,
+  # every canonical tag, the sitemap and every JSON-LD @id say. Serving the
+  # same pages on www.klucode.de and on http:// as well means four URLs for
+  # one page, which is a duplicate-content problem the canonical tag only
+  # partly cleans up. These two rules make the server agree with the markup.
+  #
+  # Enable AFTER the certificate is installed in Plesk. Turning on the HTTPS
+  # redirect before the certificate exists locks you out of your own site.
+  # RewriteCond %{HTTPS} off
+  # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+  #
+  # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  # RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+  # 1. German browsers to /de/, everyone else to /en/.
   RewriteCond %{REQUEST_URI} ^/$
   RewriteCond %{HTTP:Accept-Language} ^de [NC]
   RewriteRule ^$ /de/ [R=302,L]
@@ -104,9 +120,10 @@ ErrorDocument 404 /404.html
 </IfModule>
 
 # ---------------------------------------------------------------------------
-# 6. Force HTTPS (enable once the certificate is installed in Plesk)
+# 6. Force HTTPS and the apex host
+#
+# Moved into section 0, so that it runs before the language redirect rather
+# than after it. In the old order an http://www request was first sent to
+# /de/ and only then upgraded, which cost a second round trip and produced a
+# redirect chain search engines report as a warning.
 # ---------------------------------------------------------------------------
-# <IfModule mod_rewrite.c>
-#   RewriteCond %{HTTPS} off
-#   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
-# </IfModule>

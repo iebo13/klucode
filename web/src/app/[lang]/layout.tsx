@@ -2,12 +2,10 @@ import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import { notFound } from 'next/navigation';
 
-import { JsonLd } from '@/components/json-ld';
 import { getContent } from '@/content';
 import { isPreviewDeploy, profile } from '@/content/profile';
 import { asset } from '@/lib/base-path';
-import { openGraphFor } from '@/lib/og';
-import { businessJsonLd } from '@/lib/schema';
+import { openGraphFor, twitterFor } from '@/lib/og';
 import { LANGS, isLang, type Lang } from '@/lib/routes';
 import { THEME_INIT_SCRIPT } from '@/lib/theme';
 
@@ -55,16 +53,18 @@ export async function generateMetadata({
 
   return {
     metadataBase: new URL(profile.siteUrl),
-    // Sub-pages set short titles ('Leistungen') and get the suffix from this
-    // template — one place for the pattern instead of eight hand-appended
-    // copies that can drift. The home page opts out with `absolute`.
-    title: { default: c.meta.title, template: `%s — ${c.meta.siteName}` },
+    // No-op template on purpose: every content title carries its own
+    // "— KluCode" suffix, because scripts/check-meta.mjs asserts length and
+    // uniqueness on the raw content strings — a template-appended suffix
+    // would be invisible to it and the budget would silently lie.
+    title: { default: c.meta.title, template: `%s` },
     description: c.meta.description,
     alternates: {
       canonical: `/${lang}/`,
       languages: { de: '/de/', en: '/en/', 'x-default': '/de/' },
     },
     openGraph: openGraphFor(c, lang, `/${lang}/`),
+    twitter: twitterFor(c),
     icons: {
       icon: [{ url: asset('/favicon.svg'), type: 'image/svg+xml' }],
       apple: asset('/apple-touch-icon.png'),
@@ -85,9 +85,6 @@ export default async function LangLayout({
   const { lang } = await params;
   if (!isLang(lang)) notFound();
 
-  // null while profile.ts still carries todo() placeholders — see lib/schema.ts.
-  const business = businessJsonLd(getContent(lang), lang);
-
   return (
     // suppressHydrationWarning: the script below writes data-theme onto this
     // element before React sees it, so the client tree legitimately differs
@@ -102,10 +99,9 @@ export default async function LangLayout({
             what produces the white flash on a dark-themed reload. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-dvh bg-surface text-body antialiased">
-        {business ? <JsonLd data={business} /> : null}
-        {children}
-      </body>
+      {/* Structured data is emitted per page (lib/schema.ts pageSchema), not
+          here — the layout cannot know which page's graph to claim. */}
+      <body className="min-h-dvh bg-surface text-body antialiased">{children}</body>
     </html>
   );
 }

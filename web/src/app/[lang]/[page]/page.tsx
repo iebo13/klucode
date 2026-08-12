@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { JsonLd } from '@/components/json-ld';
 import {
   AboutPage,
   ApproachPage,
@@ -13,8 +14,9 @@ import {
 import { Shell } from '@/components/shell';
 import { getContent } from '@/content';
 import { isPreviewDeploy } from '@/content/profile';
-import { openGraphFor } from '@/lib/og';
+import { openGraphFor, twitterFor } from '@/lib/og';
 import { LANGS, PAGE_KEYS, isLang, keyForSlug, slugs, type PageKey } from '@/lib/routes';
+import { pageSchema } from '@/lib/schema';
 
 /**
  * Every page other than the home page, in both languages, from one file.
@@ -59,7 +61,12 @@ export async function generateMetadata({
         'x-default': `/de/${slugs[key].de}/`,
       },
     },
-    openGraph: openGraphFor(c, lang, path),
+    // The page's own card, not the site-level pair every sub-page once
+    // shared. Built whole through the helper — Next replaces a parent's
+    // openGraph rather than merging it, so a partial override here would
+    // drop the image, siteName and locale.
+    openGraph: openGraphFor(c, lang, path, m),
+    twitter: twitterFor(c, m),
     // Legal pages carry no marketing value and should not compete in search;
     // a preview deploy must stay out of the index entirely.
     robots: isPreviewDeploy
@@ -96,6 +103,9 @@ export default async function Page({
 
   return (
     <Shell lang={lang} current={key}>
+      {/* Legal pages are noindex; a breadcrumb graph for a page that is not in
+          the index is noise, so they get nothing. */}
+      {key === 'imprint' || key === 'privacy' ? null : <JsonLd data={pageSchema(lang, c, key)} />}
       {views[key]}
     </Shell>
   );

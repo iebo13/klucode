@@ -1,4 +1,4 @@
-import { profile } from './profile';
+import { policyDate, profile } from './profile';
 import type { Content } from './types';
 
 // The English side is NOT a translation of the German one — deliberately.
@@ -11,45 +11,44 @@ const en = {
     siteName: 'KluCode',
     title: 'KluCode — Custom software, built in Düsseldorf',
     description:
-      'Senior React and Next.js capacity for product teams and agencies, and complete web applications at a fixed price. One engineer, front end to server, based in Düsseldorf.',
-    // Sub-page titles are short — the layout's title template appends
-    // "— KluCode" exactly once. Only the home title is used as-is.
+      'Senior React and Next.js capacity for product teams and agencies, plus complete web applications at a fixed price. One engineer, front end to server.',
     pages: {
       home: {
         title: 'KluCode — Custom software, built in Düsseldorf',
         description:
-          'Freelance software developer in Düsseldorf. Senior React and Next.js capacity for product teams and agencies, plus complete web applications at a fixed price — front end to server, one person.',
+          'Freelance software developer in Düsseldorf. Senior React and Next.js capacity for product teams and agencies, plus web applications at a fixed price.',
       },
       services: {
-        title: 'Services',
+        title: 'Services — KluCode',
         description:
           'Development capacity from €680/day, custom web applications from €9,000, websites from €2,500, maintenance from €90/month.',
       },
       work: {
-        title: 'Work',
+        title: 'Work — KluCode',
         description:
           'Three delivered systems in production: a CRM with commission management and a comparison portal, a POS system for hospitality, and a landing page with campaign.',
       },
       approach: {
-        title: 'Approach',
+        title: 'Approach — KluCode',
         description:
           'How a project runs: four steps, one price, one person. Plus an honest account of what role AI plays in it.',
       },
       about: {
-        title: 'About',
+        title: 'About — KluCode',
         description:
           'Computer science graduate, four years of frontend development, now freelancing in Düsseldorf. What KluCode means and why I work the way I do.',
       },
       contact: {
-        title: 'Contact',
+        title: 'Contact — KluCode',
         description: 'Tell me what is not working. 30 minutes, no pitch.',
       },
       imprint: {
-        title: 'Imprint',
-        description: 'Legal information under § 5 DDG.',
+        title: 'Imprint — KluCode',
+        description:
+          'Legal information under § 5 DDG: service provider, address, contact details and responsibility for the content of klucode.de.',
       },
       privacy: {
-        title: 'Privacy',
+        title: 'Privacy — KluCode',
         description: 'What this website processes — and what it does not.',
       },
     },
@@ -90,7 +89,7 @@ const en = {
   },
 
   home: {
-    heroEyebrow: 'Software development · Düsseldorf & remote',
+    heroEyebrow: 'Software development · Remote',
     heroTitle: 'One senior engineer.',
     heroTitleAccent: 'Front end to server.',
     heroLead:
@@ -139,7 +138,7 @@ const en = {
     approachLink: 'How I work',
 
     faqEyebrow: 'Common questions',
-    faqTitle: 'What people want to know first.',
+    faqTitle: 'What businesses ask first.',
     faq: [
       {
         q: 'What does it cost?',
@@ -173,7 +172,7 @@ const en = {
 
   services: {
     eyebrow: 'Services',
-    title: 'Four services. That is enough.',
+    title: 'Four services. No more are needed.',
     lead: 'Prices are starting points for the scope described. You get the binding fixed price in writing before I start.',
     // Order is priority for segments B and C: capacity first. The home page
     // features the first two items large — on /en that must be capacity and
@@ -193,22 +192,7 @@ const en = {
         ],
         price: '€680',
         priceNote: 'per day · framework agreement available',
-      },
-      {
-        key: 'app',
-        name: 'Custom web application',
-        forWhom: 'For processes currently living in spreadsheets, on paper or in chat.',
-        body: 'CRM, point of sale, reporting, internal tooling, portals. Built around your process rather than the other way round — including database, user management and server. This is the work I like most.',
-        includes: [
-          'Analysis of the current process, with the people who run it',
-          'Front end, back end, database and deployment',
-          'Roles, permissions and audit trails',
-          'Data migration from whatever you use today',
-          'First working version after roughly two weeks',
-          'Documentation and handover to your team',
-        ],
-        price: '€9,000',
-        priceNote: '4 to 10 weeks · fixed price',
+        priceUnit: 'day',
       },
       {
         key: 'website',
@@ -227,6 +211,22 @@ const en = {
         priceNote: '2 to 3 weeks · fixed price',
       },
       {
+        key: 'app',
+        name: 'Custom web application',
+        forWhom: 'For work stuck in Excel, on paper or in WhatsApp.',
+        body: 'CRM, point of sale, reporting, internal tooling, portals. Built around your process rather than the other way round — including database, user management and server. This is the work I like most.',
+        includes: [
+          'Analysis of the current process, with the people who run it',
+          'Front end, back end, database and deployment',
+          'Roles, permissions and audit trails',
+          'Data migration from whatever you use today',
+          'First working version after roughly two weeks',
+          'Documentation and handover to your team',
+        ],
+        price: '€9,000',
+        priceNote: '4 to 10 weeks · fixed price',
+      },
+      {
         key: 'care',
         name: 'Maintenance & operations',
         forWhom: 'For anyone running something — built by me or by someone else.',
@@ -240,6 +240,7 @@ const en = {
         ],
         price: '€90',
         priceNote: 'per month · cancel monthly',
+        priceUnit: 'month',
       },
     ],
     howEyebrow: 'How billing works',
@@ -266,7 +267,7 @@ const en = {
         key: 'crm',
         title: 'CRM, commission management and comparison portal',
         sector: 'Sales organisation',
-        scope: 'Largest project · full stack',
+        scope: 'Full stack · three systems, one database',
         summary:
           'Three systems that used to be three spreadsheets — customer management, commission settlement and a public comparison portal, all sharing the same data.',
         before:
@@ -281,7 +282,7 @@ const en = {
         key: 'pos',
         title: 'Point-of-sale system for a shisha bar',
         sector: 'Hospitality',
-        scope: 'Medium project · front end & database',
+        scope: 'Front end & data model · tablet till',
         summary:
           'A till that fits how the venue works — rather than a venue reorganised to fit a till.',
         before:
@@ -296,7 +297,7 @@ const en = {
         key: 'landing',
         title: 'Landing page and LinkedIn campaign',
         sector: 'Cleaning company',
-        scope: 'Small project · front end & marketing',
+        scope: 'Front end & campaign · no framework',
         summary:
           'No builder, no framework weight: a page that loads — plus the campaign that brings people to it.',
         before:
@@ -305,7 +306,7 @@ const en = {
           'A hand-built page in plain JavaScript with no framework overhead, plus a LinkedIn campaign using AI-generated video and imagery — at a cost that would otherwise have been out of reach for a business this size.',
         result:
           'Visibility beyond the referral circle. What began as a web job became a complete customer-acquisition package.',
-        stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'AI-assisted image and video production'],
+        stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'AI image & video'],
       },
     ],
     noteTitle: 'On numbers and names',
@@ -413,14 +414,15 @@ const en = {
       'I agree that my details may be processed in order to handle my enquiry. They will not be passed on. Withdrawable at any time by email.',
     submit: 'Send message',
     submitting: 'Sending …',
-    mailtoOpened:
-      'Your email program should have opened with the message ready. If it did not, write directly to',
     sent: `Got it. You will hear from me within ${profile.responseTime.en}.`,
+    handoffTitle: 'Your email client should have opened.',
+    handoffBody:
+      'The message is prepared, but it is not sent until you press send in your own mail program. If nothing opened, write to me directly at:',
     failed: 'That did not work. Please email me directly.',
     errorRequired: 'Required.',
     errorEmail: 'That address does not look right.',
     mailtoNote:
-      'This site runs without a server and without tracking. The form therefore opens your email client with the message ready to go — so you can see exactly what is sent, and to whom.',
+      'This site runs without a server and without tracking. The form sends nothing itself; it opens your email client with the message ready to go, so you can see exactly what is sent and you press send. If your device has no mail client set up, please use the address on the left.',
     expectTitle: 'What happens next',
     expect: [
       'A reply within one working day.',
@@ -447,13 +449,35 @@ const en = {
         heading: 'Contact',
         paragraphs: [`Phone: ${profile.phone}`, `Email: ${profile.email}`],
       },
-      {
-        heading: 'VAT identification number',
-        paragraphs: [
-          'VAT identification number under § 27 a of the German VAT Act:',
-          profile.vatId,
-        ],
-      },
+      // Mirrors de.ts: either the § 27 a VAT ID or the § 19 small-business
+      // statement, never an empty § 27 a heading.
+      profile.vatId
+        ? {
+            heading: 'VAT identification number',
+            paragraphs: [
+              'VAT identification number under § 27 a of the German VAT Act:',
+              profile.vatId,
+            ],
+          }
+        : {
+            heading: 'VAT',
+            paragraphs: [
+              'As a small business within the meaning of § 19 (1) of the German VAT Act, no VAT is charged and no VAT identification number is held.',
+            ],
+          },
+      // § 2 no. 11 DL-InfoV — only where a policy actually exists.
+      ...(profile.insurance
+        ? [
+            {
+              heading: 'Professional indemnity insurance',
+              paragraphs: [
+                profile.insurance.name,
+                profile.insurance.address,
+                `Territorial scope of cover: ${profile.insurance.scope.en}`,
+              ],
+            },
+          ]
+        : []),
       {
         heading: 'Professional status',
         paragraphs: [
@@ -464,10 +488,12 @@ const en = {
         heading: 'Responsible for content',
         paragraphs: [`${profile.firstName} ${profile.lastName}, address as above.`],
       },
+      // No reference to the EU Commission's ODR platform: it was shut down on
+      // 20 July 2025. Pointing consumers at it has been misleading — and so
+      // chargeable in its own right — ever since. Removing it is required.
       {
         heading: 'Dispute resolution',
         paragraphs: [
-          'The European Commission provides a platform for online dispute resolution: https://ec.europa.eu/consumers/odr',
           'I am neither willing nor obliged to participate in dispute resolution proceedings before a consumer arbitration board.',
         ],
       },
@@ -500,7 +526,7 @@ const en = {
   privacy: {
     title: 'Privacy policy',
     lead: 'In short: this site sets no cookies, embeds no third-party services and does not analyse your behaviour. What data nonetheless arises is set out below. The German version is the authoritative one.',
-    updated: 'Last updated: set on go-live',
+    updated: `Last updated: ${policyDate('en')}`,
     sections: [
       {
         heading: '1. Controller',

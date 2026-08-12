@@ -1,53 +1,54 @@
-import { profile } from './profile';
+import { policyDate, profile } from './profile';
 import type { Content } from './types';
 
 const de = {
   meta: {
     siteName: 'KluCode',
     // „Webentwicklung Düsseldorf" is what a local owner actually types into
-    // Google; the old title left the query term to the meta description.
-    title: 'KluCode — Individuelle Software & Webentwicklung in Düsseldorf',
+    // Google; the old title left the query term entirely to the description.
+    // „Individuelle" moved there — the 60-char budget check-meta.mjs enforces
+    // does not fit all three of brand, positioning word and query term.
+    title: 'KluCode — Software & Webentwicklung in Düsseldorf',
     description:
       'Ich baue die Software, mit der Ihr Betrieb tatsächlich arbeitet: Web-Anwendungen, interne Tools und Websites. Ein Ansprechpartner, Festpreis, vom ersten Klick bis zum laufenden Server.',
-    // Sub-page titles are short — the layout's title template appends
-    // "— KluCode" exactly once. Only the home title is used as-is.
     pages: {
       home: {
-        title: 'KluCode — Individuelle Software & Webentwicklung in Düsseldorf',
+        title: 'KluCode — Software & Webentwicklung in Düsseldorf',
         description:
-          'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis — Frontend, Backend, Datenbank und Server von einer Person.',
+          'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis — Frontend, Backend und Server von einer Person.',
       },
       services: {
-        title: 'Leistungen',
+        title: 'Leistungen — KluCode',
         description:
           'Website und Landingpage ab 2.500 €, individuelle Web-Anwendungen ab 9.000 €, Entwickler-Kapazität ab 680 €/Tag, Betrieb und Wartung ab 90 €/Monat.',
       },
       work: {
-        title: 'Projekte',
+        title: 'Projekte — KluCode',
         description:
-          'Drei ausgelieferte Systeme im Produktivbetrieb: CRM mit Provisionsverwaltung und Vergleichsportal, ein Kassensystem für die Gastronomie und eine Landingpage samt Kampagne.',
+          'Drei Systeme im Produktivbetrieb: ein CRM mit Provisionsverwaltung, ein Kassensystem für die Gastronomie und eine Landingpage samt Kampagne.',
       },
       approach: {
-        title: 'Ansatz',
+        title: 'Ansatz — KluCode',
         description:
           'Wie ein Projekt bei mir abläuft: vier Schritte, ein Festpreis, ein Ansprechpartner. Und eine ehrliche Antwort auf die Frage, welche Rolle KI dabei spielt.',
       },
       about: {
-        title: 'Über mich',
+        title: 'Über mich — KluCode',
         description:
           'Informatiker (B.Sc.), vier Jahre Frontend-Entwicklung, jetzt freiberuflich in Düsseldorf. Was KluCode heißt und warum ich so arbeite, wie ich arbeite.',
       },
       contact: {
-        title: 'Kontakt',
+        title: 'Kontakt — KluCode',
         description:
           'Erzählen Sie mir, was gerade nicht läuft. 30 Minuten, unverbindlich, ohne Präsentation.',
       },
       imprint: {
-        title: 'Impressum',
-        description: 'Angaben gemäß § 5 DDG.',
+        title: 'Impressum — KluCode',
+        description:
+          'Angaben gemäß § 5 DDG: Diensteanbieter, Anschrift, Kontakt und Verantwortlichkeit für die Inhalte von klucode.de.',
       },
       privacy: {
-        title: 'Datenschutzerklärung',
+        title: 'Datenschutzerklärung — KluCode',
         description: 'Welche Daten diese Website verarbeitet — und welche nicht.',
       },
     },
@@ -119,7 +120,7 @@ const de = {
     ],
     answerTitle: 'Die dritte Möglichkeit',
     answerBody:
-      'Eine ausgebildete Fachkraft, die direkt mit Ihnen spricht, Ihren Ablauf versteht und das ganze System baut — Oberfläche, Logik, Datenbank, Server. Zum Festpreis, den Sie kennen, bevor irgendetwas anfängt.',
+      'Eine Person, die mit Ihnen spricht, Ihren Ablauf versteht und danach das ganze System baut — Oberfläche, Logik, Datenbank, Server. Der Preis steht fest, bevor die erste Zeile geschrieben ist.',
 
     servicesEyebrow: 'Leistungen',
     servicesTitle: 'Vier Wege, wie wir zusammenarbeiten.',
@@ -221,6 +222,7 @@ const de = {
         ],
         price: '680 €',
         priceNote: 'pro Tag · Rahmenvertrag möglich',
+        priceUnit: 'day',
       },
       {
         key: 'care',
@@ -236,6 +238,7 @@ const de = {
         ],
         price: '90 €',
         priceNote: 'pro Monat · monatlich kündbar',
+        priceUnit: 'month',
       },
     ],
     howEyebrow: 'Abrechnung',
@@ -263,7 +266,7 @@ const de = {
         key: 'crm',
         title: 'CRM, Provisionsverwaltung und Vergleichsportal',
         sector: 'Vertriebsorganisation',
-        scope: 'Größtes Projekt · Full-Stack',
+        scope: 'Full-Stack · drei Systeme, eine Datenbank',
         summary:
           'Drei Systeme, die vorher drei Excel-Dateien waren — Kundenverwaltung, Provisionsabrechnung und ein öffentliches Vergleichsportal, die dieselben Daten teilen.',
         before:
@@ -278,7 +281,7 @@ const de = {
         key: 'pos',
         title: 'Kassensystem für eine Shisha-Bar',
         sector: 'Gastronomie',
-        scope: 'Mittleres Projekt · Frontend & Datenbank',
+        scope: 'Frontend & Datenmodell · Tablet-Kasse',
         summary:
           'Ein Kassensystem, das zum Betrieb passt — nicht ein Betrieb, der sich an ein Kassensystem anpassen muss.',
         before:
@@ -293,7 +296,7 @@ const de = {
         key: 'landing',
         title: 'Landingpage und LinkedIn-Kampagne',
         sector: 'Reinigungsunternehmen',
-        scope: 'Kleines Projekt · Frontend & Marketing',
+        scope: 'Frontend & Kampagne · ohne Framework',
         summary:
           'Kein Baukasten, kein Framework-Ballast: eine Seite, die lädt — und dazu die Kampagne, die Menschen darauf bringt.',
         before:
@@ -302,7 +305,7 @@ const de = {
           'Eine handgebaute Seite in reinem JavaScript, ohne Framework-Overhead, dazu eine LinkedIn-Kampagne mit KI-erzeugten Videos und Bildern — zu Kosten, die für einen Betrieb dieser Größe sonst nicht darstellbar gewesen wären.',
         result:
           'Sichtbarkeit über den Empfehlungskreis hinaus. Aus einem reinen Web-Auftrag wurde ein vollständiges Paket zur Kundengewinnung.',
-        stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-gestützte Bild- und Videoproduktion'],
+        stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-Bild und -Video'],
       },
     ],
     noteTitle: 'Zu Zahlen und Namen',
@@ -411,13 +414,14 @@ const de = {
     submit: 'Nachricht senden',
     submitting: 'Wird gesendet …',
     sent: `Angekommen. Ich melde mich werktags innerhalb von ${profile.responseTime.de}.`,
-    mailtoOpened:
-      'Ihr E-Mail-Programm sollte sich jetzt mit der fertigen Nachricht geöffnet haben. Falls nicht: Schreiben Sie direkt an',
+    handoffTitle: 'Ihr E-Mail-Programm sollte sich jetzt geöffnet haben.',
+    handoffBody:
+      'Die Nachricht ist fertig vorbereitet — abgeschickt ist sie erst, wenn Sie in Ihrem E-Mail-Programm auf Senden drücken. Falls sich nichts geöffnet hat, schreiben Sie mir bitte direkt an:',
     failed: 'Das hat nicht geklappt. Schreiben Sie mir bitte direkt.',
     errorRequired: 'Bitte ausfüllen.',
     errorEmail: 'Diese Adresse stimmt so nicht.',
     mailtoNote:
-      'Diese Seite läuft ohne Server und ohne Tracking. Das Formular öffnet deshalb Ihr E-Mail-Programm mit der fertigen Nachricht — Sie sehen genau, was gesendet wird, und an wen.',
+      'Diese Seite läuft ohne Server und ohne Tracking. Das Formular überträgt deshalb nichts selbst, sondern öffnet Ihr E-Mail-Programm mit der fertigen Nachricht: Sie sehen genau, was gesendet wird, und Sie drücken auf Senden. Wenn Ihr Gerät kein E-Mail-Programm eingerichtet hat, nehmen Sie bitte die Adresse links.',
     expectTitle: 'Was danach passiert',
     expect: [
       'Antwort werktags innerhalb von 24 Stunden.',
@@ -444,13 +448,36 @@ const de = {
         heading: 'Kontakt',
         paragraphs: [`Telefon: ${profile.phone}`, `E-Mail: ${profile.email}`],
       },
-      {
-        heading: 'Umsatzsteuer-Identifikationsnummer',
-        paragraphs: [
-          'Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:',
-          profile.vatId,
-        ],
-      },
+      // Either a USt-IdNr. under § 27 a UStG, or the Kleinunternehmer statement
+      // under § 19 UStG. Printing the § 27 a heading with nothing under it is
+      // worse than saying plainly that there is no VAT ID.
+      profile.vatId
+        ? {
+            heading: 'Umsatzsteuer-Identifikationsnummer',
+            paragraphs: [
+              'Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:',
+              profile.vatId,
+            ],
+          }
+        : {
+            heading: 'Umsatzsteuer',
+            paragraphs: [
+              'Als Kleinunternehmer im Sinne des § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet und keine Umsatzsteuer-Identifikationsnummer geführt.',
+            ],
+          },
+      // § 2 Nr. 11 DL-InfoV — only where a policy actually exists.
+      ...(profile.insurance
+        ? [
+            {
+              heading: 'Berufshaftpflichtversicherung',
+              paragraphs: [
+                profile.insurance.name,
+                profile.insurance.address,
+                `Räumlicher Geltungsbereich: ${profile.insurance.scope.de}`,
+              ],
+            },
+          ]
+        : []),
       {
         heading: 'Berufsbezeichnung',
         paragraphs: [
@@ -461,10 +488,13 @@ const de = {
         heading: 'Verantwortlich für den Inhalt',
         paragraphs: [`${profile.firstName} ${profile.lastName}, Anschrift wie oben.`],
       },
+      // Kein Hinweis auf die OS-Plattform der EU-Kommission: sie wurde zum
+      // 20.07.2025 abgeschaltet. Ein Link darauf informiert Verbraucher seither
+      // falsch und ist damit selbst abmahnfähig — die Angabe zu entfernen ist
+      // Pflicht, nicht Kosmetik.
       {
         heading: 'Streitbeilegung',
         paragraphs: [
-          'Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung bereit: https://ec.europa.eu/consumers/odr',
           'Ich bin nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.',
         ],
       },
@@ -497,7 +527,7 @@ const de = {
   privacy: {
     title: 'Datenschutzerklärung',
     lead: 'Kurz gesagt: Diese Website setzt keine Cookies, bindet keine fremden Dienste ein und wertet Ihr Verhalten nicht aus. Was trotzdem an Daten anfällt, steht hier.',
-    updated: 'Stand: bei Livegang eintragen',
+    updated: `Stand: ${policyDate('de')}`,
     sections: [
       {
         heading: '1. Verantwortlicher',

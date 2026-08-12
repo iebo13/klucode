@@ -5,7 +5,16 @@ import { useState } from 'react';
 import type { Content } from '@/content';
 import { profile } from '@/content/profile';
 
-type Status = 'idle' | 'sending' | 'sent' | 'mailto-opened' | 'failed';
+/**
+ * 'handoff' is not 'sent'. The mailto path assigns window.location.href and the
+ * browser either opens a mail client or does nothing at all — we never learn
+ * which, and on a device with no client configured the visitor is left staring
+ * at a page that claimed to have sent something. The two outcomes therefore get
+ * two states and two pieces of copy — and the form stays rendered through the
+ * hand-off, so a visitor whose mail client never opened still has their typed
+ * message in front of them instead of losing it to a success screen.
+ */
+type Status = 'idle' | 'sending' | 'sent' | 'handoff' | 'failed';
 type FieldKey = 'name' | 'email' | 'message' | 'consent';
 type Errors = Partial<Record<FieldKey, string>>;
 
@@ -26,9 +35,15 @@ const field =
  * visitor's own mail client with the message prepared. They can see exactly what
  * is sent and to whom.
  *
+ * This is a decision, not a stopgap (issue #11): the cost is that a device with
+ * no configured mail client reaches a dead end, which is why the contact page
+ * puts the address and phone number above the form and why the hand-off state
+ * below repeats the address in selectable text rather than claiming success.
+ *
  * Set profile.formEndpoint to switch to a real POST (deploy/contact.php is a
- * ready-made first-party handler for the Plesk server); remember to update the
- * privacy policy at the same time.
+ * ready-made first-party handler for the Plesk server, if server-side sending
+ * is ever wanted without a third-party processor); update the privacy policy
+ * in the same change.
  *
  * Props are the contact strings only, not the whole Content object: client
  * component props are serialized into every page's HTML, and this component
@@ -70,11 +85,7 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
       const subject = encodeURIComponent(`${siteName} — ${name}`);
       const body = encodeURIComponent([name, company, email, '', message].join('\n'));
       window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
-      // NOT 'sent': nothing has left this machine. The visitor still has to
-      // press send in their mail client — and on a machine with no mail
-      // handler nothing opened at all. The form stays rendered either way,
-      // so the typed message cannot be silently lost.
-      setStatus('mailto-opened');
+      setStatus('handoff');
       return;
     }
 
@@ -177,10 +188,19 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
         {status === 'sending' ? t.submitting : t.submit}
       </button>
 
-      {status === 'mailto-opened' ? (
-        <p role="status" className="panel max-w-measure p-4 text-small">
-          {t.mailtoOpened} <a href={`mailto:${profile.email}`}>{profile.email}</a>
-        </p>
+      {status === 'handoff' ? (
+        <div role="status" className="panel p-6 md:p-8">
+          <h3 className="font-display text-h3">{t.handoffTitle}</h3>
+          <p className="mt-3 max-w-measure text-muted">{t.handoffBody}</p>
+          {/* Selectable plain text, not just a second mailto — a visitor whose
+              device has no mail client cannot use another mailto link either. */}
+          <a
+            href={`mailto:${profile.email}`}
+            className="mt-4 inline-block select-all font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+          >
+            {profile.email}
+          </a>
+        </div>
       ) : null}
 
       {status === 'failed' ? (
