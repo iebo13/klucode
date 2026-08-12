@@ -9,6 +9,9 @@
     "start": "npx serve out",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "check:profile": "node scripts/check-profile.mjs",
+    "check:meta": "node scripts/check-meta.mjs",
+    "check:copy": "node scripts/check-copy.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

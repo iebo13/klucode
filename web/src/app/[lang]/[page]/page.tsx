@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { JsonLd } from '@/components/json-ld';
 import {
   AboutPage,
   ApproachPage,
@@ -13,6 +14,7 @@ import {
 import { Shell } from '@/components/shell';
 import { getContent } from '@/content';
 import { LANGS, PAGE_KEYS, isLang, keyForSlug, slugs, type PageKey } from '@/lib/routes';
+import { pageSchema } from '@/lib/schema';
 
 /**
  * Every page other than the home page, in both languages, from one file.
@@ -51,6 +53,10 @@ export async function generateMetadata({
         [other]: `/${other}/${slugs[key][other]}/`,
       },
     },
+    // Without these the layout's site-level OG title and description are
+    // reused, so every sub-page shared one card. Merged with the layout's
+    // siteName / locale / image rather than replacing them.
+    openGraph: { title: m.title, description: m.description, url: `/${lang}/${page}/` },
     // Legal pages carry no marketing value and should not compete in search.
     robots:
       key === 'imprint' || key === 'privacy'
@@ -85,6 +91,9 @@ export default async function Page({
 
   return (
     <Shell lang={lang} current={key}>
+      {/* Legal pages are noindex; a breadcrumb graph for a page that is not in
+          the index is noise, so they get nothing. */}
+      {key === 'imprint' || key === 'privacy' ? null : <JsonLd data={pageSchema(lang, c, key)} />}
       {views[key]}
     </Shell>
   );

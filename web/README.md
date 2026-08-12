@@ -19,13 +19,64 @@ npm run lint && npm run typecheck
    and puts a loud warning banner at the top of the Impressum. That banner is a
    feature: in Germany an incomplete Impressum under § 5 DDG is grounds for a
    costly _Abmahnung_.
+
+   Two ways to be empty, and they are not the same. `todo('…')` means _required
+   and not supplied yet_ — it keeps the banner up. `null` means _deliberately
+   absent_: no USt-IdNr. because of § 19 UStG, no public GitHub, no professional
+   indemnity policy to disclose. A `null` field renders nothing, drops the
+   Impressum section that would have shown it, and never reaches the banner.
+   Without that distinction a Kleinunternehmer could never clear the warning.
+
+   ```bash
+   npm run build && npm run check:profile   # the hard gate
+   ```
+
+   `check:profile` fails on any remaining `«…»` anywhere in `out/` and on the
+   presence of the Impressum alert box. It is deliberately **not** in CI — CI
+   has to stay green while the placeholders are legitimately still there.
+
 2. **Add a portrait** as `public/portrait.jpg` and swap the placeholder block in
    `src/components/page-sections.tsx` (`AboutPage`). A one-person brand with no
    face is asking for trust it has not offered.
 3. **Have the Impressum and Datenschutzerklärung reviewed once.** They are
    written carefully and are a solid starting point, but they are not legal
-   advice and only you know your final setup.
+   advice and only you know your final setup. Two things are already handled:
+   the Impressum carries no reference to the EU ODR platform (shut down
+   20 July 2025 — a link to it is now itself chargeable), and the VAT section
+   switches between § 27a and the § 19 Kleinunternehmer statement depending on
+   `profile.vatId`. If you hold professional indemnity insurance, fill in
+   `profile.insurance`: § 2 no. 11 DL-InfoV wants insurer, address and
+   territorial scope, and a partial disclosure is worse than none.
 4. Work through the launch checklist in `../brand/04-launch-playbook.md` §3.3.
+
+### Going live on the real domain
+
+`profile.siteUrl` is `metadataBase`; every canonical, hreflang, OG URL, sitemap
+entry and JSON-LD `@id` derives from it. Getting the domain right is therefore
+one variable, and verifying it is one grep.
+
+```bash
+npm run build            # NEXT_PUBLIC_SITE_URL unset -> https://klucode.de
+npm run check:profile
+grep -o 'https://[^"]*' out/de/index.html | sort -u | head   # nothing but the apex
+```
+
+Then, on the host:
+
+- [ ] DNS for `klucode.de`, and `www` decided — the `.htaccess` assumes
+      `www` → apex; flip both rules if you want it the other way.
+- [ ] TLS certificate installed, **then** un-comment section 0 of
+      `deploy/htaccess.txt` (HTTPS and apex redirects). Not before — enabling
+      the HTTPS redirect without a certificate locks you out.
+- [ ] `deploy/htaccess.txt` renamed to `.htaccess` in the document root.
+- [ ] `curl -I https://klucode.de/de/` shows the CSP, HSTS, nosniff and
+      referrer-policy headers. Plesk does not apply them from
+      `next.config.mjs`; only the `.htaccess` does.
+- [ ] `https://klucode.de/de/leistungen/` resolves with the trailing slash and
+      without a rewrite rule — this is what `trailingSlash: true` is for.
+- [ ] `robots.txt` and `sitemap.xml` show the production origin, and the
+      sitemap lists the twelve indexable routes (the two legal pages are
+      `noindex` and deliberately absent).
 
 ---
 
@@ -67,7 +118,35 @@ src/
     de.ts / en.ts        all copy, both `satisfies Content`
     types.ts
   lib/routes.ts          localised slugs and the language switch
+  lib/schema.ts          JSON-LD, generated from content/ — never hand-written
+scripts/
+  check-spacing.mjs      off-scale spacing utilities produce no CSS, silently
+  check-meta.mjs         title / description uniqueness and length budget
+  check-copy.mjs         copy that has to fit a narrow slot still fits it
+  check-profile.mjs      the go-live gate: no «placeholders» left in out/
 ```
+
+### Structured data
+
+`src/lib/schema.ts` builds a `@graph` — `ProfessionalService` with an
+`OfferCatalog`, `WebSite`, `Person` on the About and Contact pages,
+`BreadcrumbList` on sub-pages, `FAQPage` on the home page — entirely from
+`src/content`. Nothing is hand-written next to the copy it describes, because
+that drifts within one edit.
+
+Two things worth knowing before touching it:
+
+- **URLs come from `profile.siteUrl`, never from `asset()`.** `siteUrl` already
+  contains the base path on a subpath deploy, so `asset()` would apply it twice
+  and poison every `@id`. Same trap as `alternates` vs `icons` — see
+  `src/lib/base-path.ts`. CI builds with a base path and greps for it.
+- **`FAQPage` is not an SEO lever any more.** Google deprecated FAQ structured
+  data on 7 May 2026: the rich result is gone, Rich Results Test support ended
+  that June and the Search Console report that August. It stays because the
+  markup is still valid, costs nothing to generate from an array that already
+  exists, and is still read by Bing and the retrieval crawlers. Do not hang an
+  acceptance criterion on it, and do not use the Rich Results Test as the only
+  validator — check the whole graph in the Schema.org validator too.
 
 ### Localised slugs
 
@@ -96,14 +175,31 @@ it.
 
 ## The contact form
 
+**Decided (issue #11): the mailto hand-off stays. No endpoint.**
+
 There is no server, so the form does **not** silently post to a third-party
 service. It opens the visitor's own mail client with the message prepared —
-they see exactly what is sent and to whom, and the privacy policy stays true.
+they see exactly what is sent and to whom, and the privacy policy stays true
+because there is no additional processor to name.
+
+The cost is real and is handled rather than hidden. A device with no configured
+mail client reaches a dead end, and nothing is logged, so a lost enquiry is
+silently lost. Three things follow from that:
+
+- The form has a `handoff` state, not a `sent` state. Assigning
+  `window.location.href` tells you nothing about whether a mail client opened,
+  so the copy says what _should_ have happened and repeats the address in
+  selectable text. It must never claim a message was sent.
+- The address and phone number sit above the form in DOM order, so on a phone
+  the guaranteed path is the one you meet first.
+- `mailtoNote` says plainly what the form does and does not do.
 
 To switch to a real endpoint (Formspree, Basin, your own handler): set
 `profile.formEndpoint`. **Update `privacy.sections` §5 in `de.ts` and `en.ts` at
 the same time** — you will have added a processor, and the policy currently says
-you have not.
+you have not. Note that Plesk runs PHP, so a same-origin handler is the one
+option that adds no processor at all: the host is already named under Art. 28 in
+§3 of the policy, and the CSP already permits `form-action 'self'`.
 
 ---
 
