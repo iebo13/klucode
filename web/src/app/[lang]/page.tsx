@@ -3,13 +3,13 @@ import { notFound } from 'next/navigation';
 
 import { JsonLd } from '@/components/json-ld';
 import { Shell } from '@/components/shell';
+import { SystemDiagram } from '@/components/diagram';
 import {
   ArrowLink,
   ButtonLink,
   Card,
   Eyebrow,
   Faq,
-  FigureSlot,
   InkPanel,
   RHYTHM,
   Section,
@@ -53,121 +53,139 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   const c = getContent(lang);
   const h = c.home;
 
-  // The copy ranks these; the layout used to render them all at equal weight.
-  // Services split into two revenue lines and two supporting ones; projects are
-  // literally labelled largest / middle / smallest.
-  const [revenue, supporting] = [c.services.items.slice(0, 2), c.services.items.slice(2)];
+  // Projects are literally labelled largest / middle / smallest in the copy;
+  // the flagship gets the featured panel.
   const [flagship, ...otherProjects] = c.work.projects;
+
+  // The flagship drawn as what it is. Labels are content, so they localise.
+  const diagram =
+    lang === 'de'
+      ? {
+          sources: ['CRM', 'Provisionsabrechnung', 'Vergleichsportal'] as const,
+          hub: 'PostgreSQL · eine Datenbank',
+          out: 'Plesk-Server',
+          label:
+            'Systemdiagramm: CRM, Provisionsabrechnung und Vergleichsportal teilen eine PostgreSQL-Datenbank auf einem Plesk-Server.',
+        }
+      : {
+          sources: ['CRM', 'Commission billing', 'Comparison portal'] as const,
+          hub: 'PostgreSQL · one database',
+          out: 'Plesk server',
+          label:
+            'System diagram: the CRM, commission billing and comparison portal share one PostgreSQL database on one Plesk server.',
+        };
 
   return (
     <Shell lang={lang} current="home">
       <JsonLd data={pageSchema(lang, c, 'home')} />
 
       {/* ---------------------------------------------------------------- hero */}
-      <section className="relative isolate overflow-hidden">
-        <div aria-hidden="true" className="aurora -z-10" />
-        <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-50" />
+      {/* The INK OPENING. The page is framed in ink: it opens on the same
+          dark slab it closes on (the footer), and everything between is paper.
+          The slab is pulled up under the glass capsule (-mt-12 against a
+          ~48px header) so the frame starts at the viewport edge, in both
+          themes. All colour on this surface uses the fixed ink roles — ink is
+          dark in both themes, so nothing here flips. */}
+      <section className="grain relative isolate -mt-12 overflow-hidden bg-ink text-ink-fg">
+        <div aria-hidden="true" className="ink-aurora -z-10" />
+        <div aria-hidden="true" className="node-field-ink absolute inset-0 -z-10 opacity-60" />
         <div className="relative mx-auto max-w-container px-6 pb-section pt-16 md:px-8 md:pt-24">
-          <Eyebrow>{h.heroEyebrow}</Eyebrow>
-          {/* The headline keeps the full container width — narrowing it to make
-              room for the figure cost it two extra line breaks and most of its
-              impact. text-brand-text, not text-brand: the accent was
-              viridian-500 at 2.79:1, so the biggest word on the site failed AA
-              for large text, in defiance of the rule tokens.css states in its
-              own header comment. viridian-700 measures 5.27:1 here. */}
-          <h1 className={`${RHYTHM.heading} max-w-4xl text-display`}>
-            {h.heroTitle} <span className="text-brand-text">{h.heroTitleAccent}</span>
+          <p className="flex items-center gap-2 text-small font-medium text-ink-accent">
+            <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-ink-accent" />
+            {h.heroEyebrow}
+          </p>
+          <h1 className={`${RHYTHM.heading} max-w-5xl text-display`}>
+            {h.heroTitle} <span className="text-ink-accent">{h.heroTitleAccent}</span>
           </h1>
 
-          <div className={`${RHYTHM.lead} grid gap-8 lg:grid-cols-12 lg:gap-12`}>
-            <div className="lg:col-span-7">
-              <p className="max-w-measure text-lead text-muted">{h.heroLead}</p>
+          <p className={`${RHYTHM.lead} max-w-measure text-lead text-ink-muted`}>{h.heroLead}</p>
 
-              <div className="mt-8 flex flex-wrap gap-4">
-                <ButtonLink href={pathFor('contact', lang)}>{c.ui.ctaPrimary}</ButtonLink>
-                <ButtonLink href={pathFor('work', lang)} variant="secondary">
-                  {c.ui.ctaSecondary}
-                </ButtonLink>
-              </div>
-
-              <ul className="mt-12 flex flex-wrap gap-3">
-                {h.heroProof.map((p) => (
-                  <li
-                    key={p}
-                    className="flex items-center gap-2 rounded-full border border-line bg-surface-raised px-4 py-2 text-small text-muted"
-                  >
-                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-brand" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Reserved for a screenshot of a real system. Correct ratio now, so
-                dropping one in later is a file drop, not a layout change. */}
-            <FigureSlot className="hidden aspect-[4/3] lg:col-span-5 lg:block" />
+          <div className="mt-8 flex flex-wrap gap-4">
+            <ButtonLink href={pathFor('contact', lang)} variant="ink">
+              {c.ui.ctaPrimary}
+            </ButtonLink>
+            <ButtonLink href={pathFor('work', lang)} variant="inkSecondary">
+              {c.ui.ctaSecondary}
+            </ButtonLink>
           </div>
+
+          {/* Proof as clear-glass chips: on this surface the blur has the node
+              field and aurora underneath it, which is the one condition glass
+              needs to actually refract. */}
+          <ul className="mt-12 flex flex-wrap gap-3">
+            {h.heroProof.map((p) => (
+              <li
+                key={p}
+                className="glass-chip flex items-center gap-2 rounded-full px-4 py-2 text-small text-ink-muted"
+              >
+                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-ink-accent" />
+                {p}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
       {/* ------------------------------------------------------------- problem */}
-      {/* Three bad options and the pitch. The pitch used to get `border-l-2
-          border-brand pl-7` — the weakest emphasis device in the system — while
-          the three things it argues against each got a card. Now it is the
-          fourth cell of a 2x2 and it is inverted, so the visual weight matches
-          the argument. Same markup cost. */}
-      <Section tint>
-        <SectionHead eyebrow={h.problemEyebrow} title={h.problemTitle} lead={h.problemLead} />
-        <div className="mt-8 grid gap-6 md:mt-12 md:grid-cols-2">
-          {h.problemCards.map((card) => (
-            <Card key={card.title}>
-              <h3 className="text-h3">{card.title}</h3>
-              <p className="mt-3 text-muted">{card.body}</p>
-            </Card>
-          ))}
-          <InkPanel className="flex flex-col justify-center">
-            <h3 className="font-display text-h2">{h.answerTitle}</h3>
-            <p className="mt-4 max-w-measure text-lead text-ink-muted">{h.answerBody}</p>
-          </InkPanel>
-        </div>
-      </Section>
-
-      {/* ------------------------------------------------------------ services */}
-      {/* Two of these are revenue lines and two are supporting work. A uniform
-          2x2 said they were four equivalent products. */}
+      {/* Three bad options as hairline rows — the same list device as the
+          price board, so the page has ONE way of setting a list — and the
+          answer as a single full-width ink slab: the frame's material
+          reappearing mid-page, once, for the sentence the section argues
+          towards. */}
       <Section>
-        <SectionHead
-          eyebrow={h.servicesEyebrow}
-          title={h.servicesTitle}
-          aside={<ArrowLink href={pathFor('services', lang)}>{h.servicesLink}</ArrowLink>}
-        />
-        <div className="mt-8 grid gap-6 md:mt-12 md:grid-cols-2">
-          {revenue.map((s) => (
-            <div key={s.key} className="panel flex flex-col justify-between gap-8 p-6 md:p-8">
-              <div>
-                <h3 className="text-h2">{s.name}</h3>
-                <p className="mt-3 max-w-measure text-muted">{s.forWhom}</p>
-              </div>
-              <p className="font-display text-h2 text-brand-text">
-                <span className="text-small text-muted">{c.ui.from} </span>
-                {s.price}
-              </p>
+        <SectionHead eyebrow={h.problemEyebrow} title={h.problemTitle} lead={h.problemLead} />
+        <div className="mt-8 divide-y divide-line border-y border-line md:mt-12">
+          {h.problemCards.map((card) => (
+            <div key={card.title} className="grid gap-2 py-6 md:grid-cols-12 md:gap-8 md:py-8">
+              <h3 className="text-h3 md:col-span-4">{card.title}</h3>
+              <p className="max-w-measure text-muted md:col-span-8">{card.body}</p>
             </div>
           ))}
         </div>
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          {supporting.map((s) => (
+        <InkPanel className="mt-8 md:mt-12">
+          <div className="gap-8 md:grid md:grid-cols-12">
+            <h3 className="text-h3 md:col-span-4">{h.answerTitle}</h3>
+            <p className="mt-4 max-w-measure text-ink-muted md:col-span-8 md:mt-0">
+              {h.answerBody}
+            </p>
+          </div>
+        </InkPanel>
+      </Section>
+
+      {/* ------------------------------------------------------------ services */}
+      {/* THE PRICE BAND. A price board, not a card grid: four rows on
+          hairlines, every offer set in the same sizes, price and delivery
+          time on the right — the register of a Werkstatt price list. It sits
+          on a textured ink band: the frame's material carrying the page's
+          commercial core, with the node field underneath giving the surface
+          the depth the glass language runs on. */}
+      <Section ink glow>
+        <SectionHead
+          onInk
+          eyebrow={h.servicesEyebrow}
+          title={h.servicesTitle}
+          aside={
+            <ArrowLink onInk href={pathFor('services', lang)}>
+              {h.servicesLink}
+            </ArrowLink>
+          }
+        />
+        <div className="mt-8 divide-y divide-ink-line border-y border-ink-line md:mt-12">
+          {c.services.items.map((s) => (
             <div
               key={s.key}
-              className="panel flex flex-wrap items-baseline justify-between gap-4 p-6"
+              className="grid gap-2 py-6 md:grid-cols-12 md:items-baseline md:gap-8 md:py-8"
             >
-              <div>
-                <h3 className="text-h3">{s.name}</h3>
-                <p className="mt-1 max-w-measure text-small text-muted">{s.forWhom}</p>
-              </div>
-              <p className="shrink-0 font-display text-h3 text-brand-text">
-                <span className="text-small text-muted">{c.ui.from} </span>
+              <h3 className="text-h3 md:col-span-4">{s.name}</h3>
+              <p className="max-w-measure text-small text-ink-muted md:col-span-4">{s.forWhom}</p>
+              <p className="font-display text-h2 font-medium text-ink-accent md:col-span-4 md:text-right">
+                <span className="font-sans text-small font-normal text-ink-muted">
+                  {c.ui.from}{' '}
+                </span>
                 {s.price}
+                <span className="mt-1 block font-sans text-small font-normal text-ink-muted">
+                  {s.priceNote}
+                </span>
               </p>
             </div>
           ))}
@@ -181,7 +199,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           smallest in the copy and were rendered as three identical stacked
           cards; the flagship is now a featured panel with room for a
           screenshot, and the other two sit 2-up beneath it. */}
-      <Section tint glow bleed>
+      <Section glow bleed>
         <SectionHead
           eyebrow={h.workEyebrow}
           title={h.workTitle}
@@ -193,9 +211,11 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <div className="panel mt-8 grid gap-8 p-6 md:mt-12 md:grid-cols-[1.15fr_1fr] md:gap-12 md:p-8">
             <div>
               <p className="text-small font-medium text-brand-text">{flagship.sector}</p>
-              <h3 className="mt-2 text-h2">{flagship.title}</h3>
+              {/* h3 like its two sibling cards: the featured panel is marked by
+                  layout and the figure, not by a third heading size. */}
+              <h3 className="mt-2 text-h3">{flagship.title}</h3>
               <p className="mt-2 text-small text-muted">{flagship.scope}</p>
-              <p className="mt-6 max-w-measure text-lead text-muted">{flagship.summary}</p>
+              <p className="mt-4 max-w-measure text-muted">{flagship.summary}</p>
               {/* The client-approved number, once it exists — the strongest
                   line in the section the moment de.ts/en.ts carry it. */}
               {flagship.metric ? (
@@ -205,7 +225,19 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
                 <Tags items={flagship.stack} />
               </div>
             </div>
-            <FigureSlot className="aspect-[4/3] md:aspect-auto md:min-h-[16rem]" />
+            {/* The house device as information: the flagship's real topology,
+                drawn from the logo's own geometry. This replaced an empty
+                figure slot — a diagram that says „drei Systeme, eine
+                Datenbank" is proof; an empty dotted box was an apology. */}
+            <div className="flex items-center">
+              <SystemDiagram
+                sources={diagram.sources}
+                hub={diagram.hub}
+                out={diagram.out}
+                label={diagram.label}
+                className="w-full"
+              />
+            </div>
           </div>
         ) : null}
 
@@ -229,7 +261,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           columns 1-4 and sticks while the steps scroll past in columns 6-12,
           so the section is read as one thing with four parts rather than as
           another eyebrow / h2 / lead / grid band. */}
-      <Section>
+      <Section tint>
         <div className="grid gap-8 md:grid-cols-12 md:gap-8">
           <div className="md:sticky md:top-32 md:col-span-4 md:self-start">
             <Eyebrow>{h.approachEyebrow}</Eyebrow>
@@ -260,7 +292,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ----------------------------------------------------------------- faq */}
-      <Section tint>
+      <Section>
         <SectionHead eyebrow={h.faqEyebrow} title={h.faqTitle} />
         <div className="mt-8 max-w-narrow md:mt-12">
           <Faq items={h.faq} />
@@ -268,21 +300,28 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ----------------------------------------------------------- final cta */}
-      <Section>
+      {/* The INK CLOSE. The frame's other end: the ask sits on the same slab
+          the page opened on, and flows straight into the ink footer below it,
+          so the page ends as one dark block with the single thing it exists
+          for. The warm dot is fixed warm-300 here — the theme role resolves
+          to a value chosen for paper and dies on ink. */}
+      <Section ink>
         <div className="gap-8 md:grid md:grid-cols-12 md:items-end">
           <div className="md:col-span-7">
             <h2 className="text-h1">{h.finalTitle}</h2>
-            <p className="mt-6 max-w-measure text-lead text-muted">{h.finalLead}</p>
+            <p className="mt-6 max-w-measure text-lead text-ink-muted">{h.finalLead}</p>
             <div className="mt-8">
-              <ButtonLink href={pathFor('contact', lang)}>{c.ui.ctaPrimary}</ButtonLink>
+              <ButtonLink href={pathFor('contact', lang)} variant="ink">
+                {c.ui.ctaPrimary}
+              </ButtonLink>
             </div>
             {/* The last step should not cost a page load: the reader who is
                 already convinced gets the address here. Real data only. */}
             {filled(profile.email) ? (
-              <p className="mt-6 text-small text-muted">
+              <p className="mt-6 text-small text-ink-muted">
                 <a
                   href={`mailto:${profile.email}`}
-                  className="text-brand-text underline decoration-viridian-300 underline-offset-4"
+                  className="text-ink-accent underline decoration-viridian-300 underline-offset-4"
                 >
                   {profile.email}
                 </a>
@@ -290,10 +329,11 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
               </p>
             ) : null}
           </div>
-          {/* The availability line lives in the column that used to be empty. */}
-          <p className="mt-8 text-small text-muted md:col-span-4 md:col-start-9 md:mt-0 md:text-right">
-            <span className="flex items-center gap-2 md:justify-end">
-              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-accent-warm" />
+          {/* The availability line lives in the column that used to be empty —
+              as a glass chip, like the hero's proof. */}
+          <p className="mt-8 text-small text-ink-muted md:col-span-4 md:col-start-9 md:mt-0 md:text-right">
+            <span className="glass-chip inline-flex items-center gap-2 rounded-full px-4 py-2">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-warm-300" />
               {c.ui.availablePrefix} {profile.availableFrom[lang]}
             </span>
           </p>

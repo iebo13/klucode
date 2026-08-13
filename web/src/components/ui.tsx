@@ -2,20 +2,24 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 /**
- * Small uppercase mono label. The quiet signal that a developer built this.
+ * Section label: a node dot and sentence-case text.
  *
- * It stopped being quiet: 12px uppercase mono at 0.08em appeared about 36 times
- * on the homepage — six section eyebrows, three proof pills, four price labels,
- * three sector and three scope labels, twelve tags, four step numbers and the
- * availability line — which made the loudest recurring texture on the page out
- * of the device meant to whisper, and left no hierarchy inside the small-text
- * tier at all. Mono-uppercase is now restricted to three roles: SECTION
- * EYEBROWS (this component), TECH TAGS and STEP NUMBERS. Everything else that
- * used to reach for it is sentence-case `text-small`.
+ * This was uppercase mono, the reflexive dev-brand register — and by 2026 the
+ * single most recognisable tic of AI-generated sites. Mono survives only where
+ * it shows something genuinely technical (tags, step numbers); the label that
+ * merely names a section speaks in sentence case, marked by the smallest
+ * possible piece of the house device: one node.
  */
-export function Eyebrow({ children }: { children: ReactNode }) {
+export function Eyebrow({ children, onInk = false }: { children: ReactNode; onInk?: boolean }) {
+  // On ink the theme roles are wrong by construction (brandText resolves to a
+  // deep green in light mode); the fixed ink-accent does the same job there.
+  const color = onInk ? 'text-ink-accent' : 'text-brand-text';
+  const dot = onInk ? 'bg-ink-accent' : 'bg-brand';
   return (
-    <p className="font-mono text-eyebrow uppercase tracking-[0.08em] text-brand-text">{children}</p>
+    <p className={`flex items-center gap-2 text-small font-medium ${color}`}>
+      <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
+      {children}
+    </p>
   );
 }
 
@@ -37,11 +41,19 @@ export function Section({
   tint = false,
   glow = false,
   bleed = false,
+  ink = false,
   id,
 }: {
   children: ReactNode;
   className?: string;
   tint?: boolean;
+  /**
+   * The ink register: the section becomes a full-bleed slab of the same
+   * surface the footer is made of — dark in BOTH themes. The homepage is
+   * framed in it: it opens on ink and closes on ink, and everything between
+   * is paper. Carries grain, because ink is a peak surface.
+   */
+  ink?: boolean;
   /**
    * Adds an aurora wash behind the section. PUNCTUATION, and rationed like it:
    * the hero and one section, nothing else.
@@ -71,9 +83,17 @@ export function Section({
       // border-line`: hard flat separation, fighting the soft depth language,
       // and redundant next to the tint alternation that was already marking the
       // same boundaries. The tint stays; the rules go.
-      className={`relative isolate overflow-hidden ${tint ? 'bg-surface-alt' : ''} ${className}`}
+      className={`relative isolate overflow-hidden ${
+        ink ? 'grain bg-ink text-ink-fg' : tint ? 'bg-surface-alt' : ''
+      } ${className}`}
     >
-      {glow ? <div aria-hidden="true" className="aurora -z-10" /> : null}
+      {/* On ink, glow means the ink's own fixed washes plus the node field —
+          the texture that gives any glass sitting on this band something to
+          refract. The theme-flipping .aurora would haze a dark ground. */}
+      {glow ? <div aria-hidden="true" className={`${ink ? 'ink-aurora' : 'aurora'} -z-10`} /> : null}
+      {ink && glow ? (
+        <div aria-hidden="true" className="node-field-ink absolute inset-0 -z-10 opacity-40" />
+      ) : null}
       <div
         className={`relative mx-auto px-6 py-section md:px-8 ${
           bleed ? 'max-w-[104rem]' : 'max-w-container'
@@ -99,20 +119,28 @@ export function SectionHead({
   lead,
   aside,
   className = '',
+  onInk = false,
 }: {
   eyebrow?: string;
   title: string;
   lead?: string;
   aside?: ReactNode;
   className?: string;
+  onInk?: boolean;
 }) {
   return (
     <div className={`gap-8 md:grid md:grid-cols-12 md:items-end ${className}`}>
       <div className="md:col-span-7">
-        {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+        {eyebrow ? <Eyebrow onInk={onInk}>{eyebrow}</Eyebrow> : null}
         <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
         {lead ? (
-          <p className={`${RHYTHM.lead} max-w-measure text-lead text-muted`}>{lead}</p>
+          <p
+            className={`${RHYTHM.lead} max-w-measure text-lead ${
+              onInk ? 'text-ink-muted' : 'text-muted'
+            }`}
+          >
+            {lead}
+          </p>
         ) : null}
       </div>
       {aside ? (
@@ -138,7 +166,13 @@ export function InkPanel({
   className?: string;
 }) {
   return (
-    <div className={`rounded-lg bg-ink p-6 text-ink-fg md:p-8 ${className}`}>
+    <div
+      // border-ink-line, because "every panel gets a border" applies to this
+      // panel too — on the dark theme the bare slab sat at ~1.25:1 against a
+      // tinted section and had no edge at all. Grain, because the ink slab is
+      // one of the page's two peak surfaces.
+      className={`grain relative overflow-hidden rounded-lg border border-ink-line bg-ink p-6 text-ink-fg md:p-8 ${className}`}
+    >
       <span aria-hidden="true" className="mb-6 block h-1 w-8 rounded-full bg-ink-accent" />
       {children}
     </div>
@@ -163,8 +197,11 @@ export function FigureSlot({ className = '' }: { className?: string }) {
   );
 }
 
+// Body face, not display: a button is an instrument, not a headline. And
+// transition-colors, not transition-all — the only thing that should ever
+// animate on a button is its colour.
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-display text-[0.95rem] font-medium transition-all duration-base ease-brand';
+  'inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-small font-semibold transition-colors duration-base ease-brand';
 
 /**
  * Primary buttons sit on viridian-600, not the brand viridian-500. On 500 the
@@ -178,7 +215,13 @@ export function ButtonLink({
 }: {
   href: string;
   children: ReactNode;
-  variant?: 'primary' | 'secondary';
+  /**
+   * `ink` / `inkSecondary` are for buttons ON an ink surface. They use fixed
+   * scale values rather than theme roles, and that is correct, not lazy: ink
+   * is dark in both themes, so its button is the dark-theme button in both —
+   * viridian-400 fill with an ink label (7.51:1, see visual-identity §5).
+   */
+  variant?: 'primary' | 'secondary' | 'ink' | 'inkSecondary';
 }) {
   // The primary button is a solid fill. It is the one element on the page whose
   // contrast is not allowed to depend on what sits behind it.
@@ -188,10 +231,22 @@ export function ButtonLink({
   // "secondary" means. It is now an outlined button: a real 1px edge, body text,
   // and a border that goes brand on hover so the affordance is visible before
   // the pointer arrives, not after.
-  const style =
-    variant === 'primary'
-      ? 'bg-brand-action text-on-brand shadow-[0_6px_20px_-6px_rgba(53,108,91,.55)] hover:bg-viridian-700 hover:shadow-[0_10px_28px_-8px_rgba(53,108,91,.65)]'
-      : 'border border-line bg-transparent text-body hover:border-brand-action hover:text-brand-text';
+  // The shadow tint is viridian-700 (#396C43), the button's own hover colour —
+  // the previous value was an off-palette green that existed nowhere in the
+  // token scales. Static, because a shadow that grows on hover is motion the
+  // brand never asked for.
+  const styles = {
+    primary:
+      'bg-brand-action text-on-brand shadow-[0_6px_20px_-8px_rgba(57,108,67,.5)] hover:bg-viridian-700',
+    secondary:
+      'border border-line bg-transparent text-body hover:border-brand-action hover:text-brand-text',
+    ink: 'bg-viridian-400 text-stone-950 hover:bg-viridian-300',
+    // Clear glass: on ink the secondary action is a glass chip — the blur has
+    // the node field and aurora underneath it to sample, which is the one
+    // condition glass needs (see globals.css).
+    inkSecondary: 'glass-chip text-ink-fg hover:border-ink-accent hover:text-ink-accent',
+  } as const;
+  const style = styles[variant];
   return (
     <Link href={href} className={`${base} ${style}`}>
       {children}
@@ -200,11 +255,23 @@ export function ButtonLink({
 }
 
 /** A text link with an arrow, used to lead into a deeper page. */
-export function ArrowLink({ href, children }: { href: string; children: ReactNode }) {
+export function ArrowLink({
+  href,
+  children,
+  onInk = false,
+}: {
+  href: string;
+  children: ReactNode;
+  onInk?: boolean;
+}) {
   return (
     <Link
       href={href}
-      className="group inline-flex items-center gap-2 font-display font-medium text-brand-text underline decoration-viridian-300 underline-offset-4 transition-colors duration-base hover:decoration-current"
+      className={`group inline-flex items-center gap-2 font-medium underline underline-offset-4 transition-colors duration-base hover:decoration-current ${
+        onInk
+          ? 'text-ink-accent decoration-viridian-600'
+          : 'text-brand-text decoration-viridian-300'
+      }`}
     >
       {children}
       <span
@@ -265,7 +332,11 @@ export function Faq({ items }: { items: readonly { q: string; a: string }[] }) {
     <div className="divide-y divide-line border-y border-line">
       {items.map((item) => (
         <details key={item.q} className="group py-4">
-          <summary className="flex cursor-pointer list-none items-start justify-between gap-6 font-display text-h3 font-medium marker:content-none">
+          {/* Body face at lead size, not display h3: six display-set questions
+              in a row out-shouted the section heading above them, and the
+              size jump inside the accordion was one of the places the type
+              scale felt arbitrary. */}
+          <summary className="liquid-row -mx-3 flex cursor-pointer list-none items-start justify-between gap-6 px-3 py-2 text-lead font-medium marker:content-none">
             {item.q}
             <span
               aria-hidden="true"

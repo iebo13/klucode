@@ -17,6 +17,10 @@ const de = {
         description:
           'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis — Frontend, Backend und Server von einer Person.',
       },
+      // Plain spaces in this description on purpose: check-meta parses and
+      // budgets the raw source string (an escape counts six chars), and a
+      // search snippet never line-breaks inside a price. The NBSP rule
+      // applies to rendered copy.
       services: {
         title: 'Leistungen — KluCode',
         description:
@@ -90,10 +94,12 @@ const de = {
 
   home: {
     heroEyebrow: 'Softwareentwicklung · Düsseldorf',
-    heroTitle: 'Software, mit der Ihr Betrieb',
+    // NBSP: „mit" must not separate from „der" — at display size the balanced
+    // wrap otherwise breaks after „mit" and strands the pronoun.
+    heroTitle: 'Software, mit der Ihr Betrieb',
     heroTitleAccent: 'tatsächlich arbeitet.',
     heroLead:
-      'Web-Anwendungen, interne Tools und Websites — vom ersten Klick bis zum laufenden Server. Ein Ansprechpartner, ein Festpreis, und der Mensch im Termin ist derselbe, der den Code schreibt.',
+      'Web-Anwendungen, interne Tools und Websites, vom ersten Klick bis zum laufenden Server. Ein Ansprechpartner, ein Festpreis. Und der Mensch im Termin ist derselbe, der den Code schreibt.',
     heroProof: [
       'Drei Systeme im Produktivbetrieb',
       'Informatik B.Sc. · 4 Jahre Berufserfahrung',
@@ -123,7 +129,7 @@ const de = {
       'Eine Person, die mit Ihnen spricht, Ihren Ablauf versteht und danach das ganze System baut — Oberfläche, Logik, Datenbank, Server. Der Preis steht fest, bevor die erste Zeile geschrieben ist.',
 
     servicesEyebrow: 'Leistungen',
-    servicesTitle: 'Vier Wege, wie wir zusammenarbeiten.',
+    servicesTitle: 'Vier Wege zur Zusammenarbeit.',
     servicesLink: 'Alle Leistungen und Preise',
 
     workEyebrow: 'Projekte',
@@ -135,7 +141,7 @@ const de = {
     approachEyebrow: 'Ansatz',
     approachTitle: 'Warum das in Wochen geht und nicht in Quartalen.',
     approachLead:
-      'Weil kein Angebot durch drei Abteilungen läuft, kein Briefing übersetzt werden muss — und weil ich modern arbeite. Was das konkret heißt, steht offen auf einer eigenen Seite.',
+      'Kein Angebot läuft durch drei Abteilungen, kein Briefing wird zweimal übersetzt. Und ich arbeite KI-gestützt. Was das konkret heißt, steht offen auf einer eigenen Seite.',
     approachLink: 'So arbeite ich',
 
     faqEyebrow: 'Häufige Fragen',
@@ -143,7 +149,7 @@ const de = {
     faq: [
       {
         q: 'Was kostet das?',
-        a: 'Eine Website beginnt bei 2.500 €, eine individuelle Web-Anwendung bei 9.000 €. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung — nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
+        a: 'Eine Website beginnt bei 2.500\u00A0€, eine individuelle Web-Anwendung bei 9.000\u00A0€. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung — nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
       },
       {
         q: 'Wie lange dauert es?',
@@ -159,7 +165,7 @@ const de = {
       },
       {
         q: 'Machen Sie auch die Wartung?',
-        a: 'Ja, ab 90 € im Monat: Updates, Sicherheits-Patches, Backups, kleine Änderungen. Sie müssen es nicht buchen — aber Software, die niemand pflegt, wird nach zwei Jahren zum Problem.',
+        a: 'Ja, ab 90\u00A0€ im Monat: Updates, Sicherheits-Patches, Backups, kleine Änderungen. Sie müssen es nicht buchen — aber Software, die niemand pflegt, wird nach zwei Jahren zum Problem.',
       },
       {
         q: 'Arbeiten Sie auch außerhalb von Düsseldorf?',
@@ -189,7 +195,7 @@ const de = {
           'Ohne Cookie-Banner, weil ohne Tracking',
           'Einweisung, damit Sie Inhalte selbst pflegen können',
         ],
-        price: '2.500 €',
+        price: '2.500\u00A0€',
         priceNote: '2 bis 3 Wochen · Festpreis',
       },
       {
@@ -205,7 +211,7 @@ const de = {
           'Erste lauffähige Version nach etwa zwei Wochen',
           'Dokumentation und Übergabe an Ihr Team',
         ],
-        price: '9.000 €',
+        price: '9.000\u00A0€',
         priceNote: '4 bis 10 Wochen · Festpreis',
       },
       {
@@ -220,7 +226,7 @@ const de = {
           'Remote, im Rheinland auch vor Ort',
           'Ab fünf Tagen buchbar',
         ],
-        price: '680 €',
+        price: '680\u00A0€',
         priceNote: 'pro Tag · Rahmenvertrag möglich',
         priceUnit: 'day',
       },
@@ -236,7 +242,7 @@ const de = {
           'Kleine Änderungen im vereinbarten Umfang',
           'Fester Ansprechpartner, Reaktion innerhalb von 24 Stunden',
         ],
-        price: '90 €',
+        price: '90\u00A0€',
         priceNote: 'pro Monat · monatlich kündbar',
         priceUnit: 'month',
       },
@@ -324,7 +330,7 @@ const de = {
       },
       {
         title: 'Leistungsbeschreibung und Festpreis',
-        body: 'Eine Seite: was gebaut wird, was ausdrücklich nicht, bis wann, zu welchem Preis. Sie unterschreiben eine Zahl, keine Schätzung. Diese Seite ist später auch die Grundlage, an der wir beide messen, ob das Ergebnis stimmt.',
+        body: 'Eine Seite: was gebaut wird, was ausdrücklich nicht, bis wann, zu welchem Preis. Sie unterschreiben eine Zahl, keine Schätzung. Diese Seite ist später auch der Maßstab, an dem sich das Ergebnis messen lässt.',
       },
       {
         title: 'Bauen, mit Zwischenständen',

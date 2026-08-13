@@ -44,7 +44,7 @@
   --kc-dangerOnDark: #F19F93;
 
   /* --- type ------------------------------------------------------- */
-  --kc-font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --kc-font-display: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
   --kc-font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --kc-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --kc-text-eyebrow: 0.75rem;
@@ -54,7 +54,7 @@
   --kc-text-h3: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
   --kc-text-h2: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
   --kc-text-h1: clamp(2.25rem, 1.6rem + 3vw, 4rem);
-  --kc-text-display: clamp(2.75rem, 1.7rem + 4.6vw, 5rem);
+  --kc-text-display: clamp(2.875rem, 1.6rem + 5.4vw, 6rem);
 
   /* --- nav glass (scheme-independent parts) ----------------------- */
   --kc-glass-blur: 14px;

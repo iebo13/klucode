@@ -4,9 +4,12 @@ The KluCode website. Next.js 15 (App Router) exported to static files —
 no server, no database, no runtime dependencies.
 
 ```bash
+# from this directory (web/) — or from the repo root, whose package.json
+# forwards dev/build/start here
 npm install
-npm run dev          # http://localhost:3000  (redirects to /de)
+npm run dev          # http://localhost:3000  (dev-only redirect to /de)
 npm run build        # → out/   (static, deployable anywhere)
+npm run start        # serve the built out/ directory
 npm run lint && npm run typecheck
 ```
 

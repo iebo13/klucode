@@ -109,7 +109,7 @@ export const profile = {
 
   // --- commercial --------------------------------------------------------
   /** Shown in the header. Update it; a stale availability line is worse than none. */
-  availableFrom: { de: 'Januar', en: 'January' },
+  availableFrom: { de: 'September', en: 'September' },
   responseTime: { de: '24 Stunden', en: 'one working day' },
 
   /**

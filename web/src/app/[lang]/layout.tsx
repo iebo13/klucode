@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { Inter, JetBrains_Mono, Schibsted_Grotesk } from 'next/font/google';
 import { notFound } from 'next/navigation';
 
 import { getContent } from '@/content';
@@ -17,7 +17,7 @@ import '../globals.css';
  * visitor IP reaches Google — which is the whole point in Germany after
  * LG München I, Az. 3 O 17493/20. See brand/03-visual-identity.md §6.2.
  */
-const display = Space_Grotesk({
+const display = Schibsted_Grotesk({
   subsets: ['latin'],
   weight: ['500', '700'],
   variable: '--font-display',

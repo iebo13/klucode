@@ -50,13 +50,15 @@ export function Header({
   const themeLabels = { toDark: ui.themeToDark, toLight: ui.themeToLight };
 
   return (
-    <header className="sticky top-0 z-50 px-4 pt-4 md:px-6">
+    <header className="sticky top-0 z-50 px-4 pt-2 md:px-6">
       {/* A floating capsule rather than a full-width bar: the chrome is an
           object sitting on the page, with content visibly flowing underneath
           it. This is the ONLY element on the site that carries .glass-nav —
           the only one where a backdrop blur has moving content to sample and
-          therefore earns its compositing layer. */}
-      <div className="glass-nav mx-auto flex max-w-container items-center justify-between gap-6 rounded-full py-3 pl-6 pr-3 md:pl-8 md:pr-4">
+          therefore earns its compositing layer. Deliberately slim: pt-2 above,
+          py-2 inside — a chrome that takes 80px of the viewport before the
+          page starts is chrome arguing with the content. */}
+      <div className="glass-nav mx-auto flex max-w-container items-center justify-between gap-3 rounded-full py-2 pl-4 pr-2 md:gap-6 md:pl-6">
         <Link
           href={pathFor('home', lang)}
           className="shrink-0 text-[1.35rem]"
@@ -65,27 +67,27 @@ export function Header({
           <Logo />
         </Link>
 
-        <nav aria-label={ui.menu} className="hidden items-center gap-6 lg:flex">
+        <nav aria-label={ui.menu} className="hidden items-center gap-1 lg:flex">
           {links.map((l) => (
             <Link
               key={l.key}
               href={l.href}
               aria-current={current === l.key ? 'page' : undefined}
-              className={`text-small transition-colors duration-base ${
-                current === l.key ? 'text-brand-text' : 'text-muted hover:text-body'
+              className={`nav-link px-3 py-2 text-small ${
+                current === l.key ? 'text-body' : 'text-muted hover:text-body'
               }`}
             >
               {l.label}
             </Link>
           ))}
 
-          <span aria-hidden="true" className="h-4 w-px bg-line" />
+          <span aria-hidden="true" className="mx-2 h-4 w-px bg-line" />
 
           <Link
             href={alternatePath(current, lang)}
             lang={lang === 'de' ? 'en' : 'de'}
             aria-label={ui.switchLangLabel}
-            className="text-small text-muted transition-colors duration-base hover:text-body"
+            className="nav-link px-3 py-2 text-small text-muted hover:text-body"
           >
             {ui.switchLang}
           </Link>
@@ -94,7 +96,7 @@ export function Header({
 
           <Link
             href={pathFor('contact', lang)}
-            className="rounded-full bg-brand-action px-4 py-3 text-small font-medium text-on-brand shadow-[0_6px_18px_-6px_rgba(53,108,91,.5)] transition-colors duration-base hover:bg-viridian-700"
+            className="rounded-full bg-brand-action px-4 py-2 text-small font-semibold text-on-brand transition-colors duration-base hover:bg-viridian-700"
           >
             {nav.contact}
           </Link>
@@ -104,10 +106,10 @@ export function Header({
             one action a business site exists for — ahead of the theme toggle,
             which moves into the drawer. Most first visits from local owners
             are on a phone; contact must not be a tap deeper than the menu. */}
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-1 lg:hidden">
           <Link
             href={pathFor('contact', lang)}
-            className="rounded-full bg-brand-action px-4 py-2 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
+            className="rounded-full bg-brand-action px-3 py-2 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
           >
             {nav.contact}
           </Link>
@@ -117,7 +119,7 @@ export function Header({
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav"
-            className="rounded-full border border-line px-4 py-2 text-small transition-colors duration-base hover:border-brand-action"
+            className="rounded-full border border-line px-3 py-2 text-small transition-colors duration-base hover:border-brand-action"
           >
             {open ? ui.close : ui.menu}
           </button>
@@ -130,10 +132,11 @@ export function Header({
         id="mobile-nav"
         hidden={!open}
         aria-label={ui.menu}
-        // A flat panel, not glass. Glass under glass is a nested
-        // backdrop-filter: the drawer would sample a capsule that is itself
-        // sampling the page, which costs two layers and looks like neither.
-        className="panel mx-auto mt-3 max-w-container px-6 py-6 lg:hidden"
+        // The drawer is part of the navigation layer, so it shares the
+        // capsule's glass. This is NOT glass-under-glass: the drawer is a
+        // sibling of the capsule, not nested inside it, so each samples the
+        // page exactly once.
+        className="glass-nav mx-auto mt-3 max-w-container rounded-lg px-6 py-6 lg:hidden"
       >
         <ul className="flex flex-col gap-1">
           {[

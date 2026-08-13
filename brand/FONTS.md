@@ -9,11 +9,16 @@ deliberate constraint, for three reasons:
    (see `03-visual-identity.md` §6.2).
 3. **Outlines may be embedded in artwork**, which is what the logo files do.
 
-| Role    | Typeface       | Designer                | Source                                                    |
-| ------- | -------------- | ----------------------- | --------------------------------------------------------- |
-| Display | Space Grotesk  | Florian Karsten         | https://github.com/floriankarsten/space-grotesk           |
-| Body    | Inter          | Rasmus Andersson        | https://github.com/rsms/inter                             |
-| Mono    | JetBrains Mono | JetBrains               | https://github.com/JetBrains/JetBrainsMono                |
+| Role    | Typeface          | Designer         | Source                                                    |
+| ------- | ----------------- | ---------------- | --------------------------------------------------------- |
+| Display | Schibsted Grotesk | Schibsted        | https://fonts.google.com/specimen/Schibsted+Grotesk       |
+| Body    | Inter             | Rasmus Andersson | https://github.com/rsms/inter                             |
+| Mono    | JetBrains Mono    | JetBrains        | https://github.com/JetBrains/JetBrainsMono                |
+
+> **Changed 2026-08:** the display face was Space Grotesk. It was replaced
+> because it had become the recognisable default of AI-generated sites — the
+> opposite of a signature. Schibsted Grotesk keeps the same modern grotesque
+> register with a sharper, more editorial voice, and is likewise OFL.
 
 ---
 
@@ -39,6 +44,11 @@ which is why the licence note above matters.
 
 The wordmark in every file under `logo/` is **outlined paths**, generated from
 Space Grotesk Bold by `logo/_build/build_logos.py`.
+
+> **Open task since the 2026-08 display-face change:** the logo SVGs (and the
+> OG card built from them) still carry Space Grotesk outlines. Point
+> `build_logos.py` at Schibsted Grotesk Bold and regenerate, so the exported
+> wordmark matches the site's live-text wordmark again.
 
 This is not a stylistic choice. An SVG logo containing a `<text>` element
 silently falls back to Arial on any machine without the font installed — a

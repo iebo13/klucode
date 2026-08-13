@@ -15,15 +15,22 @@ import type { Content } from '@/content';
 import { filled, openTodos, profile } from '@/content/profile';
 import { pathFor, type Lang } from '@/lib/routes';
 
+/**
+ * Every page opens on ink, exactly like the homepage — the frame is a site
+ * rule, not a homepage feature. Pulled up under the capsule (-mt-12 against
+ * the ~48px header) so the slab starts at the viewport edge; the content
+ * padding is tight on purpose, because dead space between the capsule and
+ * the first line is what breaks the opening's flow.
+ */
 function PageHero({ eyebrow, title, lead }: { eyebrow: string; title: string; lead: string }) {
   return (
-    <section className="relative isolate overflow-hidden">
-      <div aria-hidden="true" className="aurora -z-10" />
-      <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-40" />
-      <div className="relative mx-auto max-w-container px-6 pb-16 pt-16 md:px-8 md:pt-24">
-        <Eyebrow>{eyebrow}</Eyebrow>
+    <section className="grain relative isolate -mt-12 overflow-hidden bg-ink text-ink-fg">
+      <div aria-hidden="true" className="ink-aurora -z-10" />
+      <div aria-hidden="true" className="node-field-ink absolute inset-0 -z-10 opacity-60" />
+      <div className="relative mx-auto max-w-container px-6 pb-12 pt-16 md:px-8 md:pt-24">
+        <Eyebrow onInk>{eyebrow}</Eyebrow>
         <h1 className={`${RHYTHM.heading} max-w-4xl text-h1`}>{title}</h1>
-        <p className={`${RHYTHM.lead} max-w-measure text-lead text-muted`}>{lead}</p>
+        <p className={`${RHYTHM.lead} max-w-measure text-lead text-ink-muted`}>{lead}</p>
       </div>
     </section>
   );

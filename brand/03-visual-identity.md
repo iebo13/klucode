@@ -322,21 +322,24 @@ them.
 
 ## 6. Typography
 
-| Role        | Typeface          | Weights   | Licence | Used for                                       |
-| ----------- | ----------------- | --------- | ------- | ---------------------------------------------- |
-| Display     | **Space Grotesk** | 500, 700  | OFL     | Headlines, the wordmark, numbers in stat blocks |
-| Body        | **Inter**         | 400/500/600 | OFL   | All running text, UI, forms                     |
-| Mono        | **JetBrains Mono**| 400, 500  | OFL     | Eyebrow labels, tags, stack lists, code          |
+| Role        | Typeface              | Weights   | Licence | Used for                                       |
+| ----------- | --------------------- | --------- | ------- | ---------------------------------------------- |
+| Display     | **Schibsted Grotesk** | 500, 700  | OFL     | Headlines, the wordmark, numbers in stat blocks |
+| Body        | **Inter**             | 400/500/600 | OFL   | All running text, UI, forms                     |
+| Mono        | **JetBrains Mono**    | 400, 500  | OFL     | Tags, stack lists, step numbers, code            |
 
 All three are open-source and self-hostable — which is not an aesthetic
 preference but a legal one, see §6.2.
 
-**Why these.** Space Grotesk is a geometric grotesque with enough irregularity to
-be *recognisable* rather than merely neutral, and its `K` and `C` echo the mark's
-geometry. Inter is the most legible German-language UI face available free —
-important when your copy is full of `ä`, `ö`, `ü`, `ß` and 20-letter compounds.
-JetBrains Mono in small caps-height labels is the quiet signal that a developer
-built this page; it does a job no amount of copy can.
+**Why these.** Schibsted Grotesk (2026-08, replacing Space Grotesk) is a sharp
+contemporary grotesque with a genuinely distinctive voice at display sizes —
+chosen after Space Grotesk became the documented default face of AI-generated
+sites, which made the wordmark read as generated rather than designed. Inter is
+the most legible German-language UI face available free — important when your
+copy is full of `ä`, `ö`, `ü`, `ß` and 20-letter compounds. JetBrains Mono is
+the quiet signal that a developer built this page — but only where it shows
+something genuinely technical (tags, step numbers, code). Uppercase-mono
+*labels* were retired along with Space Grotesk, for the same reason.
 
 ### 6.1 Type rules
 
