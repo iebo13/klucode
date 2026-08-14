@@ -34,7 +34,7 @@ system, and a production-ready bilingual website.
 
 ## The short version
 
-**Name.** _Klu_ is from **Klausmann**, and from German **_klug_** — smart,
+**Name.** _Klu_ is from **Klusmann**, and from German **_klug_** — smart,
 considered — and it reads as English **_clue_**. The surname says _who_, _klug_
 says _how_, _clue_ says _what you get_. All three point at the same claim: the
 value is the thinking that happens before the typing.

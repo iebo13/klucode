@@ -250,7 +250,6 @@ const en = {
     notBody: 'The fastest way to be believed is to say where I am not the right person:',
     notItems: [
       'Native iOS and Android apps',
-      'Graphic design, print, logo work',
       'SEO or social media as an ongoing service',
       'Off-the-shelf shop systems: there are better and cheaper options',
       'Staffing teams or running projects beyond twelve months',
@@ -379,7 +378,7 @@ const en = {
       'What matters to me: I do not build software that impresses. I build software someone uses on a Monday morning without thinking about it, and that someone else can still work on two years later.',
     ],
     nameNote:
-      'The "Klu" in KluCode comes from Klausmann. And from the German "klug", meaning smart and considered, because that is the part of the work that counts: what gets built is decided before the first line of code.',
+      'The "Klu" in KluCode comes from Klusmann. And from the German "klug", meaning smart and considered, because that is the part of the work that counts: what gets built is decided before the first line of code.',
     factsTitle: 'The short version',
     facts: [
       { label: 'Based in', value: 'Düsseldorf, North Rhine-Westphalia' },
@@ -437,7 +436,8 @@ const en = {
       {
         heading: 'Service provider',
         paragraphs: [
-          `${profile.firstName} ${profile.lastName}`,
+          'KluCode · individuelle Softwarelösungen',
+          `Owner: ${profile.firstName} ${profile.lastName}`,
           profile.role.en,
           `${profile.street}`,
           `${profile.postalCode} ${profile.city}`,

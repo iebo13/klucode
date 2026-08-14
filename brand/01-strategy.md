@@ -13,7 +13,7 @@ compete:
 
 | Source                | Reading                                                   | What it promises                                          |
 | --------------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **Klausmann**         | your own surname, shortened                                | A person stands behind this, not a shell company.          |
+| **Klusmann**         | your own surname, shortened                                | A person stands behind this, not a shell company.          |
 | German **klug**       | smart, considered, wise — not merely *clever*              | Code that was thought about before it was written.          |
 | English **clue**      | the insight that unlocks the problem                        | Someone who works out what you actually need.               |
 
@@ -33,12 +33,12 @@ before the typing**. Every piece of copy in this kit is downstream of that idea.
 in the second line of a LinkedIn profile. It takes one sentence and it does more
 work than a paragraph of adjectives:
 
-> „KluCode — das *Klu* kommt von Klausmann. Und von *klug*, weil der Teil der
+> „KluCode — das *Klu* kommt von Klusmann. Und von *klug*, weil der Teil der
 > Arbeit ist, der zählt."
 
 One caution: because the mark is now partly a family name, the trademark check in
 the next section matters *more*, not less. Check for existing marks from anyone
-called Klausmann in software or IT services before you register anything.
+called Klusmann in software or IT services before you register anything.
 
 Pronunciation to use out loud: *KLU-code* ("kloo"), not "K-L-U".
 

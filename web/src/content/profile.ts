@@ -41,8 +41,8 @@ type Insurance = {
 export const profile = {
   // --- identity ----------------------------------------------------------
   brand: 'KluCode',
-  firstName: todo('Vorname'),
-  lastName: 'Klausmann',
+  firstName: 'Ibrahim',
+  lastName: 'Klusmann',
   role: {
     de: 'Freiberuflicher Softwareentwickler',
     en: 'Freelance software developer',
@@ -51,13 +51,13 @@ export const profile = {
   // --- contact -----------------------------------------------------------
   // § 5 DDG requires an email address PLUS a second fast channel. A phone
   // number is the simplest way to satisfy that.
-  email: todo('E-Mail-Adresse'),
+  email: 'info@klucode.de',
   phone: todo('Telefonnummer'),
 
   // --- ladungsfähige Anschrift -------------------------------------------
   // Must be a real street address. A P.O. box does not satisfy § 5 DDG.
-  street: todo('Straße und Hausnummer'),
-  postalCode: todo('PLZ'),
+  street: 'Heyestraße 140',
+  postalCode: '40625',
   city: 'Düsseldorf',
   region: { de: 'Nordrhein-Westfalen', en: 'North Rhine-Westphalia' },
   country: { de: 'Deutschland', en: 'Germany' },

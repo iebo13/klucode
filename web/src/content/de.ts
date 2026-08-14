@@ -255,7 +255,6 @@ const de = {
       'Der schnellste Weg, glaubwürdig zu sein, ist zu sagen, wo ich nicht der Richtige bin:',
     notItems: [
       'Native Apps für iOS und Android',
-      'Grafikdesign, Print, Logoentwicklung',
       'SEO- oder Social-Media-Betreuung als Dauerleistung',
       'Shopsysteme von der Stange: dafür gibt es Bessere und Günstigere',
       'Teams stellen oder Projekte über zwölf Monate leiten',
@@ -384,7 +383,7 @@ const de = {
       'Was mir dabei wichtig ist: Ich baue keine Software, die beeindruckt. Ich baue Software, die jemand am Montagmorgen benutzt, ohne darüber nachzudenken, und die nach zwei Jahren noch jemand anderes weiterentwickeln kann.',
     ],
     nameNote:
-      'Das „Klu“ in KluCode kommt von Klausmann. Und von „klug“, weil das der Teil der Arbeit ist, der zählt: Die Entscheidung, was gebaut wird, fällt vor der ersten Zeile Code.',
+      'Das „Klu“ in KluCode kommt von Klusmann. Und von „klug“, weil das der Teil der Arbeit ist, der zählt: Die Entscheidung, was gebaut wird, fällt vor der ersten Zeile Code.',
     factsTitle: 'Kurz und sachlich',
     facts: [
       { label: 'Standort', value: 'Düsseldorf, Nordrhein-Westfalen' },
@@ -442,7 +441,8 @@ const de = {
       {
         heading: 'Diensteanbieter',
         paragraphs: [
-          `${profile.firstName} ${profile.lastName}`,
+          'KluCode · individuelle Softwarelösungen',
+          `Inhaber: ${profile.firstName} ${profile.lastName}`,
           profile.role.de,
           `${profile.street}`,
           `${profile.postalCode} ${profile.city}`,
