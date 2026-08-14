@@ -49,8 +49,15 @@ export function Header({
   const links = NAV_KEYS.map((k) => ({ key: k, href: pathFor(k, lang), label: nav[k] }));
   const themeLabels = { toDark: ui.themeToDark, toLight: ui.themeToLight };
 
+  // Fixed, not sticky: a sticky header occupies layout space, which forced
+  // the ink heroes to guess its height with a negative margin — and any
+  // rendering that made the header taller than the guess (zoom, narrow
+  // viewports, font settings) opened a page-coloured seam at the viewport
+  // top. A fixed overlay takes no space at all, so the ink slab starts at
+  // pixel zero by construction. Every page opens with a hero whose top
+  // padding clears the capsule.
   return (
-    <header className="sticky top-0 z-50 px-4 pt-2 md:px-6">
+    <header className="fixed inset-x-0 top-0 z-50 px-4 pt-2 md:px-6">
       {/* A floating capsule rather than a full-width bar: the chrome is an
           object sitting on the page, with content visibly flowing underneath
           it. This is the ONLY element on the site that carries .glass-nav —

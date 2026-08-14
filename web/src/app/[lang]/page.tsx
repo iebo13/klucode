@@ -85,10 +85,11 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           The slab is pulled up under the glass capsule so the frame starts at
           the viewport edge, in both themes. All colour on this surface uses the fixed ink roles — ink is
           dark in both themes, so nothing here flips. */}
-      {/* -mt-16 must EXCEED the header's total height (~52px), not approximate
-          it: at -mt-12 the slab fell 4px short and a page-coloured seam showed
-          above the capsule at the very top of the viewport. */}
-      <section className="grain relative isolate -mt-16 overflow-hidden bg-ink text-ink-fg">
+      {/* The header is a fixed overlay (see header.tsx), so this section is
+          the first thing in the layout flow and the ink starts at the
+          viewport's first pixel — no margin arithmetic against the header's
+          height, which proved fragile across zoom levels and viewports. */}
+      <section className="grain relative isolate overflow-hidden bg-ink text-ink-fg">
         <div aria-hidden="true" className="ink-aurora -z-10" />
         <div aria-hidden="true" className="node-field-ink absolute inset-0 -z-10 opacity-60" />
         <div className="relative mx-auto max-w-container px-6 pb-section pt-24 md:px-8">
