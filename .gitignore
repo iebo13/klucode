@@ -23,3 +23,7 @@ brand/logo/_build/.cache/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Playwright MCP session artifacts (screenshots/snapshots from design verification)
+.playwright-mcp/
+de-dark-hero.png

@@ -5,10 +5,13 @@
   "description": "klucode.de — the KluCode website. Static export, no runtime dependencies, no third-party requests.",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/emit-root-redirect.mjs",
+    "build": "next build && node scripts/emit-root-redirect.mjs && node scripts/emit-404.mjs",
     "start": "npx serve out",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "check:profile": "node scripts/check-profile.mjs",
+    "check:meta": "node scripts/check-meta.mjs",
+    "check:copy": "node scripts/check-copy.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -32,6 +35,6 @@
     "typescript": "^5.7.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }

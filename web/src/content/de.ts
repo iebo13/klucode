@@ -1,18 +1,26 @@
-import { profile } from './profile';
+import { policyDate, profile } from './profile';
 import type { Content } from './types';
 
 const de = {
   meta: {
     siteName: 'KluCode',
-    title: 'KluCode — Individuelle Software aus Düsseldorf',
+    // „Webentwicklung Düsseldorf" is what a local owner actually types into
+    // Google; the old title left the query term entirely to the description.
+    // „Individuelle" moved there — the 60-char budget check-meta.mjs enforces
+    // does not fit all three of brand, positioning word and query term.
+    title: 'KluCode — Software & Webentwicklung in Düsseldorf',
     description:
       'Ich baue die Software, mit der Ihr Betrieb tatsächlich arbeitet: Web-Anwendungen, interne Tools und Websites. Ein Ansprechpartner, Festpreis, vom ersten Klick bis zum laufenden Server.',
     pages: {
       home: {
-        title: 'KluCode — Individuelle Software aus Düsseldorf',
+        title: 'KluCode — Software & Webentwicklung in Düsseldorf',
         description:
-          'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis — Frontend, Backend, Datenbank und Server von einer Person.',
+          'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis — Frontend, Backend und Server von einer Person.',
       },
+      // Plain spaces in this description on purpose: check-meta parses and
+      // budgets the raw source string (an escape counts six chars), and a
+      // search snippet never line-breaks inside a price. The NBSP rule
+      // applies to rendered copy.
       services: {
         title: 'Leistungen — KluCode',
         description:
@@ -21,7 +29,7 @@ const de = {
       work: {
         title: 'Projekte — KluCode',
         description:
-          'Drei ausgelieferte Systeme im Produktivbetrieb: CRM mit Provisionsverwaltung und Vergleichsportal, ein Kassensystem für die Gastronomie und eine Landingpage samt Kampagne.',
+          'Drei Systeme im Produktivbetrieb: ein CRM mit Provisionsverwaltung, ein Kassensystem für die Gastronomie und eine Landingpage samt Kampagne.',
       },
       approach: {
         title: 'Ansatz — KluCode',
@@ -40,7 +48,8 @@ const de = {
       },
       imprint: {
         title: 'Impressum — KluCode',
-        description: 'Angaben gemäß § 5 DDG.',
+        description:
+          'Angaben gemäß § 5 DDG: Diensteanbieter, Anschrift, Kontakt und Verantwortlichkeit für die Inhalte von klucode.de.',
       },
       privacy: {
         title: 'Datenschutzerklärung — KluCode',
@@ -69,6 +78,11 @@ const de = {
     close: 'Schließen',
     switchLang: 'EN',
     switchLangLabel: 'Switch to English',
+    themeToDark: 'Dunkles Design',
+    themeToLight: 'Helles Design',
+    footerNavLabel: 'Seiten',
+    footerLegalLabel: 'Rechtliches',
+    footerSocialLabel: 'Profile',
     backHome: 'Zur Startseite',
     stack: 'Technik',
     before: 'Vorher',
@@ -80,10 +94,12 @@ const de = {
 
   home: {
     heroEyebrow: 'Softwareentwicklung · Düsseldorf',
-    heroTitle: 'Software, mit der Ihr Betrieb',
+    // NBSP: „mit" must not separate from „der" — at display size the balanced
+    // wrap otherwise breaks after „mit" and strands the pronoun.
+    heroTitle: 'Software, mit der Ihr Betrieb',
     heroTitleAccent: 'tatsächlich arbeitet.',
     heroLead:
-      'Web-Anwendungen, interne Tools und Websites — vom ersten Klick bis zum laufenden Server. Ein Ansprechpartner, ein Festpreis, und der Mensch im Termin ist derselbe, der den Code schreibt.',
+      'Web-Anwendungen, interne Tools und Websites, vom ersten Klick bis zum laufenden Server. Ein Ansprechpartner, ein Festpreis. Und der Mensch im Termin ist derselbe, der den Code schreibt.',
     heroProof: [
       'Drei Systeme im Produktivbetrieb',
       'Informatik B.Sc. · 4 Jahre Berufserfahrung',
@@ -110,10 +126,10 @@ const de = {
     ],
     answerTitle: 'Die dritte Möglichkeit',
     answerBody:
-      'Eine ausgebildete Fachkraft, die direkt mit Ihnen spricht, Ihren Ablauf versteht und das ganze System baut — Oberfläche, Logik, Datenbank, Server. Zum Festpreis, den Sie kennen, bevor irgendetwas anfängt.',
+      'Eine Person, die mit Ihnen spricht, Ihren Ablauf versteht und danach das ganze System baut — Oberfläche, Logik, Datenbank, Server. Der Preis steht fest, bevor die erste Zeile geschrieben ist.',
 
     servicesEyebrow: 'Leistungen',
-    servicesTitle: 'Vier Wege, wie wir zusammenarbeiten.',
+    servicesTitle: 'Vier Wege zur Zusammenarbeit.',
     servicesLink: 'Alle Leistungen und Preise',
 
     workEyebrow: 'Projekte',
@@ -125,7 +141,7 @@ const de = {
     approachEyebrow: 'Ansatz',
     approachTitle: 'Warum das in Wochen geht und nicht in Quartalen.',
     approachLead:
-      'Weil kein Angebot durch drei Abteilungen läuft, kein Briefing übersetzt werden muss — und weil ich modern arbeite. Was das konkret heißt, steht offen auf einer eigenen Seite.',
+      'Kein Angebot läuft durch drei Abteilungen, kein Briefing wird zweimal übersetzt. Und ich arbeite KI-gestützt. Was das konkret heißt, steht offen auf einer eigenen Seite.',
     approachLink: 'So arbeite ich',
 
     faqEyebrow: 'Häufige Fragen',
@@ -133,7 +149,7 @@ const de = {
     faq: [
       {
         q: 'Was kostet das?',
-        a: 'Eine Website beginnt bei 2.500 €, eine individuelle Web-Anwendung bei 9.000 €. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung — nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
+        a: 'Eine Website beginnt bei 2.500\u00A0€, eine individuelle Web-Anwendung bei 9.000\u00A0€. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung — nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
       },
       {
         q: 'Wie lange dauert es?',
@@ -149,7 +165,7 @@ const de = {
       },
       {
         q: 'Machen Sie auch die Wartung?',
-        a: 'Ja, ab 90 € im Monat: Updates, Sicherheits-Patches, Backups, kleine Änderungen. Sie müssen es nicht buchen — aber Software, die niemand pflegt, wird nach zwei Jahren zum Problem.',
+        a: 'Ja, ab 90\u00A0€ im Monat: Updates, Sicherheits-Patches, Backups, kleine Änderungen. Sie müssen es nicht buchen — aber Software, die niemand pflegt, wird nach zwei Jahren zum Problem.',
       },
       {
         q: 'Arbeiten Sie auch außerhalb von Düsseldorf?',
@@ -179,7 +195,7 @@ const de = {
           'Ohne Cookie-Banner, weil ohne Tracking',
           'Einweisung, damit Sie Inhalte selbst pflegen können',
         ],
-        price: '2.500 €',
+        price: '2.500\u00A0€',
         priceNote: '2 bis 3 Wochen · Festpreis',
       },
       {
@@ -195,7 +211,7 @@ const de = {
           'Erste lauffähige Version nach etwa zwei Wochen',
           'Dokumentation und Übergabe an Ihr Team',
         ],
-        price: '9.000 €',
+        price: '9.000\u00A0€',
         priceNote: '4 bis 10 Wochen · Festpreis',
       },
       {
@@ -210,8 +226,9 @@ const de = {
           'Remote, im Rheinland auch vor Ort',
           'Ab fünf Tagen buchbar',
         ],
-        price: '680 €',
+        price: '680\u00A0€',
         priceNote: 'pro Tag · Rahmenvertrag möglich',
+        priceUnit: 'day',
       },
       {
         key: 'care',
@@ -225,8 +242,9 @@ const de = {
           'Kleine Änderungen im vereinbarten Umfang',
           'Fester Ansprechpartner, Reaktion innerhalb von 24 Stunden',
         ],
-        price: '90 €',
+        price: '90\u00A0€',
         priceNote: 'pro Monat · monatlich kündbar',
+        priceUnit: 'month',
       },
     ],
     howEyebrow: 'Abrechnung',
@@ -254,7 +272,7 @@ const de = {
         key: 'crm',
         title: 'CRM, Provisionsverwaltung und Vergleichsportal',
         sector: 'Vertriebsorganisation',
-        scope: 'Größtes Projekt · Full-Stack',
+        scope: 'Full-Stack · drei Systeme, eine Datenbank',
         summary:
           'Drei Systeme, die vorher drei Excel-Dateien waren — Kundenverwaltung, Provisionsabrechnung und ein öffentliches Vergleichsportal, die dieselben Daten teilen.',
         before:
@@ -269,7 +287,7 @@ const de = {
         key: 'pos',
         title: 'Kassensystem für eine Shisha-Bar',
         sector: 'Gastronomie',
-        scope: 'Mittleres Projekt · Frontend & Datenbank',
+        scope: 'Frontend & Datenmodell · Tablet-Kasse',
         summary:
           'Ein Kassensystem, das zum Betrieb passt — nicht ein Betrieb, der sich an ein Kassensystem anpassen muss.',
         before:
@@ -284,7 +302,7 @@ const de = {
         key: 'landing',
         title: 'Landingpage und LinkedIn-Kampagne',
         sector: 'Reinigungsunternehmen',
-        scope: 'Kleines Projekt · Frontend & Marketing',
+        scope: 'Frontend & Kampagne · ohne Framework',
         summary:
           'Kein Baukasten, kein Framework-Ballast: eine Seite, die lädt — und dazu die Kampagne, die Menschen darauf bringt.',
         before:
@@ -293,7 +311,7 @@ const de = {
           'Eine handgebaute Seite in reinem JavaScript, ohne Framework-Overhead, dazu eine LinkedIn-Kampagne mit KI-erzeugten Videos und Bildern — zu Kosten, die für einen Betrieb dieser Größe sonst nicht darstellbar gewesen wären.',
         result:
           'Sichtbarkeit über den Empfehlungskreis hinaus. Aus einem reinen Web-Auftrag wurde ein vollständiges Paket zur Kundengewinnung.',
-        stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-gestützte Bild- und Videoproduktion'],
+        stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-Bild und -Video'],
       },
     ],
     noteTitle: 'Zu Zahlen und Namen',
@@ -312,7 +330,7 @@ const de = {
       },
       {
         title: 'Leistungsbeschreibung und Festpreis',
-        body: 'Eine Seite: was gebaut wird, was ausdrücklich nicht, bis wann, zu welchem Preis. Sie unterschreiben eine Zahl, keine Schätzung. Diese Seite ist später auch die Grundlage, an der wir beide messen, ob das Ergebnis stimmt.',
+        body: 'Eine Seite: was gebaut wird, was ausdrücklich nicht, bis wann, zu welchem Preis. Sie unterschreiben eine Zahl, keine Schätzung. Diese Seite ist später auch der Maßstab, an dem sich das Ergebnis messen lässt.',
       },
       {
         title: 'Bauen, mit Zwischenständen',
@@ -402,11 +420,14 @@ const de = {
     submit: 'Nachricht senden',
     submitting: 'Wird gesendet …',
     sent: `Angekommen. Ich melde mich werktags innerhalb von ${profile.responseTime.de}.`,
+    handoffTitle: 'Ihr E-Mail-Programm sollte sich jetzt geöffnet haben.',
+    handoffBody:
+      'Die Nachricht ist fertig vorbereitet — abgeschickt ist sie erst, wenn Sie in Ihrem E-Mail-Programm auf Senden drücken. Falls sich nichts geöffnet hat, schreiben Sie mir bitte direkt an:',
     failed: 'Das hat nicht geklappt. Schreiben Sie mir bitte direkt.',
     errorRequired: 'Bitte ausfüllen.',
     errorEmail: 'Diese Adresse stimmt so nicht.',
     mailtoNote:
-      'Diese Seite läuft ohne Server und ohne Tracking. Das Formular öffnet deshalb Ihr E-Mail-Programm mit der fertigen Nachricht — Sie sehen genau, was gesendet wird, und an wen.',
+      'Diese Seite läuft ohne Server und ohne Tracking. Das Formular überträgt deshalb nichts selbst, sondern öffnet Ihr E-Mail-Programm mit der fertigen Nachricht: Sie sehen genau, was gesendet wird, und Sie drücken auf Senden. Wenn Ihr Gerät kein E-Mail-Programm eingerichtet hat, nehmen Sie bitte die Adresse links.',
     expectTitle: 'Was danach passiert',
     expect: [
       'Antwort werktags innerhalb von 24 Stunden.',
@@ -433,13 +454,36 @@ const de = {
         heading: 'Kontakt',
         paragraphs: [`Telefon: ${profile.phone}`, `E-Mail: ${profile.email}`],
       },
-      {
-        heading: 'Umsatzsteuer-Identifikationsnummer',
-        paragraphs: [
-          'Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:',
-          profile.vatId,
-        ],
-      },
+      // Either a USt-IdNr. under § 27 a UStG, or the Kleinunternehmer statement
+      // under § 19 UStG. Printing the § 27 a heading with nothing under it is
+      // worse than saying plainly that there is no VAT ID.
+      profile.vatId
+        ? {
+            heading: 'Umsatzsteuer-Identifikationsnummer',
+            paragraphs: [
+              'Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:',
+              profile.vatId,
+            ],
+          }
+        : {
+            heading: 'Umsatzsteuer',
+            paragraphs: [
+              'Als Kleinunternehmer im Sinne des § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet und keine Umsatzsteuer-Identifikationsnummer geführt.',
+            ],
+          },
+      // § 2 Nr. 11 DL-InfoV — only where a policy actually exists.
+      ...(profile.insurance
+        ? [
+            {
+              heading: 'Berufshaftpflichtversicherung',
+              paragraphs: [
+                profile.insurance.name,
+                profile.insurance.address,
+                `Räumlicher Geltungsbereich: ${profile.insurance.scope.de}`,
+              ],
+            },
+          ]
+        : []),
       {
         heading: 'Berufsbezeichnung',
         paragraphs: [
@@ -450,10 +494,13 @@ const de = {
         heading: 'Verantwortlich für den Inhalt',
         paragraphs: [`${profile.firstName} ${profile.lastName}, Anschrift wie oben.`],
       },
+      // Kein Hinweis auf die OS-Plattform der EU-Kommission: sie wurde zum
+      // 20.07.2025 abgeschaltet. Ein Link darauf informiert Verbraucher seither
+      // falsch und ist damit selbst abmahnfähig — die Angabe zu entfernen ist
+      // Pflicht, nicht Kosmetik.
       {
         heading: 'Streitbeilegung',
         paragraphs: [
-          'Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung bereit: https://ec.europa.eu/consumers/odr',
           'Ich bin nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.',
         ],
       },
@@ -486,7 +533,7 @@ const de = {
   privacy: {
     title: 'Datenschutzerklärung',
     lead: 'Kurz gesagt: Diese Website setzt keine Cookies, bindet keine fremden Dienste ein und wertet Ihr Verhalten nicht aus. Was trotzdem an Daten anfällt, steht hier.',
-    updated: 'Stand: bei Livegang eintragen',
+    updated: `Stand: ${policyDate('de')}`,
     sections: [
       {
         heading: '1. Verantwortlicher',
@@ -500,6 +547,7 @@ const de = {
         heading: '2. Was diese Website nicht tut',
         paragraphs: [
           'Diese Website setzt keine Cookies und verwendet keine vergleichbaren Techniken wie Local Storage zur Wiedererkennung. Aus diesem Grund gibt es hier auch kein Einwilligungsbanner.',
+          'Eine einzige Einstellung wird lokal in Ihrem Browser gespeichert, und nur dann, wenn Sie sie selbst treffen: Ihre Wahl zwischen hellem und dunklem Design (Local Storage, Schlüssel „kc-theme“). Sie enthält keine personenbezogenen Daten, verlässt Ihr Gerät nicht und dient nicht der Wiedererkennung. Die Speicherung ist unbedingt erforderlich, um die von Ihnen ausdrücklich gewünschte Darstellung bereitzustellen (§ 25 Abs. 2 Nr. 2 TDDDG).',
           'Es findet keine Reichweitenmessung und keine Analyse Ihres Nutzungsverhaltens statt. Es sind keine Dienste Dritter eingebunden — keine Analysewerkzeuge, keine Kartendienste, keine sozialen Netzwerke, keine externen Videos.',
           'Insbesondere werden keine Schriftarten von fremden Servern nachgeladen. Alle verwendeten Schriften werden vom Server dieser Website ausgeliefert. Ihre IP-Adresse wird dadurch an keinen Dritten übermittelt.',
         ],

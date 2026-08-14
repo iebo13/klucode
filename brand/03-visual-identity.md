@@ -145,25 +145,78 @@ torsion** — cooler tints, deeper shades — instead of accidental drift.
 flatter than the old greys, which is the change that lets the green read as
 green.
 
-`50 #F5F8F6` (paper) · `100 #EAEEEB` · `200 #D7DBD8` · `300 #C1C5C2` ·
-`400 #A8ADA9` · `500 #8E938F` · `600 #757975` · `700 #5C605C` · `800 #444844` ·
-`900 #2D322D` · **`950 #1C201C`** (ink)
+`0 #FFFFFF` (raised) · `50 #F5F8F6` (paper) · `100 #EAEEEB` · `200 #D7DBD8` ·
+`300 #C1C5C2` · `400 #A8ADA9` · `500 #8E938F` · `600 #757975` · `700 #5C605C` ·
+`800 #444844` · `900 #2D322D` · **`950 #1C201C`** (ink)
+
+Step `0` is pure white and carries no chroma at all — the one true neutral in
+the system, and the light-mode raised-panel surface. A raised panel should read
+as a clean sheet laid on a tinted page, not as a slightly brighter patch of the
+same tint.
 
 **Semantic** — interface states only, never marketing, never the logo.
-success `#396C43` · warning `#8A5A16` · warningSurface `#F6EFE2` ·
-danger `#8C2F26`. `warningSurface` is the only warm value in the system and is
-confined to alert boxes: an alert that is not warm does not read as an alert.
+success `#2B564A` · warning `#8A5A16` · warningSurface `#F6EFE2` ·
+danger `#8C2F26` · dangerOnDark `#F19F93`. `warningSurface` is confined to alert
+boxes: an alert that is not warm does not read as an alert.
+
+**Warm** — the one counterpoint, hue 62° against viridian's 152°.
+`300 #F2A359` · `600 #C16F00`
+
+Two steps, because it has exactly one job. The system is otherwise a single hue
+all the way down: the surfaces are green-tinted stone (`#F5F8F6` has G above R
+and B, so there was no true neutral on the ramp at all), the alternating tint is
+viridian, the aurora is viridian, the accents and the footer accent are
+viridian. A palette with one hue has nothing to measure itself against and reads
+as a cast rather than a choice.
+
+It is used in **exactly one place** — the availability status dot — and that is
+the whole point. `600` at L 0.620 is not a taste value: it is the lightest step
+that still clears 1.4.11's 3:1 against the page (3.24:1) as a non-text
+indicator. Anything brighter is a prettier amber and an illegible dot. It sits
+close to `warning` (70°) in hue and separates by value and chroma instead —
+1.56:1 apart, which at dot size is the difference between amber and brown.
+
+> Do not scatter it. A second warm accent and the counterpoint stops being one.
 
 ### The rule that still matters most
 
-> **Viridian `500` is a display colour. It is not a text colour.**
+> **Viridian `500` is the mark's colour. It is not a text colour, and it is not
+> a UI colour either.**
+
+The second half of that sentence is new, and it is new because the first half
+was being quoted while the second was being violated. `500` was `text-brand` on
+the accent span of the 80px hero `h1` — **2.79:1**, so the biggest word on the
+site failed AA — and it was the fill for every bullet dot and the FAQ `+`
+affordance, which WCAG **1.4.11** puts at 3:1 for non-text UI. It missed both.
+
+The fix is structural rather than a set of one-off corrections: the **`brand`
+role** now resolves to `viridian-600`, the lightest step that clears 3:1 as a
+graphical object. `viridian-500` remains *the* brand colour of the logo — the
+mark is drawn in it — but nothing in the interface reaches for it.
 
 | Pair | Ratio | Verdict |
 | --- | --- | --- |
-| `500 #5EA472` on paper | **2.79:1** | ✗ display only — logo, large headings, fills |
-| `700 #396C43` on paper | **5.78:1** | ✓ green text and links |
+| `500 #5EA472` on the page | 2.55:1 | ✗ the mark only. Not text, not UI. |
+| `600 #488859` on the page | **3.63:1** | ✓ dots, rules, affordances (1.4.11) |
+| `600 #488859` on a panel | **4.25:1** | ✓ same |
+| `700 #396C43` on the page | **5.27:1** | ✓ green text and links |
+| `700 #396C43` on a panel | **6.18:1** | ✓ same |
 | paper on `700` (filled button) | **5.78:1** | ✓ the button colour |
 | ink on paper | 15.43:1 | ✓ everywhere |
+
+**`danger` is a role, not a hex.** It was a single deep brick (`#8C2F26`) used
+for form validation messages in both schemes. On the dark page that measures
+**2.00:1** — unreadable, on the one string a user is *required* to be able to
+read. Dark mode gets `#F19F93`: the same colour taken up the OKLCH scale
+(L 0.441 → 0.78, hue held at 28.8°, chroma tapered), obeying the same
+raised-is-lighter rule as every other role. 7.95:1 on the page.
+
+**The nav capsule has its own border role.** `navBorder` is `stone-400` in light
+and `stone-700` in dark, not the page's `border`. The capsule is translucent and
+sticky, so its effective backdrop is whatever is scrolling underneath: composited
+over the ink footer, `stone-300` measures **1.32:1** against the capsule and the
+boundary disappears at exactly the scroll position where it matters most.
+`navBorder` holds 1.72:1 there.
 
 ### Two themes, not one theme inverted
 
@@ -174,14 +227,45 @@ palette.
 
 | Role | Light | Dark |
 | --- | --- | --- |
-| surface | `stone-50` | `stone-950` |
-| surface, raised | `stone-50` | `stone-900` *(lighter, not darker)* |
-| alternating surface | `viridian-50` | `viridian-950` |
-| border | `stone-200` | `stone-800` |
+| surface | `stone-100` | `stone-950` |
+| surface, raised | `stone-0` (white) | `stone-900` *(lighter, not darker)* |
+| alternating surface | `viridian-100` | `viridian-950` |
+| border | `stone-300` | `stone-800` |
 | body text | `stone-950` | `stone-100` *(off-white, never pure white)* |
-| muted text | `stone-700` (5.98:1) | `stone-300` (9.45:1) |
-| green text | `viridian-700` (5.78:1) | `viridian-300` (9.74:1) |
+| muted text | `stone-700` | `stone-300` |
+| green text | `viridian-700` | `viridian-300` |
+| green fill, non-text | `viridian-600` | `viridian-400` |
 | button fill | `viridian-700`, paper label | `viridian-400`, ink label (7.51:1) |
+
+### Light mode has a real elevation step, and this is the load-bearing change
+
+`surface` and `surfaceRaised` used to *both* be `stone-50`. A **1.0:1** step —
+which is to say no elevation existed. Dark mode had a genuine one (`stone-900`
+over `stone-950`, 1.26:1) and that is the only reason dark mode looked better
+than light. The glass material was invented in this codebase to fake the
+elevation these tokens were not providing.
+
+| Measured, light mode | Ratio |
+| --- | --- |
+| panel (`stone-0`) vs page (`stone-100`) | **1.17:1** |
+| panel border (`stone-300`) vs panel | **1.75:1** |
+| panel border vs page | 1.49:1 |
+| body text on page | 14.09:1 |
+| body text on panel | **16.50:1** |
+| muted on page | 5.46:1 |
+| muted on panel | **6.40:1** |
+| brand text on page | 5.27:1 |
+| brand text on panel | **6.18:1** |
+| button label on `brandAction` | 5.78:1 |
+
+`textMuted` stays at `stone-700`: on the new `stone-100` page it measures
+5.46:1, comfortably above AA, so there was no need to darken it.
+
+`surfaceAlt` moved `viridian-50` → `viridian-100` for a structural reason.
+`viridian-50` is *lighter* than the new page, so tinted bands read as **raised**
+— competing with the panels for the same signal. `viridian-100` sits at the
+page's own lightness (1.01:1) and separates by chroma instead: a hue change, not
+a second elevation.
 
 Two dark-mode details that were found by measuring, not by reasoning:
 
@@ -190,6 +274,31 @@ Two dark-mode details that were found by measuring, not by reasoning:
   that light grounds do not.
 - **The accent moves *up* the scale in dark**, where the chroma taper has already
   softened it. Saturated colour on a dark ground vibrates.
+
+**The ink roles are not `surfaceInverse`.** The footer is the dark slab that
+closes the page, and it is dark *by intent in both themes*. Building it from an
+inverted surface makes it follow the theme in the wrong direction: in dark mode
+`surfaceInverse` resolves to `stone-50`, so the page ended with a white block
+glued under a dark page and light text vanishing into it. `ink*` is a separate
+set of roles — `inkSurface` is `stone-950` in light and lifts to `stone-900` in
+dark, obeying the same raised-is-lighter rule as everything else.
+
+| Ink role | Light | Dark |
+| --- | --- | --- |
+| `inkSurface` | `stone-950` | `stone-900` *(lifts, does not invert)* |
+| `inkText` | `stone-50` | `stone-50` |
+| `inkTextMuted` | `stone-300` (8.91:1) | `stone-300` (6.96:1) |
+| `inkTextFaint` | `stone-400` (7.24:1) | `stone-400` (5.74:1) |
+| `inkAccent` | `viridian-300` | `viridian-300` |
+
+**The switch.** Both themes are reachable — a two-state toggle in the header
+capsule, on desktop and on phones. Two states, not a light/dark/system cycle:
+the third stop looks identical to whichever of the other two the OS is already
+on, so the control appears not to have worked. Following the OS is simply what
+happens before anyone touches it, because nothing is written to storage until a
+choice is actually made. A blocking inline script in `<head>` applies the stored
+choice before first paint; deferring it is what produces the white flash on a
+dark-themed reload.
 
 ### Proportion
 
@@ -213,21 +322,24 @@ them.
 
 ## 6. Typography
 
-| Role        | Typeface          | Weights   | Licence | Used for                                       |
-| ----------- | ----------------- | --------- | ------- | ---------------------------------------------- |
-| Display     | **Space Grotesk** | 500, 700  | OFL     | Headlines, the wordmark, numbers in stat blocks |
-| Body        | **Inter**         | 400/500/600 | OFL   | All running text, UI, forms                     |
-| Mono        | **JetBrains Mono**| 400, 500  | OFL     | Eyebrow labels, tags, stack lists, code          |
+| Role        | Typeface              | Weights   | Licence | Used for                                       |
+| ----------- | --------------------- | --------- | ------- | ---------------------------------------------- |
+| Display     | **Schibsted Grotesk** | 500, 700  | OFL     | Headlines, the wordmark, numbers in stat blocks |
+| Body        | **Inter**             | 400/500/600 | OFL   | All running text, UI, forms                     |
+| Mono        | **JetBrains Mono**    | 400, 500  | OFL     | Tags, stack lists, step numbers, code            |
 
 All three are open-source and self-hostable — which is not an aesthetic
 preference but a legal one, see §6.2.
 
-**Why these.** Space Grotesk is a geometric grotesque with enough irregularity to
-be *recognisable* rather than merely neutral, and its `K` and `C` echo the mark's
-geometry. Inter is the most legible German-language UI face available free —
-important when your copy is full of `ä`, `ö`, `ü`, `ß` and 20-letter compounds.
-JetBrains Mono in small caps-height labels is the quiet signal that a developer
-built this page; it does a job no amount of copy can.
+**Why these.** Schibsted Grotesk (2026-08, replacing Space Grotesk) is a sharp
+contemporary grotesque with a genuinely distinctive voice at display sizes —
+chosen after Space Grotesk became the documented default face of AI-generated
+sites, which made the wordmark read as generated rather than designed. Inter is
+the most legible German-language UI face available free — important when your
+copy is full of `ä`, `ö`, `ü`, `ß` and 20-letter compounds. JetBrains Mono is
+the quiet signal that a developer built this page — but only where it shows
+something genuinely technical (tags, step numbers, code). Uppercase-mono
+*labels* were retired along with Space Grotesk, for the same reason.
 
 ### 6.1 Type rules
 
@@ -265,77 +377,160 @@ something to tell clients about.
 
 - **Grid:** 12 columns, 72rem max container, 48rem for reading-width pages
   (imprint, privacy, long-form).
-- **Spacing:** 4px base grid, section rhythm `clamp(4rem, 2.5rem + 7vw, 8rem)`.
+- **Spacing:** 4px base grid, section rhythm `clamp(4rem, 2.5rem + 6vw, 6.5rem)`.
+  The token scale is the **only** spacing scale — `tailwind.config.ts` replaces
+  `theme.spacing` rather than extending it, so an off-scale utility emits no CSS
+  at all. That failure is silent, so `web/scripts/check-spacing.mjs` asserts it
+  in CI.
 - **Alignment:** left, almost always. Centre only short hero blocks.
 - **Whitespace is the brand.** When a layout feels wrong, the answer is nearly
   always more space, not another element.
-- **Radius:** `0.25`–`0.875rem` for small controls, `1.25rem` (`rounded-glass`)
-  for panels, full pills for buttons and tags. A frosted panel with a 14px
-  radius reads as a cut-out rather than a pane.
-- **Shadows:** only as part of the glass layer below — a soft, wide, low-opacity
-  ambient shadow that separates a panel from what it floats over. Never a hard
-  drop shadow, never on flat elements, never to fake depth where there is none.
+- **Radius:** `0.25`/`0.5rem` for small controls, `0.875rem` (`--kc-radius-lg`)
+  for panels, full pills for buttons and tags. There is no separate panel
+  radius any more; `rounded-glass` (1.75rem) went with the glass.
+- **Shadows:** one soft, wide, low-opacity ambient shadow that separates a panel
+  from the page. Never a hard drop shadow, and never as a substitute for a
+  border — a shadow alone is not a boundary, which is the mistake §7 documents.
 
-### The liquid glass layer
+### The material system: one flat panel, one navigation glass
 
-Panels are **liquid glass** — slabs with thickness floating over an aurora wash —
-not flat frosted rectangles. Three things separate the two, and all three are
-required or the effect collapses back into "a white card with a shadow":
+The site ran on **clear glass** for a while — translucent panes with an optical,
+displacement-mapped edge, on roughly twenty-seven elements per screen. It was
+removed, and it is worth writing down why, because the reasoning was measured
+rather than argued and the same trap is easy to fall back into.
 
-1. **A specular sweep.** A directional highlight raking across the face, as if
-   one light source is hitting a curved lens.
-2. **An edge refraction band.** A bright ring hugging the border — a *ring*,
-   masked to a fixed inset, not a `border` — where a real lens would bend and
-   concentrate light.
-3. **Thickness.** Paired inset highlights top and bottom plus an interior
-   shadow, so the panel has a bottom and reads as a slab rather than a hole cut
-   in a sheet.
+**Glass had no edge in light mode.** `rgba(255,255,255,0.10)` over the stone-50
+page composited to `rgb(246, 248.7, 246.9)` against a page of `rgb(245,248,246)`
+— **1.007:1**. WCAG 1.4.11 asks for 3:1 on a meaningful non-text boundary. The
+panels were held together by an ambient shadow and nothing else. Dark mode
+survived only because its rim light composited to `rgb(87,91,88)` on
+`rgb(28,32,28)`; in light mode that same rim was 72% white on near-white.
 
-**The fill has to be low enough to transmit colour.** This is the counter-
-intuitive part: at `0.66` the panels read as plain white cards, because glass
-over a near-white background is white. Light fill is `0.44`, dark `0.50`, and
-the blur is *lower* than flat glass would use (12px) with saturation *higher*
-(1.9) — liquid glass transmits colour, it does not fog it.
+**The blur and the refraction were no-ops.** `backdrop-filter: blur()` and
+`feDisplacementMap` only produce a visible result over high-frequency content.
+Behind every panel was a flat tint plus an aurora whose peak composite was
+`rgb(232,245,237)` — a smooth gradient. Blur a smooth gradient and you get the
+same gradient back. Bend it and you get the same gradient back.
 
-**Which means the aurora is not decoration, it is a requirement.** Glass with
-nothing behind it has nothing to refract. Sections that carry glass panels get
-`glow`; sections that do not, do not.
+**And glass was faking an elevation the tokens should have provided.** In light
+mode `surface` and `surfaceRaised` were *both* stone-50: a 1.0:1 step, i.e. no
+elevation existed. Dark mode had a genuine step and that is the only reason dark
+mode looked better. The fix was in the tokens, not the material — see §5.
+
+**What replaced it.**
+
+`.panel` — the surface everything that carries content is made of.
+`surfaceRaised` background, a real `1px solid var(--kc-border)`, radius
+`--kc-radius-lg`, and one ambient shadow (`0 1px 2px` plus
+`0 8px 24px -12px` of `--kc-glass-cast`). No `backdrop-filter`. Elevation is a
+value step and a border, both measurable, in both themes.
+
+`.glass-nav` — **the navigation layer, and nothing else.** Renamed from `.glass`
+specifically so it cannot be reused casually. It survives on the sticky header
+capsule because that is the one element with real page content moving underneath
+it, so the blur has something to sample and earns its compositing layer. It is
+also the only place Apple's own guidance puts this material — and that guidance
+explicitly forbids nesting it, which the old system did three ways over (tags
+inside cards, a glass drawer under a glass capsule).
+
+The nav fill is **0.86**, not the 0.10 it was, and that is a legibility number
+rather than a taste one: the capsule crosses the ink footer on the way down the
+page, and at 0.10 the active nav link composited to **3.44:1** against it.
+`check_contrast.py` composites every nav text role over the darkest and lightest
+backdrop the capsule can cross and fails the build below 4.5:1.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `glass-fill` | `rgba(255,255,255,.44)` | `rgba(34,48,42,.50)` |
-| `glass-fillStrong` | `rgba(255,255,255,.72)` | `rgba(34,48,42,.82)` |
-| `glass-rim` / `rimLow` | specular edge lights | — |
-| `glass-spec` / `specLow` | the face sweep | — |
-| `glass-cast` / `depth` | ambient float / interior shading | — |
-| `glass-blur` · `saturate` | `12px` · `1.9` | same |
+| `glass-fill` | `rgba(255,255,255,.86)` | `rgba(28,32,28,.86)` |
+| `glass-rim` / `rimLow` | top rim light / trailing glint | — |
+| `glass-spec` / `specLow` | the face sheen | — |
+| `glass-cast` | ambient shadow, also used by `.panel` | — |
+| `glass-blur` · `saturate` | `14px` · `1.35` | same |
 
-**Classes**
+`fillStrong`, `border`, `edge`, `depth`, `lensBand` and `lensScale` are gone
+along with the lens and the variants that used them, as are `.glass-sm`,
+`.glass-strong` and `.glass-solid`. `<GlassLens>` — the runtime SVG
+displacement-map builder — is deleted.
 
-- `.glass` — the standard panel. Radius `1.75rem`, 9px refraction band.
-- `.glass-sm` — pills, tags, small buttons. 4px band, full radius. Without it
-  the ring swallows the shape.
-- `.glass-strong` — higher fill where a panel overlaps busy content.
-- `.glass-solid` — near-opaque (92%), for long copy and form fields.
+**The rules that keep it readable**
 
-**The four rules that keep it readable**
+1. **`.glass-nav` appears on exactly one element site-wide.** If a second one
+   turns up, the count is a bug.
+2. **Zero nested backdrop-filters. Zero backdrop-filters on content panels.**
+3. Panel-vs-page contrast ≥ 1.15:1, and the panel's 1px border ≥ 1.4:1 against
+   the panel, in both themes. Asserted, not eyeballed.
+4. **The primary button is never translucent.** Solid `viridian-700`. It is the
+   one element whose contrast may not depend on what is behind it.
+5. Every panel gets a border. The old rule said the opposite, and the old rule
+   is what produced a 1.007:1 edge.
 
-1. Fills stay high enough that the audit passes — the number is not sacred, the
-   audit is.
-2. Long copy and form fields sit on `glass-solid`.
-3. **The primary button is never glass.** Solid `viridian-600`. It is the one
-   element whose contrast may not depend on what happens to be behind it.
-4. Every panel keeps its border and rim, or it stops reading as glass.
+**The chrome is still an object.** The header is a floating capsule with page
+content visibly flowing underneath, not a full-width bar pinned to the top edge.
+That single move does more to signal the register than any amount of blur — and
+it is now the only place paying for the blur.
 
-**The chrome is an object.** The header is a floating capsule with page content
-visibly flowing underneath, not a full-width bar pinned to the top edge. That
-single move does more to signal the register than any amount of blur.
+### Weight, and where it is allowed to go
 
-**Verify, do not assume.** Composited contrast is measured on *rendered pixels* —
-declared CSS values lie the moment translucency is involved. Every text role
-clears its WCAG threshold in both schemes, tightest 6.44:1 against a 4.5
-requirement. **Re-run that audit after any change to fill opacity or aurora
-strength**, because both move the number.
+The copy ranks things. For a while the layout rendered them all at equal weight,
+which is a way of saying nothing.
+
+**`InkPanel` is the emphasis device.** An inverted slab, reserved for the one
+sentence a section is actually arguing towards. It replaced `border-l-2
+border-brand pl-7`, which was the weakest device in the system and was doing
+this job in three places — a 2px rule does not carry a punchline. The quieter
+register, for an aside rather than a conclusion, is a `.panel` with a brand
+top-rule. Two devices, visibly different.
+
+**Exactly two structural exceptions per page, and no more.** Seven sections
+sharing one left edge, one alignment and one internal rhythm is what made the
+homepage read as a single undifferentiated column. The fix is punctuation, not
+variety, so a third exception would undo the first two. On the homepage they
+are:
+
+1. **Full-bleed** — the work section drops the 72rem container cap
+   (`<Section bleed>`). The proof section is the one allowed to break the shared
+   left edge.
+2. **Asymmetric and offset** — the approach section puts a sticky heading in
+   columns 1–4 and the steps in 6–12.
+
+**The right column is not spare.** `SectionHead` is a 12-column grid: head in
+1–7 for measure, `aside` in 9–12. That column used to be ~570px of nothing above
+every grid on the page, seven times over. It now holds the section's ArrowLink.
+
+**Reserve image slots before there are images.** `FigureSlot` is a correct
+aspect-ratio box holding the node field at content strength, so dropping a
+screenshot in later is a file drop rather than a layout change. At *background*
+strength an empty slot reads as a failed image rather than as a panel waiting
+for one — which is why `.node-field-fill` exists alongside `.node-field`.
+
+### One separation strategy, one glow
+
+**Sections separate by tint alternation. There are no rules.** Every `Section`
+used to carry `border-t border-line` *as well* — hard flat separation fighting
+the soft depth language, and redundant next to an alternation already marking
+the same boundaries. Pick one; this system picks the tint.
+
+**`glow` is punctuation and is rationed like it: the hero plus one section.** It
+used to say "use sparingly" and then sit on the hero plus four of six sections,
+which is wallpaper. It also produced two different results depending on where it
+landed — on a `tint` section the wash was `viridian-100` over `viridian-100`,
+i.e. nothing. The wash now sits a step down the scale (`viridian-200/300/100` at
+0.45) so it registers against the page *and* against the tint. A device that
+does two different things depending on where it lands is not a device.
+
+**Grain is gone.** Effective alpha was 0.045 (the SVG rect) × 0.34 (the
+`::after`) × 0.55 (the inherited `.aurora` opacity) = **0.008**, roughly 40×
+too faint to break up the banding it existed for. The job went away too: the
+note described a 90px blur, and there is no blur behind the aurora any more.
+It cost a `mix-blend-mode` compositing layer per glow section. If banding ever
+does appear, it comes back as one element with a measured alpha — not a third
+nested opacity.
+
+**Verify, do not assume.** `brand/tokens/check_contrast.py` is CI-runnable and
+asserts every text pair at 4.5:1, every non-text UI pair at 3:1, every panel
+boundary at 1.4:1 and every elevation step at 1.15:1, in both themes. Run it
+after any token change. It exists because eyeballing is exactly how a 1.007:1
+"edge" shipped.
 
 ### The house graphic device
 
@@ -381,9 +576,9 @@ Do not introduce illustrations, 3-D renders, gradient meshes, or stock isometric
   carry text, darken a crop of it rather than tinting it green.
 
 **Screenshots** are your strongest image asset and you are under-using them.
-Frame them on a `glass` panel with generous padding and a 1px
-`stone-200` border. Blur or replace real client data — you will need this anyway
-for the DSGVO.
+Frame them on a `.panel` with generous padding — the
+border comes with the material. Blur or replace real client data; you will need
+this anyway for the DSGVO.
 
 **The one photograph the site cannot do without** is you. A one-person brand
 whose About page has no face is asking for trust it has not offered. Plain
@@ -440,8 +635,19 @@ your face, not the logo — people hire people.
 ```bash
 pip install fonttools uharfbuzz brotli
 cd brand/logo/_build && python3 build_logos.py   # 14 SVGs
-cd ../../tokens && python3 build_css.py          # tokens.css
+cd ../../tokens
+python3 build_palette.py                         # regenerates the scales
+python3 build_css.py                             # tokens.css
+python3 check_contrast.py                        # MUST pass — CI runs it too
 ```
+
+`check_contrast.py` needs no dependencies and exits non-zero on any pair below
+threshold. It runs in CI before the site is built, because a contrast
+regression is a defect in the tokens rather than in the site, and the site
+cannot be right if the tokens are wrong. CI also regenerates `tokens.css` and
+fails if the result differs from what is committed — editing the generated file
+by hand, or changing `tokens.json` without re-running the build, silently
+decouples the site from its source of truth.
 
 `tokens/tokens.json` is the single source of truth for colour, type, and spacing.
 The website's `tailwind.config.ts` imports it directly, so a value changed there

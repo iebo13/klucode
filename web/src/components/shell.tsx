@@ -18,13 +18,20 @@ export function Shell({
 
   return (
     <>
+      {/* focus-visible, not focus: on a client-side route change the router can
+          move focus programmatically, and with plain focus styling the skip
+          link flashed into view on every page switch. :focus-visible only
+          matches keyboard-driven focus, which is the audience this link is
+          for. */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-brand-action focus:px-5 focus:py-3 focus:text-on-brand"
+        className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:left-4 focus-visible:top-4 focus-visible:z-[60] focus-visible:rounded-md focus-visible:bg-brand-action focus-visible:px-4 focus-visible:py-3 focus-visible:text-on-brand"
       >
         {c.ui.skipToContent}
       </a>
-      <Header lang={lang} c={c} current={current} />
+      {/* Header is a client component: it gets the strings it renders, not
+          the whole Content object, so the flight payload stays small. */}
+      <Header lang={lang} nav={c.nav} ui={c.ui} siteName={c.meta.siteName} current={current} />
       <main id="main">{children}</main>
       <Footer lang={lang} c={c} />
     </>

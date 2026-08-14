@@ -18,6 +18,14 @@ export type Service = {
   includes: string[];
   price: string;
   priceNote: string;
+  /**
+   * The unit `price` is charged in, where it is not a one-off project fee.
+   * Omitted for the two fixed-price lines; 'day' and 'month' for the two
+   * supporting ones. The prose in `priceNote` already says this to a reader —
+   * this says it to a machine, so lib/schema.ts can emit 680 €/day as a
+   * UnitPriceSpecification rather than as a flat 680 € project price.
+   */
+  priceUnit?: 'day' | 'month';
 };
 
 export type Project = {
@@ -30,6 +38,16 @@ export type Project = {
   after: string;
   result: string;
   stack: string[];
+  /**
+   * One client-approved number, as a complete sentence fragment the reader
+   * can verify — „Aus drei Tagen Abrechnung wurden ein paar Minuten." The
+   * strategy's rule: one real number outperforms every adjective. Optional so
+   * the site can ship before approvals arrive; the layout renders a slot the
+   * moment the value exists.
+   */
+  metric?: string;
+  /** A written, client-released testimonial. Same deal: add when approved. */
+  quote?: { text: string; attribution: string };
 };
 
 export type LegalSection = { heading: string; paragraphs: string[] };
@@ -66,6 +84,14 @@ export type Content = {
     close: string;
     switchLang: string;
     switchLangLabel: string;
+    /** Action labels, not state labels: they say what the press will do. */
+    themeToDark: string;
+    themeToLight: string;
+    /** Footer navigation landmarks — one for the pages, one for the legal pair. */
+    footerNavLabel: string;
+    footerLegalLabel: string;
+    /** Heading over the LinkedIn/GitHub links, shown only once they exist. */
+    footerSocialLabel: string;
     backHome: string;
     stack: string;
     before: string;
@@ -169,7 +195,16 @@ export type Content = {
     consent: string;
     submit: string;
     submitting: string;
+    /** Only reachable when profile.formEndpoint is set and the POST succeeded. */
     sent: string;
+    /**
+     * The mailto path. Assigning `window.location.href` hands off to whatever
+     * mail client the device has — which may be none. Nothing was sent, so this
+     * copy must not say it was; it says what should have happened and repeats
+     * the address for the case where it did not.
+     */
+    handoffTitle: string;
+    handoffBody: string;
     failed: string;
     errorRequired: string;
     errorEmail: string;

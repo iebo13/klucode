@@ -11,14 +11,6 @@ const nextConfig = {
   // It does NOT prefix string URLs in the metadata API or anything written by
   // hand — see src/lib/base-path.ts for the places that need doing manually.
   basePath,
-  // Static export. Three reasons this is the right call for klucode.de:
-  //  1. It deploys to the Plesk server KluCode already runs — plain files over
-  //     FTP, no Node process to keep alive, no runtime to patch.
-  //  2. Nothing executes per request, so there is no server-side logging of
-  //     visitor IPs to disclose or justify under the DSGVO.
-  //  3. It is fast in the way that actually shows up in Lighthouse.
-  output: 'export',
-
   // No image optimisation server exists in a static export.
   images: { unoptimized: true },
 
@@ -27,6 +19,27 @@ const nextConfig = {
   trailingSlash: true,
 
   reactStrictMode: true,
+
+  // Dev and production want different shapes, so the two keys are set as a
+  // pair:
+  //
+  //  - Production: `output: 'export'` — static export. Three reasons this is
+  //    the right call for klucode.de: it deploys to the Plesk server KluCode
+  //    already runs (plain files over FTP, no Node process to keep alive);
+  //    nothing executes per request, so there is no server-side logging of
+  //    visitor IPs to justify under the DSGVO; and it is fast in the way that
+  //    shows up in Lighthouse. In the export, `/` is a static language
+  //    chooser emitted by scripts/emit-root-redirect.mjs.
+  //  - Dev: `next dev` knows nothing about that emitted file, so the root URL
+  //    would 404 — which reads as "the project doesn't run" to anyone opening
+  //    localhost:3000. A dev-only redirect keeps the root usable. It must not
+  //    coexist with `output: 'export'` in the same config, or every dev
+  //    request logs a "redirects will not work with export" warning.
+  ...(process.env.NODE_ENV === 'development'
+    ? {
+        redirects: async () => [{ source: '/', destination: '/de/', permanent: false }],
+      }
+    : { output: 'export' }),
 
   // The site sets no cookies and makes no third-party requests; these headers
   // are honoured by hosts that read them at deploy time (Vercel, Netlify).

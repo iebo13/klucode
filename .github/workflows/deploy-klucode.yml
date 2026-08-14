@@ -75,12 +75,16 @@ jobs:
         with:
           path: web/out
 
+  # This job depends on repository state that is not in this file: the
+  # github-pages environment must allow main to deploy to it
+  # (Settings -> Environments -> github-pages -> Deployment branches and tags
+  # -> No restriction). A branch policy that excludes main kills this job in
+  # about a second with zero steps executed and no log to read at all, which
+  # looks nothing like a normal failure. If that ever recurs, check there
+  # first rather than debugging the workflow.
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # Repeated at job level as well as workflow level. Inherited permissions
-    # are enough in theory, but stating them here removes one variable when
-    # the job is being rejected before it starts.
     permissions:
       contents: read
       pages: write
@@ -89,13 +93,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # Runs before deploy-pages on purpose. If this line appears in the log,
-      # the job was allowed to start and any failure belongs to the action. If
-      # it does not, the github-pages environment rejected the job before it
-      # ever ran — which produces no logs at all and is otherwise impossible to
-      # tell apart from the action failing.
-      - name: Confirm the job was allowed to start
-        run: echo "deploy job started; environment gate passed"
-
       - id: deployment
         uses: actions/deploy-pages@v4

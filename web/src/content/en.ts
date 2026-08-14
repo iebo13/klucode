@@ -1,22 +1,27 @@
-import { profile } from './profile';
+import { policyDate, profile } from './profile';
 import type { Content } from './types';
 
+// The English side is NOT a translation of the German one — deliberately.
+// brand/01-strategy.md §4: /de speaks to owner-run SMBs (segment A); /en
+// exists for remote product teams and agencies (segments B and C), who buy
+// velocity on a defined slice and want stack, day rate and availability up
+// front. Same structure, different argument.
 const en = {
   meta: {
     siteName: 'KluCode',
     title: 'KluCode — Custom software, built in Düsseldorf',
     description:
-      'I build the system your business actually runs on: web applications, internal tools and websites. One engineer, a fixed price, front end to server.',
+      'Senior React and Next.js capacity for product teams and agencies, plus complete web applications at a fixed price. One engineer, front end to server.',
     pages: {
       home: {
         title: 'KluCode — Custom software, built in Düsseldorf',
         description:
-          'Freelance software developer in Düsseldorf. Web applications, internal tools and websites at a fixed price — front end, back end, database and server from one person.',
+          'Freelance software developer in Düsseldorf. Senior React and Next.js capacity for product teams and agencies, plus web applications at a fixed price.',
       },
       services: {
         title: 'Services — KluCode',
         description:
-          'Websites from €2,500, custom web applications from €9,000, development capacity from €680/day, maintenance from €90/month.',
+          'Development capacity from €680/day, custom web applications from €9,000, websites from €2,500, maintenance from €90/month.',
       },
       work: {
         title: 'Work — KluCode',
@@ -39,7 +44,8 @@ const en = {
       },
       imprint: {
         title: 'Imprint — KluCode',
-        description: 'Legal information under § 5 DDG.',
+        description:
+          'Legal information under § 5 DDG: service provider, address, contact details and responsibility for the content of klucode.de.',
       },
       privacy: {
         title: 'Privacy — KluCode',
@@ -68,6 +74,11 @@ const en = {
     close: 'Close',
     switchLang: 'DE',
     switchLangLabel: 'Auf Deutsch ansehen',
+    themeToDark: 'Dark theme',
+    themeToLight: 'Light theme',
+    footerNavLabel: 'Pages',
+    footerLegalLabel: 'Legal',
+    footerSocialLabel: 'Profiles',
     backHome: 'Back to the homepage',
     stack: 'Stack',
     before: 'Before',
@@ -78,38 +89,38 @@ const en = {
   },
 
   home: {
-    heroEyebrow: 'Software development · Düsseldorf',
-    heroTitle: 'The system your business',
-    heroTitleAccent: 'actually runs on.',
+    heroEyebrow: 'Software development · Remote',
+    heroTitle: 'One senior engineer.',
+    heroTitleAccent: 'Front end to server.',
     heroLead:
-      'Web applications, internal tools and websites — front end to running server. One point of contact, a fixed price, and the person in the meeting is the person writing the code.',
+      'React, Next.js, TypeScript, Node.js. I take a defined slice of your product and ship it — or slot into your team as capacity that does not need managing. Day rate or fixed price, agreed before anything starts.',
     heroProof: [
       'Three systems in production',
       'BSc Computer Science · 4 years professional',
-      'Fixed price before anything starts',
+      'From €680/day · bookable from five days',
     ],
 
     problemEyebrow: 'The situation',
-    problemTitle: 'Two options, and neither one fits.',
+    problemTitle: 'Three ways to add capacity. Each costs more than it looks.',
     problemLead:
-      'Most teams I speak to have picked this up twice already and put it back down. For good reasons.',
+      'When a product team or an agency needs more hands, the standard options all carry a hidden invoice.',
     problemCards: [
       {
+        title: 'The hire',
+        body: 'Months of sourcing and onboarding for work that needed shipping this quarter — and a permanent seat on the payroll for what was a temporary peak.',
+      },
+      {
         title: 'The agency',
-        body: 'Four months, five figures, three points of contact. You are also paying for the distance between the person who understood the problem and the person who builds it. Most of the understanding is lost on that trip.',
+        body: 'Capacity on paper, overhead in practice: account managers, briefing rounds, and the distance between the person who understood your product and the person who writes the code.',
       },
       {
-        title: 'The site builder',
-        body: 'Looks finished in two days and stops exactly where your business starts: the commission logic, the shift handover, the one report you actually need.',
-      },
-      {
-        title: 'So, no change',
-        body: 'Spreadsheets, chat threads and a folder only one person understands. It works — until that person is on holiday, or the file exists in three versions.',
+        title: 'The stretched team',
+        body: 'The roadmap absorbs it. Features slip, the refactoring waits, and the people you hired for product thinking spend their sprints working through the backlog.',
       },
     ],
-    answerTitle: 'The third option',
+    answerTitle: 'The fourth option',
     answerBody:
-      'A qualified engineer who talks to you directly, understands how you actually work, and builds the whole system — interface, logic, database, server. At a fixed price you know before anything begins.',
+      'A senior engineer who is productive in your codebase within days — follows your conventions, communicates in your rhythm, and can own a defined slice end to end: interface, logic, database, deployment. At a day rate or a fixed price you know before the start.',
 
     servicesEyebrow: 'Services',
     servicesTitle: 'Four ways to work together.',
@@ -127,11 +138,11 @@ const en = {
     approachLink: 'How I work',
 
     faqEyebrow: 'Common questions',
-    faqTitle: 'What people want to know first.',
+    faqTitle: 'What businesses ask first.',
     faq: [
       {
         q: 'What does it cost?',
-        a: 'A website starts at €2,500, a custom web application at €9,000. You get the exact fixed price after a 30-minute call and a written scope — not before, because a number without a scope is worthless.',
+        a: 'Development capacity is €680 a day, bookable from five days, with a framework agreement for longer runs. Fixed-price work starts at €2,500 for a website and €9,000 for a custom web application — the exact number after a 30-minute call and a written scope, not before, because a number without a scope is worthless.',
       },
       {
         q: 'How long does it take?',
@@ -155,15 +166,34 @@ const en = {
       },
     ],
 
-    finalTitle: 'Tell me what is not working.',
+    finalTitle: 'Tell me what needs shipping.',
     finalLead: `30 minutes, no obligation, no slide deck. If I am not the right fit I will say so — and point you at someone who is, where I can. Reply within ${profile.responseTime.en}.`,
   },
 
   services: {
     eyebrow: 'Services',
-    title: 'Four services. That is enough.',
+    title: 'Four services. No more are needed.',
     lead: 'Prices are starting points for the scope described. You get the binding fixed price in writing before I start.',
+    // Order is priority for segments B and C: capacity first. The home page
+    // features the first two items large — on /en that must be capacity and
+    // the app work, not the SMB website package.
     items: [
+      {
+        key: 'capacity',
+        name: 'Development capacity',
+        forWhom: 'For agencies and product teams that need frontend capacity.',
+        body: 'React, Next.js, TypeScript, Node.js. I pick up existing code, follow your conventions, and can join a client call without embarrassing you.',
+        includes: [
+          'React · Next.js · TypeScript · Node.js · PostgreSQL',
+          'Onboarding into existing codebases',
+          'Code review and pull requests to your standards',
+          'Remote, on-site within the Rhineland',
+          'Bookable from five days',
+        ],
+        price: '€680',
+        priceNote: 'per day · framework agreement available',
+        priceUnit: 'day',
+      },
       {
         key: 'website',
         name: 'Website & landing page',
@@ -183,7 +213,7 @@ const en = {
       {
         key: 'app',
         name: 'Custom web application',
-        forWhom: 'For processes currently living in spreadsheets, on paper or in chat.',
+        forWhom: 'For work stuck in Excel, on paper or in WhatsApp.',
         body: 'CRM, point of sale, reporting, internal tooling, portals. Built around your process rather than the other way round — including database, user management and server. This is the work I like most.',
         includes: [
           'Analysis of the current process, with the people who run it',
@@ -195,21 +225,6 @@ const en = {
         ],
         price: '€9,000',
         priceNote: '4 to 10 weeks · fixed price',
-      },
-      {
-        key: 'capacity',
-        name: 'Development capacity',
-        forWhom: 'For agencies and product teams that need frontend capacity.',
-        body: 'React, Next.js, TypeScript, Node.js. I pick up existing code, follow your conventions, and can join a client call without embarrassing you.',
-        includes: [
-          'React · Next.js · TypeScript · Node.js · PostgreSQL',
-          'Onboarding into existing codebases',
-          'Code review and pull requests to your standards',
-          'Remote, on-site within the Rhineland',
-          'Bookable from five days',
-        ],
-        price: '€680',
-        priceNote: 'per day · framework agreement available',
       },
       {
         key: 'care',
@@ -225,6 +240,7 @@ const en = {
         ],
         price: '€90',
         priceNote: 'per month · cancel monthly',
+        priceUnit: 'month',
       },
     ],
     howEyebrow: 'How billing works',
@@ -251,7 +267,7 @@ const en = {
         key: 'crm',
         title: 'CRM, commission management and comparison portal',
         sector: 'Sales organisation',
-        scope: 'Largest project · full stack',
+        scope: 'Full stack · three systems, one database',
         summary:
           'Three systems that used to be three spreadsheets — customer management, commission settlement and a public comparison portal, all sharing the same data.',
         before:
@@ -266,7 +282,7 @@ const en = {
         key: 'pos',
         title: 'Point-of-sale system for a shisha bar',
         sector: 'Hospitality',
-        scope: 'Medium project · front end & database',
+        scope: 'Front end & data model · tablet till',
         summary:
           'A till that fits how the venue works — rather than a venue reorganised to fit a till.',
         before:
@@ -281,7 +297,7 @@ const en = {
         key: 'landing',
         title: 'Landing page and LinkedIn campaign',
         sector: 'Cleaning company',
-        scope: 'Small project · front end & marketing',
+        scope: 'Front end & campaign · no framework',
         summary:
           'No builder, no framework weight: a page that loads — plus the campaign that brings people to it.',
         before:
@@ -290,7 +306,7 @@ const en = {
           'A hand-built page in plain JavaScript with no framework overhead, plus a LinkedIn campaign using AI-generated video and imagery — at a cost that would otherwise have been out of reach for a business this size.',
         result:
           'Visibility beyond the referral circle. What began as a web job became a complete customer-acquisition package.',
-        stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'AI-assisted image and video production'],
+        stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'AI image & video'],
       },
     ],
     noteTitle: 'On numbers and names',
@@ -399,11 +415,14 @@ const en = {
     submit: 'Send message',
     submitting: 'Sending …',
     sent: `Got it. You will hear from me within ${profile.responseTime.en}.`,
+    handoffTitle: 'Your email client should have opened.',
+    handoffBody:
+      'The message is prepared, but it is not sent until you press send in your own mail program. If nothing opened, write to me directly at:',
     failed: 'That did not work. Please email me directly.',
     errorRequired: 'Required.',
     errorEmail: 'That address does not look right.',
     mailtoNote:
-      'This site runs without a server and without tracking. The form therefore opens your email client with the message ready to go — so you can see exactly what is sent, and to whom.',
+      'This site runs without a server and without tracking. The form sends nothing itself; it opens your email client with the message ready to go, so you can see exactly what is sent and you press send. If your device has no mail client set up, please use the address on the left.',
     expectTitle: 'What happens next',
     expect: [
       'A reply within one working day.',
@@ -430,13 +449,35 @@ const en = {
         heading: 'Contact',
         paragraphs: [`Phone: ${profile.phone}`, `Email: ${profile.email}`],
       },
-      {
-        heading: 'VAT identification number',
-        paragraphs: [
-          'VAT identification number under § 27 a of the German VAT Act:',
-          profile.vatId,
-        ],
-      },
+      // Mirrors de.ts: either the § 27 a VAT ID or the § 19 small-business
+      // statement, never an empty § 27 a heading.
+      profile.vatId
+        ? {
+            heading: 'VAT identification number',
+            paragraphs: [
+              'VAT identification number under § 27 a of the German VAT Act:',
+              profile.vatId,
+            ],
+          }
+        : {
+            heading: 'VAT',
+            paragraphs: [
+              'As a small business within the meaning of § 19 (1) of the German VAT Act, no VAT is charged and no VAT identification number is held.',
+            ],
+          },
+      // § 2 no. 11 DL-InfoV — only where a policy actually exists.
+      ...(profile.insurance
+        ? [
+            {
+              heading: 'Professional indemnity insurance',
+              paragraphs: [
+                profile.insurance.name,
+                profile.insurance.address,
+                `Territorial scope of cover: ${profile.insurance.scope.en}`,
+              ],
+            },
+          ]
+        : []),
       {
         heading: 'Professional status',
         paragraphs: [
@@ -447,10 +488,12 @@ const en = {
         heading: 'Responsible for content',
         paragraphs: [`${profile.firstName} ${profile.lastName}, address as above.`],
       },
+      // No reference to the EU Commission's ODR platform: it was shut down on
+      // 20 July 2025. Pointing consumers at it has been misleading — and so
+      // chargeable in its own right — ever since. Removing it is required.
       {
         heading: 'Dispute resolution',
         paragraphs: [
-          'The European Commission provides a platform for online dispute resolution: https://ec.europa.eu/consumers/odr',
           'I am neither willing nor obliged to participate in dispute resolution proceedings before a consumer arbitration board.',
         ],
       },
@@ -483,7 +526,7 @@ const en = {
   privacy: {
     title: 'Privacy policy',
     lead: 'In short: this site sets no cookies, embeds no third-party services and does not analyse your behaviour. What data nonetheless arises is set out below. The German version is the authoritative one.',
-    updated: 'Last updated: set on go-live',
+    updated: `Last updated: ${policyDate('en')}`,
     sections: [
       {
         heading: '1. Controller',
@@ -497,6 +540,7 @@ const en = {
         heading: '2. What this website does not do',
         paragraphs: [
           'This website sets no cookies and uses no comparable techniques such as local storage for recognition. For that reason there is no consent banner here.',
+          'One single setting is stored locally in your browser, and only if you choose it yourself: your preference for the light or dark theme (local storage, key "kc-theme"). It contains no personal data, never leaves your device and is not used to recognise you. Storing it is strictly necessary to provide the presentation you explicitly asked for (§ 25 (2) no. 2 TDDDG).',
           'There is no reach measurement and no analysis of your usage behaviour. No third-party services are embedded — no analytics, no maps, no social networks, no external video.',
           'In particular, no fonts are loaded from third-party servers. All typefaces are served from this website’s own server, so your IP address is not transmitted to any third party.',
         ],

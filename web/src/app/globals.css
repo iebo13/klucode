@@ -10,6 +10,17 @@
     color-scheme: light dark;
   }
 
+  /* A forced theme must also force the UA's own rendering — checkboxes,
+     scrollbars, autofill. Without this, forcing light on a dark OS leaves
+     dark form widgets sitting on a light page (and vice versa). */
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
   html {
     scroll-behavior: smooth;
     /* German compounds are long; let the browser break them rather than
@@ -29,10 +40,13 @@
 
   /* One visible focus style everywhere. Never remove it — keyboard users are
      the reason it exists, and it is the cheapest accessibility win there is. */
+  /* border-radius belonged to the ELEMENT, not to the outline, so this was
+     quietly rounding the corners of whatever had focus. It was harmless only
+     because Tailwind's utility and component layers outrank base, i.e. by
+     accident. outline-offset does the job it was there for. */
   :focus-visible {
     outline: 2px solid var(--kc-brandAction);
     outline-offset: 3px;
-    border-radius: 2px;
   }
 
   ::selection {
@@ -46,6 +60,15 @@
     font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
     text-wrap: balance;
+  }
+
+  /* h3 drops to 500. All three levels were 700, so the hierarchy was
+     size-only — a card title and a section heading differed by nothing but
+     scale, and at the bottom of the ramp there is not much scale left. Space
+     Grotesk 500 is already loaded and paid for; using it gives card titles a
+     different VOICE rather than just a smaller one. */
+  h3 {
+    font-weight: 500;
   }
 
   p {
@@ -81,110 +104,100 @@
     --node-dot: var(--kc-viridian-200);
   }
 
-  /* Liquid glass, not flat frosted glass. The difference is three things a
-     plain backdrop-blur panel does not have:
+  /* The same device, but as CONTENT rather than as background texture.
+     Inside a reserved figure slot the node field is the only thing in the box,
+     so it keeps full density, drops the fade-out mask, and moves one step up
+     the scale — at background strength an empty slot reads as a failed image
+     rather than as a panel waiting for one. */
+  .node-field-fill {
+    --node-dot: var(--kc-viridian-300);
+    background-image: radial-gradient(circle at center, var(--node-dot) 2px, transparent 2.1px);
+    background-size: 32px 32px;
+  }
 
-       a) a SPECULAR SWEEP — a directional highlight raking across the surface,
-          as if one light source is hitting a curved lens;
-       b) an EDGE REFRACTION BAND — a bright ring hugging the border where a
-          real lens bends and concentrates light;
-       c) THICKNESS — paired inset highlights top and bottom plus an inset
-          shadow, so the panel reads as a slab with depth rather than a hole
-          cut in a sheet.
+  @media (prefers-color-scheme: dark) {
+    .node-field-fill {
+      --node-dot: var(--kc-viridian-800);
+    }
+  }
 
-     The blur is deliberately lower than before (12px, not 16px) and the
-     saturation higher: liquid glass transmits colour, it does not fog it. */
-  .glass {
+  [data-theme='dark'] .node-field-fill {
+    --node-dot: var(--kc-viridian-800);
+  }
+
+  [data-theme='light'] .node-field-fill {
+    --node-dot: var(--kc-viridian-300);
+  }
+
+  /* ---------------------------------------------------------------------
+     .glass-nav — RESERVED FOR THE NAVIGATION LAYER.
+
+     The navigation layer means the sticky header capsule and, on phones, the
+     drawer that opens from it — siblings, never nested, so each samples the
+     page exactly once. It is renamed from `.glass` precisely so it cannot be
+     reused casually — if you find yourself typing it on a card, you want
+     `.panel` (on paper) or `.glass-chip` (on ink).
+
+     Why the header keeps it and nothing else does. This material costs a
+     compositing layer and a backdrop sample per element, and it only PRODUCES
+     anything when there is high-frequency content behind it to blur. The
+     header is the one place where that is true: the page scrolls underneath
+     it. Behind every other panel on this site is a flat tint plus a smooth
+     aurora gradient, and blurring a smooth gradient returns the same gradient.
+     Twenty-seven of these were doing nothing but costing layers.
+
+     The fill is 0.86, not the 0.10 it was. That is not a taste change: the
+     capsule crosses the ink footer on the way down the page, and at 0.10 the
+     nav labels composited to 3.4:1 against it. 0.86 is the measured floor for
+     brand-text — see check_contrast.py, which composites every nav role over
+     the darkest and lightest backdrop the capsule can cross.
+
+     It also gets a real 1px border, which the old glass refused on principle.
+     The principle was wrong: an object floating over moving content needs a
+     boundary that survives whatever passes under it, and a shadow alone does
+     not (WCAG 1.4.11 wants a discernible edge on a control surface).
+     --------------------------------------------------------------------- */
+  .glass-nav {
     position: relative;
     isolation: isolate;
-    border-radius: var(--lg-radius, 1.75rem);
     background: var(--kc-glass-fill);
-    backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate)) brightness(1.04);
-    -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate))
-      brightness(1.04);
-    box-shadow:
-      /* ambient — the panel floats */
-      0 14px 40px -12px var(--kc-glass-cast),
-      0 3px 10px -4px var(--kc-glass-cast),
-      /* thickness: rim light along the top, bounce along the bottom */ inset 0 1.5px 0 -0.5px
-        var(--kc-glass-rim),
-      inset 0 -1px 0 -0.5px var(--kc-glass-rimLow),
-      /* the pane's own edge */ inset 0 0 0 1px var(--kc-glass-border),
-      /* interior depth, so the slab has a bottom */ inset 0 -22px 30px -28px var(--kc-glass-depth);
+    /* --kc-navBorder, not --kc-border. The capsule floats over content it does
+       not control: composited over the ink footer, the page border measures
+       1.32:1 against the capsule and the boundary vanishes at exactly the
+       scroll position where it matters most. */
+    border: 1px solid var(--kc-navBorder);
+    backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--kc-glass-blur)) saturate(var(--kc-glass-saturate));
+    box-shadow: 0 10px 30px -18px var(--kc-glass-cast);
   }
 
-  /* Content must sit above both pseudo-element layers. */
-  .glass > * {
-    position: relative;
-    z-index: 2;
-  }
+  /* No sheen layer. The capsule used to carry a diagonal specular gradient and
+     two rim glints; on the dark theme the lit corner read as an inconsistency
+     — a header that looked different from everything else on the page — and it
+     was the kind of decoration that makes a site feel generated. Fill, border,
+     blur and one shadow are the whole material now. */
 
-  /* (a) the specular sweep */
-  .glass::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    pointer-events: none;
-    background:
-      linear-gradient(
-        142deg,
-        var(--kc-glass-spec) 0%,
-        transparent 34%,
-        transparent 68%,
-        var(--kc-glass-specLow) 100%
-      ),
-      radial-gradient(120% 80% at 12% -10%, var(--kc-glass-specLow), transparent 58%);
-  }
+  /* ---------------------------------------------------------------------
+     .panel — the material everything that carries content is made of.
 
-  /* (b) the edge refraction band — a ring, not a border. Masked to a fixed
-     inset so it hugs the radius exactly. */
-  .glass::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    pointer-events: none;
-    padding: var(--lg-band, 9px);
-    background: linear-gradient(
-      180deg,
-      var(--kc-glass-rim) 0%,
-      transparent 35%,
-      transparent 62%,
-      var(--kc-glass-rimLow) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    opacity: 0.9;
-  }
+     Elevation is a real value step (surfaceRaised over surface) plus a real
+     border, not a translucency trick. That is the whole point: the glass it
+     replaces measured 1.007:1 against the page in light mode, which is to say
+     it had no edge, and it existed only to fake an elevation the tokens did
+     not provide. The tokens provide it now (see tokens.json role.light), so
+     the material can be honest and cost one paint instead of two composited
+     layers and a runtime SVG filter.
 
-  .glass-strong {
-    background: var(--kc-glass-fillStrong);
-  }
-
-  /* Small controls — pills, tags, buttons — need a tighter band or the ring
-     swallows the whole shape. */
-  .glass-sm {
-    --lg-band: 4px;
-    --lg-radius: 9999px;
-  }
-
-  /* Anything that has to stay readable — long copy, form fields — sits on a
-     near-opaque panel. Depth without gambling on contrast. */
-  .glass-solid {
-    background: color-mix(in srgb, var(--kc-surface) 92%, transparent);
+     Shadow is ambient only — it separates the panel from the page, it does
+     not pretend the panel is floating an inch above it.
+     --------------------------------------------------------------------- */
+  .panel {
+    background: var(--kc-surfaceRaised);
     border: 1px solid var(--kc-border);
-    box-shadow: var(--kc-glass-shadow);
-    backdrop-filter: blur(var(--kc-glass-blur));
-    -webkit-backdrop-filter: blur(var(--kc-glass-blur));
+    border-radius: var(--kc-radius-lg);
+    box-shadow:
+      0 1px 2px var(--kc-glass-cast),
+      0 8px 24px -12px var(--kc-glass-cast);
   }
 
   /* ---------------------------------------------------------------------
@@ -207,11 +220,18 @@
     pointer-events: none;
     contain: paint;
     /* The wash COLOURS have to flip with the scheme, not just the opacity.
-       Light greens laid over a dark ground do not tint it, they haze it. */
-    --aurora-1: var(--kc-viridian-100);
-    --aurora-2: var(--kc-viridian-200);
-    --aurora-3: var(--kc-viridian-50);
-    opacity: var(--aurora-strength, 0.55);
+       Light greens laid over a dark ground do not tint it, they haze it.
+
+       They also sit one step further down the scale than they used to. At
+       viridian-100 the wash was the same lightness as the viridian-100 tint it
+       was laid over, so `glow` on a tinted section produced literally nothing
+       while the identical class on an untinted one produced a visible wash. A
+       device that does two different things depending on where it lands is not
+       a device. */
+    --aurora-1: var(--kc-viridian-200);
+    --aurora-2: var(--kc-viridian-300);
+    --aurora-3: var(--kc-viridian-100);
+    opacity: var(--aurora-strength, 0.45);
     background:
       /* follows the section's top boundary, full width */
       linear-gradient(to bottom, var(--aurora-1), transparent 58%),
@@ -238,23 +258,122 @@
   }
 
   [data-theme='light'] .aurora {
-    --aurora-strength: 0.55;
-    --aurora-1: var(--kc-viridian-100);
-    --aurora-2: var(--kc-viridian-200);
-    --aurora-3: var(--kc-viridian-50);
+    --aurora-strength: 0.45;
+    --aurora-1: var(--kc-viridian-200);
+    --aurora-2: var(--kc-viridian-300);
+    --aurora-3: var(--kc-viridian-100);
   }
 
-  /* Grain. A 90px blur over flat colour bands badly on 8-bit displays; a
-     little noise breaks the bands up. Inline SVG, so no extra request. */
-  .grain::after {
+  /* -------------------------------------------------------------------
+     Navigation links: the hover is a liquid highlight, not a colour fade —
+     a translucent pill of the current text colour appears under the pointer,
+     the same material language as the capsule itself. color-mix keeps it
+     theme-correct without inventing tokens: it is literally "8% of whatever
+     the text colour is here". The active page holds the pill permanently.
+     ------------------------------------------------------------------- */
+  .nav-link {
+    border-radius: 9999px;
+    transition:
+      background-color 150ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      color 150ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .nav-link:hover {
+    background-color: color-mix(in oklab, var(--kc-text) 8%, transparent);
+  }
+
+  .nav-link[aria-current='page'] {
+    background-color: color-mix(in oklab, var(--kc-text) 10%, transparent);
+  }
+
+  /* The same liquid highlight for interactive rows (FAQ questions): a soft
+     fill of the current text colour, no blur — blur needs frequency behind
+     it, and these rows sit on flat paper. */
+  .liquid-row {
+    border-radius: 0.5rem;
+    transition: background-color 150ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .liquid-row:hover {
+    background-color: color-mix(in oklab, var(--kc-text) 5%, transparent);
+  }
+
+  /* -------------------------------------------------------------------
+     Clear glass, where it can actually refract: ON INK ONLY.
+
+     The old site-wide glass was removed because a blur over a flat tint
+     returns the flat tint (see the .glass-nav note). That physics has not
+     changed — what changed is the ground: the ink surfaces carry a node
+     field and an aurora, real frequency for a backdrop blur to sample. So
+     the clear-glass language lives on ink (chips, secondary actions) and
+     the nav capsule, and paper keeps its honest flat panels.
+     ------------------------------------------------------------------- */
+  .glass-chip {
+    background: color-mix(in oklab, var(--kc-stone-50) 7%, transparent);
+    border: 1px solid var(--kc-inkBorder);
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  }
+
+  /* -------------------------------------------------------------------
+     The ink frame's own light. Fixed values, no theme flip: ink is dark in
+     BOTH themes (that is its definition), so its washes and dots are as
+     theme-independent as the ink text roles. The page-level .aurora and
+     .node-field must not be used on ink — their light-theme values are pale
+     greens that haze a dark ground instead of tinting it.
+     ------------------------------------------------------------------- */
+  .ink-aurora {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    contain: paint;
+    opacity: 0.55;
+    background:
+      linear-gradient(to bottom, var(--kc-viridian-900), transparent 55%),
+      radial-gradient(110% 90% at 100% 0%, var(--kc-viridian-800), transparent 60%);
+  }
+
+  .node-field-ink {
+    background-image: radial-gradient(
+      circle at center,
+      var(--kc-viridian-800) 1.5px,
+      transparent 1.6px
+    );
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, black, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+  }
+
+  /* -------------------------------------------------------------------
+     Grain — ONE element, one measured alpha (see the history note below).
+     A fine mono noise at 4.5% breaks the flat-fill sterility that makes
+     token-perfect minimal sites read as generated. It sits on exactly two
+     surfaces: the hero section and the ink slabs — the page's peaks — and
+     nowhere else. Inlined SVG turbulence: no request, no script, and it
+     tiles identically in both themes.
+     ------------------------------------------------------------------- */
+  .grain::before {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 1;
+    border-radius: inherit;
     pointer-events: none;
-    opacity: 0.34;
-    mix-blend-mode: multiply;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.045;
   }
+
+  /* THE OLD GRAIN WAS REMOVED, on the numbers.
+     It was `.grain::after` nested inside `.aurora`, so its effective alpha was
+     0.045 (the SVG rect) x 0.34 (the ::after) x 0.55 (the inherited aurora
+     opacity) = 0.008 — roughly 40x too faint to do its stated job of breaking
+     up gradient banding. The job itself also went away: the note described a
+     90px blur, and there is no blur behind the aurora any more, only plain
+     gradients. It cost a mix-blend-mode compositing layer per glow section, on
+     a pass whose entire point was removing compositing layers that produce
+     nothing. If banding ever does show up, it comes back as ONE element with a
+     measured alpha, not as a third nested opacity. */
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -36,17 +36,29 @@ const html = `<!doctype html>
       })();
     </script>
     <style>
+      /* Current token values (brand/tokens/tokens.json): page = stone-100,
+         ink = stone-950, links = viridian-700. This page predates the palette
+         rebuild and was still carrying the rejected hexes. */
       body {
         margin: 0;
         min-height: 100vh;
         display: grid;
         place-items: center;
-        background: #f2f4f1;
-        color: #0c1a15;
+        background: #eaeeeb;
+        color: #1c201c;
         font: 500 17px/1.6 ui-sans-serif, system-ui, sans-serif;
       }
       a {
-        color: #2b564a;
+        color: #396c43;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #1c201c;
+          color: #eaeeeb;
+        }
+        a {
+          color: #9ed3af;
+        }
       }
     </style>
   </head>
