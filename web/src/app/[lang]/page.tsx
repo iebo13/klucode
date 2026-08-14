@@ -82,14 +82,16 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       {/* ---------------------------------------------------------------- hero */}
       {/* The INK OPENING. The page is framed in ink: it opens on the same
           dark slab it closes on (the footer), and everything between is paper.
-          The slab is pulled up under the glass capsule (-mt-12 against a
-          ~48px header) so the frame starts at the viewport edge, in both
-          themes. All colour on this surface uses the fixed ink roles — ink is
+          The slab is pulled up under the glass capsule so the frame starts at
+          the viewport edge, in both themes. All colour on this surface uses the fixed ink roles — ink is
           dark in both themes, so nothing here flips. */}
-      <section className="grain relative isolate -mt-12 overflow-hidden bg-ink text-ink-fg">
+      {/* -mt-16 must EXCEED the header's total height (~52px), not approximate
+          it: at -mt-12 the slab fell 4px short and a page-coloured seam showed
+          above the capsule at the very top of the viewport. */}
+      <section className="grain relative isolate -mt-16 overflow-hidden bg-ink text-ink-fg">
         <div aria-hidden="true" className="ink-aurora -z-10" />
         <div aria-hidden="true" className="node-field-ink absolute inset-0 -z-10 opacity-60" />
-        <div className="relative mx-auto max-w-container px-6 pb-section pt-16 md:px-8 md:pt-24">
+        <div className="relative mx-auto max-w-container px-6 pb-section pt-24 md:px-8">
           <p className="flex items-center gap-2 text-small font-medium text-ink-accent">
             <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-ink-accent" />
             {h.heroEyebrow}
