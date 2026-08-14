@@ -165,7 +165,7 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
                       German copy quotes „so", English copy "so". */}
                   <blockquote className="max-w-measure text-lead">{p.quote.text}</blockquote>
                   <figcaption className="mt-4 text-small text-muted">
-                    — {p.quote.attribution}
+                    {p.quote.attribution}
                   </figcaption>
                 </figure>
               ) : null}

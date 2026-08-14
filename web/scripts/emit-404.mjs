@@ -29,7 +29,7 @@ const html = `<!doctype html>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />
-    <title>404 — KluCode</title>
+    <title>404 · KluCode</title>
     <link rel="icon" href="${BASE}/favicon.svg" type="image/svg+xml" />
     <script>
       // Same pre-paint theme pick as the site (lib/theme.ts): stored choice
@@ -40,7 +40,7 @@ const html = `<!doctype html>
       } catch (e) {}
     </script>
     <style>
-      /* Token values from brand/tokens/tokens.json — paper/ink, viridian text-safe steps. */
+      /* Token values from brand/tokens/tokens.json: paper/ink, viridian text-safe steps. */
       :root {
         color-scheme: light dark;
         --surface: #f5f8f6;

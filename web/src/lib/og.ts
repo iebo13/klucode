@@ -42,7 +42,7 @@ export function openGraphFor(
         url: '/og.png',
         width: 1200,
         height: 630,
-        alt: `${c.meta.siteName} — ${c.footer.tagline}`,
+        alt: `${c.meta.siteName} · ${c.footer.tagline}`,
       },
     ],
   };

@@ -80,8 +80,10 @@ export function Header({
               key={l.key}
               href={l.href}
               aria-current={current === l.key ? 'page' : undefined}
-              className={`nav-link px-3 py-2 text-small ${
-                current === l.key ? 'text-body' : 'text-muted hover:text-body'
+              className={`px-3 py-2 text-small transition-colors duration-fast ${
+                current === l.key
+                  ? 'font-medium text-brand-text'
+                  : 'text-muted hover:text-brand-text'
               }`}
             >
               {l.label}
@@ -94,7 +96,7 @@ export function Header({
             href={alternatePath(current, lang)}
             lang={lang === 'de' ? 'en' : 'de'}
             aria-label={ui.switchLangLabel}
-            className="nav-link px-3 py-2 text-small text-muted hover:text-body"
+            className="px-3 py-2 text-small text-muted transition-colors duration-fast hover:text-brand-text"
           >
             {ui.switchLang}
           </Link>

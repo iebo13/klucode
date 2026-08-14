@@ -6,54 +6,54 @@ const de = {
     siteName: 'KluCode',
     // „Webentwicklung Düsseldorf" is what a local owner actually types into
     // Google; the old title left the query term entirely to the description.
-    // „Individuelle" moved there — the 60-char budget check-meta.mjs enforces
+    // „Individuelle" moved there; the 60-char budget check-meta.mjs enforces
     // does not fit all three of brand, positioning word and query term.
-    title: 'KluCode — Software & Webentwicklung in Düsseldorf',
+    title: 'KluCode · Software & Webentwicklung in Düsseldorf',
     description:
       'Ich baue die Software, mit der Ihr Betrieb tatsächlich arbeitet: Web-Anwendungen, interne Tools und Websites. Ein Ansprechpartner, Festpreis, vom ersten Klick bis zum laufenden Server.',
     pages: {
       home: {
-        title: 'KluCode — Software & Webentwicklung in Düsseldorf',
+        title: 'KluCode · Software & Webentwicklung in Düsseldorf',
         description:
-          'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis — Frontend, Backend und Server von einer Person.',
+          'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis. Frontend, Backend und Server von einer Person.',
       },
       // Plain spaces in this description on purpose: check-meta parses and
       // budgets the raw source string (an escape counts six chars), and a
       // search snippet never line-breaks inside a price. The NBSP rule
       // applies to rendered copy.
       services: {
-        title: 'Leistungen — KluCode',
+        title: 'Leistungen · KluCode',
         description:
           'Website und Landingpage ab 2.500 €, individuelle Web-Anwendungen ab 9.000 €, Entwickler-Kapazität ab 680 €/Tag, Betrieb und Wartung ab 90 €/Monat.',
       },
       work: {
-        title: 'Projekte — KluCode',
+        title: 'Projekte · KluCode',
         description:
           'Drei Systeme im Produktivbetrieb: ein CRM mit Provisionsverwaltung, ein Kassensystem für die Gastronomie und eine Landingpage samt Kampagne.',
       },
       approach: {
-        title: 'Ansatz — KluCode',
+        title: 'Ansatz · KluCode',
         description:
           'Wie ein Projekt bei mir abläuft: vier Schritte, ein Festpreis, ein Ansprechpartner. Und eine ehrliche Antwort auf die Frage, welche Rolle KI dabei spielt.',
       },
       about: {
-        title: 'Über mich — KluCode',
+        title: 'Über mich · KluCode',
         description:
           'Informatiker (B.Sc.), vier Jahre Frontend-Entwicklung, jetzt freiberuflich in Düsseldorf. Was KluCode heißt und warum ich so arbeite, wie ich arbeite.',
       },
       contact: {
-        title: 'Kontakt — KluCode',
+        title: 'Kontakt · KluCode',
         description:
           'Erzählen Sie mir, was gerade nicht läuft. 30 Minuten, unverbindlich, ohne Präsentation.',
       },
       imprint: {
-        title: 'Impressum — KluCode',
+        title: 'Impressum · KluCode',
         description:
           'Angaben gemäß § 5 DDG: Diensteanbieter, Anschrift, Kontakt und Verantwortlichkeit für die Inhalte von klucode.de.',
       },
       privacy: {
-        title: 'Datenschutzerklärung — KluCode',
-        description: 'Welche Daten diese Website verarbeitet — und welche nicht.',
+        title: 'Datenschutzerklärung · KluCode',
+        description: 'Welche Daten diese Website verarbeitet. Und welche nicht.',
       },
     },
   },
@@ -94,7 +94,7 @@ const de = {
 
   home: {
     heroEyebrow: 'Softwareentwicklung · Düsseldorf',
-    // NBSP: „mit" must not separate from „der" — at display size the balanced
+    // NBSP: „mit" must not separate from „der"; at display size the balanced
     // wrap otherwise breaks after „mit" and strands the pronoun.
     heroTitle: 'Software, mit der Ihr Betrieb',
     heroTitleAccent: 'tatsächlich arbeitet.',
@@ -121,12 +121,12 @@ const de = {
       },
       {
         title: 'Also weiter wie bisher',
-        body: 'Excel, WhatsApp und ein Ordner, den nur eine Person versteht. Funktioniert — bis diese Person Urlaub hat oder die Datei in drei Versionen existiert.',
+        body: 'Excel, WhatsApp und ein Ordner, den nur eine Person versteht. Funktioniert. Bis diese Person Urlaub hat oder die Datei in drei Versionen existiert.',
       },
     ],
     answerTitle: 'Die dritte Möglichkeit',
     answerBody:
-      'Eine Person, die mit Ihnen spricht, Ihren Ablauf versteht und danach das ganze System baut — Oberfläche, Logik, Datenbank, Server. Der Preis steht fest, bevor die erste Zeile geschrieben ist.',
+      'Eine Person, die mit Ihnen spricht, Ihren Ablauf versteht und danach das ganze System baut: Oberfläche, Logik, Datenbank, Server. Der Preis steht fest, bevor die erste Zeile geschrieben ist.',
 
     servicesEyebrow: 'Leistungen',
     servicesTitle: 'Vier Wege zur Zusammenarbeit.',
@@ -149,11 +149,11 @@ const de = {
     faq: [
       {
         q: 'Was kostet das?',
-        a: 'Eine Website beginnt bei 2.500\u00A0€, eine individuelle Web-Anwendung bei 9.000\u00A0€. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung — nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
+        a: 'Eine Website beginnt bei 2.500\u00A0€, eine individuelle Web-Anwendung bei 9.000\u00A0€. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung. Nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
       },
       {
         q: 'Wie lange dauert es?',
-        a: 'Eine Landingpage zwei bis drei Wochen. Eine Web-Anwendung vier bis zehn Wochen, je nach Umfang. Die erste lauffähige Version sehen Sie deutlich früher — meist nach zwei Wochen.',
+        a: 'Eine Landingpage zwei bis drei Wochen. Eine Web-Anwendung vier bis zehn Wochen, je nach Umfang. Die erste lauffähige Version sehen Sie deutlich früher, meist nach zwei Wochen.',
       },
       {
         q: 'Was passiert, wenn Sie ausfallen?',
@@ -165,7 +165,7 @@ const de = {
       },
       {
         q: 'Machen Sie auch die Wartung?',
-        a: 'Ja, ab 90\u00A0€ im Monat: Updates, Sicherheits-Patches, Backups, kleine Änderungen. Sie müssen es nicht buchen — aber Software, die niemand pflegt, wird nach zwei Jahren zum Problem.',
+        a: 'Ja, ab 90\u00A0€ im Monat: Updates, Sicherheits-Patches, Backups, kleine Änderungen. Sie müssen es nicht buchen. Aber Software, die niemand pflegt, wird nach zwei Jahren zum Problem.',
       },
       {
         q: 'Arbeiten Sie auch außerhalb von Düsseldorf?',
@@ -174,7 +174,7 @@ const de = {
     ],
 
     finalTitle: 'Erzählen Sie mir, was gerade nicht läuft.',
-    finalLead: `30 Minuten, unverbindlich, ohne Präsentation. Wenn ich nicht der Richtige bin, sage ich Ihnen das — und nach Möglichkeit, wer es ist. Antwort werktags innerhalb von ${profile.responseTime.de}.`,
+    finalLead: `30 Minuten, unverbindlich, ohne Präsentation. Wenn ich nicht der Richtige bin, sage ich Ihnen das. Und nach Möglichkeit, wer es ist. Antwort werktags innerhalb von ${profile.responseTime.de}.`,
   },
 
   services: {
@@ -186,13 +186,12 @@ const de = {
         key: 'website',
         name: 'Website & Landingpage',
         forWhom: 'Für Betriebe, die online gefunden werden und Anfragen bekommen wollen.',
-        body: 'Eine Seite, die lädt, auf dem Handy funktioniert und bei Google auffindbar ist. Handgebaut, ohne Baukasten-Ballast — deshalb schnell, und deshalb später erweiterbar.',
+        body: 'Eine Seite, die lädt, auf dem Handy funktioniert und bei Google auffindbar ist. Handgebaut, ohne Baukasten-Ballast: deshalb schnell, und deshalb später erweiterbar.',
         includes: [
           'Aufbau, Text-Struktur und Gestaltung',
           'Responsiv von 320 px bis Desktop',
           'Technisches SEO, Ladezeit unter einer Sekunde',
-          'Rechtssichere Einbindung von Impressum und Datenschutz',
-          'Ohne Cookie-Banner, weil ohne Tracking',
+          'Auf Wunsch mit Besucher-Statistik, datenschutzfreundlich umgesetzt',
           'Einweisung, damit Sie Inhalte selbst pflegen können',
         ],
         price: '2.500\u00A0€',
@@ -202,7 +201,7 @@ const de = {
         key: 'app',
         name: 'Individuelle Web-Anwendung',
         forWhom: 'Für Abläufe, die heute in Excel, auf Papier oder in WhatsApp hängen.',
-        body: 'CRM, Kassensystem, Auswertung, internes Werkzeug, Portal. Gebaut für Ihren Ablauf statt umgekehrt — inklusive Datenbank, Benutzerverwaltung und Server. Das ist die Arbeit, die ich am liebsten mache.',
+        body: 'CRM, Kassensystem, Auswertung, internes Werkzeug, Portal. Gebaut für Ihren Ablauf statt umgekehrt, inklusive Datenbank, Benutzerverwaltung und Server. Das ist die Arbeit, die ich am liebsten mache.',
         includes: [
           'Analyse des Ist-Ablaufs, gemeinsam mit den Menschen, die ihn ausführen',
           'Frontend, Backend, Datenbank und Deployment',
@@ -233,7 +232,7 @@ const de = {
       {
         key: 'care',
         name: 'Betrieb & Wartung',
-        forWhom: 'Für alle, die etwas laufen haben — von mir oder von jemand anderem.',
+        forWhom: 'Für alle, die etwas laufen haben. Von mir oder von jemand anderem.',
         body: 'Software, die niemand pflegt, wird nach zwei Jahren zum Sicherheitsproblem. Der günstigste Weg, das zu vermeiden, ist ein kleiner monatlicher Betrag statt einer großen Rechnung im Notfall.',
         includes: [
           'Updates und Sicherheits-Patches',
@@ -250,7 +249,7 @@ const de = {
     howEyebrow: 'Abrechnung',
     howTitle: 'Festpreis, nicht Stunden.',
     howBody:
-      'Sie kaufen ein Ergebnis, keine Arbeitszeit. Der Preis steht vor dem Start und ändert sich nur, wenn Sie den Umfang ändern — dann bekommen Sie eine neue Zahl und einen neuen Termin, schriftlich, bevor ich weiterarbeite. Zahlung in drei Schritten: 40 % bei Auftrag, 30 % bei der ersten nutzbaren Version, 30 % bei Übergabe.',
+      'Sie kaufen ein Ergebnis, keine Arbeitszeit. Der Preis steht vor dem Start und ändert sich nur, wenn Sie den Umfang ändern. Dann bekommen Sie eine neue Zahl und einen neuen Termin, schriftlich, bevor ich weiterarbeite. Zahlung in drei Schritten: 40 % bei Auftrag, 30 % bei der ersten nutzbaren Version, 30 % bei Übergabe.',
     notTitle: 'Was ich nicht mache',
     notBody:
       'Der schnellste Weg, glaubwürdig zu sein, ist zu sagen, wo ich nicht der Richtige bin:',
@@ -258,7 +257,7 @@ const de = {
       'Native Apps für iOS und Android',
       'Grafikdesign, Print, Logoentwicklung',
       'SEO- oder Social-Media-Betreuung als Dauerleistung',
-      'Shopsysteme von der Stange — dafür gibt es Bessere und Günstigere',
+      'Shopsysteme von der Stange: dafür gibt es Bessere und Günstigere',
       'Teams stellen oder Projekte über zwölf Monate leiten',
     ],
   },
@@ -266,7 +265,7 @@ const de = {
   work: {
     eyebrow: 'Projekte',
     title: 'Drei Systeme im Produktivbetrieb.',
-    lead: 'Alle drei sind ausgeliefert, bezahlt und in täglicher Nutzung. Kundennamen nenne ich nur mit schriftlicher Freigabe — die Zahlen sind wichtiger als die Logos.',
+    lead: 'Alle drei sind ausgeliefert, bezahlt und in täglicher Nutzung. Kundennamen nenne ich nur mit schriftlicher Freigabe. Die Zahlen sind wichtiger als die Logos.',
     projects: [
       {
         key: 'crm',
@@ -274,7 +273,7 @@ const de = {
         sector: 'Vertriebsorganisation',
         scope: 'Full-Stack · drei Systeme, eine Datenbank',
         summary:
-          'Drei Systeme, die vorher drei Excel-Dateien waren — Kundenverwaltung, Provisionsabrechnung und ein öffentliches Vergleichsportal, die dieselben Daten teilen.',
+          'Drei Systeme, die vorher drei Excel-Dateien waren: Kundenverwaltung, Provisionsabrechnung und ein öffentliches Vergleichsportal, die dieselben Daten teilen.',
         before:
           'Kundendaten in einer Tabelle, Provisionen in einer zweiten, das Portal gepflegt von Hand. Die Abrechnung kostete jeden Monat mehrere Tage, und jeder Übertragungsfehler kostete Geld oder Vertrauen.',
         after:
@@ -289,7 +288,7 @@ const de = {
         sector: 'Gastronomie',
         scope: 'Frontend & Datenmodell · Tablet-Kasse',
         summary:
-          'Ein Kassensystem, das zum Betrieb passt — nicht ein Betrieb, der sich an ein Kassensystem anpassen muss.',
+          'Ein Kassensystem, das zum Betrieb passt. Nicht ein Betrieb, der sich an ein Kassensystem anpassen muss.',
         before:
           'Standardlösungen aus dem Handel bilden den Ablauf einer Shisha-Bar nicht ab: offene Rechnungen am Tisch, Wechsel während der Schicht, Abrechnung am Ende des Abends.',
         after:
@@ -304,11 +303,11 @@ const de = {
         sector: 'Reinigungsunternehmen',
         scope: 'Frontend & Kampagne · ohne Framework',
         summary:
-          'Kein Baukasten, kein Framework-Ballast: eine Seite, die lädt — und dazu die Kampagne, die Menschen darauf bringt.',
+          'Kein Baukasten, kein Framework-Ballast: eine Seite, die lädt. Und dazu die Kampagne, die Menschen darauf bringt.',
         before:
           'Kein eigener Auftritt im Netz. Neue Aufträge kamen ausschließlich über Empfehlungen, und damit war das Wachstum gedeckelt.',
         after:
-          'Eine handgebaute Seite in reinem JavaScript, ohne Framework-Overhead, dazu eine LinkedIn-Kampagne mit KI-erzeugten Videos und Bildern — zu Kosten, die für einen Betrieb dieser Größe sonst nicht darstellbar gewesen wären.',
+          'Eine handgebaute Seite in reinem JavaScript, ohne Framework-Overhead, dazu eine LinkedIn-Kampagne mit KI-erzeugten Videos und Bildern. Zu Kosten, die für einen Betrieb dieser Größe sonst nicht darstellbar gewesen wären.',
         result:
           'Sichtbarkeit über den Empfehlungskreis hinaus. Aus einem reinen Web-Auftrag wurde ein vollständiges Paket zur Kundengewinnung.',
         stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-Bild und -Video'],
@@ -334,11 +333,11 @@ const de = {
       },
       {
         title: 'Bauen, mit Zwischenständen',
-        body: 'Nach etwa zwei Wochen sehen Sie die erste lauffähige Version — nicht ein Bild davon, sondern etwas, das Sie anklicken können. Danach im festen Rhythmus weiter. Sie sind immer im Bilde, ohne dafür Termine wahrnehmen zu müssen.',
+        body: 'Nach etwa zwei Wochen sehen Sie die erste lauffähige Version: nicht ein Bild davon, sondern etwas, das Sie anklicken können. Danach im festen Rhythmus weiter. Sie sind immer im Bilde, ohne dafür Termine wahrnehmen zu müssen.',
       },
       {
         title: 'Übergabe',
-        body: 'Live-Schaltung, Einweisung, Dokumentation, alle Zugänge. Der Code gehört Ihnen. Danach entweder Wartungsvertrag oder Funkstille — beides ist in Ordnung, und beides habe ich schon gehabt.',
+        body: 'Live-Schaltung, Einweisung, Dokumentation, alle Zugänge. Der Code gehört Ihnen. Danach entweder Wartungsvertrag oder Funkstille. Beides ist in Ordnung, und beides habe ich schon gehabt.',
       },
     ],
 
@@ -346,19 +345,19 @@ const de = {
     aiTitle: 'Wie ich so schnell arbeite.',
     aiBody: [
       'Ich entwickle KI-gestützt. Alle drei Projekte auf dieser Seite sind so entstanden. Ich schreibe das offen hin, weil es die ehrliche Antwort auf die Frage ist, wie eine Person die Arbeitsmenge einer kleinen Agentur schafft.',
-      'Der Nutzen für Sie liegt nicht in der Technik, sondern in zwei Zahlen: dem Preis und dem Termin. Was eine Agentur in vier Monaten und fünfstellig anbietet, liefere ich in Wochen — nicht, weil ich schneller tippe, sondern weil das Tippen nicht mehr der Engpass ist.',
+      'Der Nutzen für Sie liegt nicht in der Technik, sondern in zwei Zahlen: dem Preis und dem Termin. Was eine Agentur in vier Monaten und fünfstellig anbietet, liefere ich in Wochen. Nicht, weil ich schneller tippe, sondern weil das Tippen nicht mehr der Engpass ist.',
       'Was sich dadurch ausdrücklich nicht ändert: die Verantwortung. Ich prüfe, teste und verantworte jede Zeile, die auf Ihrem Server landet.',
     ],
     objection: {
       q: 'Schreibt das nicht einfach eine KI?',
-      a: 'Nein — eine KI tippt schneller, als ich tippen kann. Was sie nicht kann: entscheiden, was gebaut werden soll, wo die Grenzen Ihres Geschäfts liegen und welche Fehler Sie am Monatsende Geld kosten. Das ist meine Arbeit. Ich prüfe, teste und verantworte jede Zeile, die ausgeliefert wird — mit einem abgeschlossenen Informatikstudium und vier Jahren Berufserfahrung im Rücken. Der Unterschied für Sie ist nicht die Qualität. Es ist der Preis und der Termin.',
+      a: 'Nein. Eine KI tippt schneller, als ich tippen kann. Was sie nicht kann: entscheiden, was gebaut werden soll, wo die Grenzen Ihres Geschäfts liegen und welche Fehler Sie am Monatsende Geld kosten. Das ist meine Arbeit. Ich prüfe, teste und verantworte jede Zeile, die ausgeliefert wird, mit einem abgeschlossenen Informatikstudium und vier Jahren Berufserfahrung im Rücken. Der Unterschied für Sie ist nicht die Qualität. Es ist der Preis und der Termin.',
     },
 
     principlesTitle: 'Woran ich mich halte',
     principles: [
       {
         title: 'Keine Technik, die nur ich bedienen kann',
-        body: 'Bewährte, verbreitete Werkzeuge statt exotischer Entscheidungen. Damit jede andere Entwicklerin und jeder andere Entwickler übernehmen könnte — auch wenn es nie nötig sein sollte.',
+        body: 'Bewährte, verbreitete Werkzeuge statt exotischer Entscheidungen. Damit jede andere Entwicklerin und jeder andere Entwickler übernehmen könnte, auch wenn es nie nötig sein sollte.',
       },
       {
         title: 'Der Code gehört Ihnen',
@@ -366,7 +365,7 @@ const de = {
       },
       {
         title: 'Schlechte Nachrichten kommen sofort',
-        body: 'Wenn ein Termin wackelt, erfahren Sie es an dem Tag, an dem ich es weiß — nicht in der Woche, in der geliefert werden sollte.',
+        body: 'Wenn ein Termin wackelt, erfahren Sie es an dem Tag, an dem ich es weiß. Nicht in der Woche, in der geliefert werden sollte.',
       },
       {
         title: 'Barrierefrei, weil es zur Arbeit gehört',
@@ -380,12 +379,12 @@ const de = {
     title: 'Eine Person, kein Wir.',
     lead: 'Auf dieser Seite steht durchgehend „ich“, weil KluCode aus einer Person besteht. Das ist keine Bescheidenheit, sondern der Punkt: Sie sprechen mit dem, der es baut.',
     paragraphs: [
-      'Ich bin 33, Informatiker (B.Sc.) und lebe in Düsseldorf. Vier Jahre habe ich als Frontend-Entwickler angestellt gearbeitet und in dieser Zeit gelernt, was mir an dem Beruf am meisten liegt: nicht das Umsetzen fertiger Vorgaben, sondern das Gespräch davor — herauszufinden, was jemand wirklich braucht, und dann das Passende zu bauen.',
+      'Ich bin 33, Informatiker (B.Sc.) und lebe in Düsseldorf. Vier Jahre habe ich als Frontend-Entwickler angestellt gearbeitet und in dieser Zeit gelernt, was mir an dem Beruf am meisten liegt: nicht das Umsetzen fertiger Vorgaben, sondern das Gespräch davor: herauszufinden, was jemand wirklich braucht, und dann das Passende zu bauen.',
       'Parallel dazu habe ich drei Projekte für eigene Kunden umgesetzt: ein CRM mit Provisionsverwaltung und angeschlossenem Vergleichsportal, ein Kassensystem für eine Shisha-Bar und eine Landingpage samt LinkedIn-Kampagne für ein Reinigungsunternehmen. Alle drei laufen. Alle drei wurden bezahlt. Genau diese Arbeit möchte ich hauptberuflich machen.',
-      'Was mir dabei wichtig ist: Ich baue keine Software, die beeindruckt. Ich baue Software, die jemand am Montagmorgen benutzt, ohne darüber nachzudenken — und die nach zwei Jahren noch jemand anderes weiterentwickeln kann.',
+      'Was mir dabei wichtig ist: Ich baue keine Software, die beeindruckt. Ich baue Software, die jemand am Montagmorgen benutzt, ohne darüber nachzudenken, und die nach zwei Jahren noch jemand anderes weiterentwickeln kann.',
     ],
     nameNote:
-      'Das „Klu“ in KluCode kommt von Klausmann. Und von „klug“, weil das der Teil der Arbeit ist, der zählt — die Entscheidung, was gebaut wird, fällt vor der ersten Zeile Code.',
+      'Das „Klu“ in KluCode kommt von Klausmann. Und von „klug“, weil das der Teil der Arbeit ist, der zählt: Die Entscheidung, was gebaut wird, fällt vor der ersten Zeile Code.',
     factsTitle: 'Kurz und sachlich',
     facts: [
       { label: 'Standort', value: 'Düsseldorf, Nordrhein-Westfalen' },
@@ -397,7 +396,7 @@ const de = {
     ],
     portraitAlt: `${profile.firstName} ${profile.lastName}, freiberuflicher Softwareentwickler in Düsseldorf`,
     portraitPlaceholder:
-      'Hier gehört ein Foto von Ihnen hin. Eine Ein-Personen-Marke ohne Gesicht bittet um Vertrauen, das sie selbst nicht anbietet — legen Sie das Bild als public/portrait.jpg ab.',
+      'Hier gehört ein Foto von Ihnen hin. Eine Ein-Personen-Marke ohne Gesicht bittet um Vertrauen, das sie selbst nicht anbietet. Legen Sie das Bild als public/portrait.jpg ab.',
   },
 
   contact: {
@@ -413,7 +412,7 @@ const de = {
       company: 'Unternehmen (optional)',
       message: 'Worum geht es?',
       messagePlaceholder:
-        'Was läuft heute wie — und was soll sich ändern? Zwei, drei Sätze reichen völlig.',
+        'Was läuft heute wie, und was soll sich ändern? Zwei, drei Sätze reichen völlig.',
     },
     consent:
       'Ich bin damit einverstanden, dass meine Angaben zur Bearbeitung meiner Anfrage verarbeitet werden. Sie werden nicht weitergegeben. Widerruf jederzeit per E-Mail.',
@@ -422,7 +421,7 @@ const de = {
     sent: `Angekommen. Ich melde mich werktags innerhalb von ${profile.responseTime.de}.`,
     handoffTitle: 'Ihr E-Mail-Programm sollte sich jetzt geöffnet haben.',
     handoffBody:
-      'Die Nachricht ist fertig vorbereitet — abgeschickt ist sie erst, wenn Sie in Ihrem E-Mail-Programm auf Senden drücken. Falls sich nichts geöffnet hat, schreiben Sie mir bitte direkt an:',
+      'Die Nachricht ist fertig vorbereitet. Abgeschickt ist sie erst, wenn Sie in Ihrem E-Mail-Programm auf Senden drücken. Falls sich nichts geöffnet hat, schreiben Sie mir bitte direkt an:',
     failed: 'Das hat nicht geklappt. Schreiben Sie mir bitte direkt.',
     errorRequired: 'Bitte ausfüllen.',
     errorEmail: 'Diese Adresse stimmt so nicht.',
@@ -432,7 +431,7 @@ const de = {
     expect: [
       'Antwort werktags innerhalb von 24 Stunden.',
       'Ein Gespräch von 30 Minuten, telefonisch oder per Video.',
-      'Danach eine Leistungsbeschreibung mit Festpreis — oder eine ehrliche Absage.',
+      'Danach eine Leistungsbeschreibung mit Festpreis. Oder eine ehrliche Absage.',
     ],
   },
 
@@ -471,7 +470,7 @@ const de = {
               'Als Kleinunternehmer im Sinne des § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet und keine Umsatzsteuer-Identifikationsnummer geführt.',
             ],
           },
-      // § 2 Nr. 11 DL-InfoV — only where a policy actually exists.
+      // § 2 Nr. 11 DL-InfoV: only where a policy actually exists.
       ...(profile.insurance
         ? [
             {
@@ -496,7 +495,7 @@ const de = {
       },
       // Kein Hinweis auf die OS-Plattform der EU-Kommission: sie wurde zum
       // 20.07.2025 abgeschaltet. Ein Link darauf informiert Verbraucher seither
-      // falsch und ist damit selbst abmahnfähig — die Angabe zu entfernen ist
+      // falsch und ist damit selbst abmahnfähig; die Angabe zu entfernen ist
       // Pflicht, nicht Kosmetik.
       {
         heading: 'Streitbeilegung',
@@ -548,7 +547,7 @@ const de = {
         paragraphs: [
           'Diese Website setzt keine Cookies und verwendet keine vergleichbaren Techniken wie Local Storage zur Wiedererkennung. Aus diesem Grund gibt es hier auch kein Einwilligungsbanner.',
           'Eine einzige Einstellung wird lokal in Ihrem Browser gespeichert, und nur dann, wenn Sie sie selbst treffen: Ihre Wahl zwischen hellem und dunklem Design (Local Storage, Schlüssel „kc-theme“). Sie enthält keine personenbezogenen Daten, verlässt Ihr Gerät nicht und dient nicht der Wiedererkennung. Die Speicherung ist unbedingt erforderlich, um die von Ihnen ausdrücklich gewünschte Darstellung bereitzustellen (§ 25 Abs. 2 Nr. 2 TDDDG).',
-          'Es findet keine Reichweitenmessung und keine Analyse Ihres Nutzungsverhaltens statt. Es sind keine Dienste Dritter eingebunden — keine Analysewerkzeuge, keine Kartendienste, keine sozialen Netzwerke, keine externen Videos.',
+          'Es findet keine Reichweitenmessung und keine Analyse Ihres Nutzungsverhaltens statt. Es sind keine Dienste Dritter eingebunden: keine Analysewerkzeuge, keine Kartendienste, keine sozialen Netzwerke, keine externen Videos.',
           'Insbesondere werden keine Schriftarten von fremden Servern nachgeladen. Alle verwendeten Schriften werden vom Server dieser Website ausgeliefert. Ihre IP-Adresse wird dadurch an keinen Dritten übermittelt.',
         ],
       },

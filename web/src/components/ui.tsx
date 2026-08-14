@@ -338,7 +338,7 @@ export function Faq({ items }: { items: readonly { q: string; a: string }[] }) {
               in a row out-shouted the section heading above them, and the
               size jump inside the accordion was one of the places the type
               scale felt arbitrary. */}
-          <summary className="liquid-row -mx-3 flex cursor-pointer list-none items-start justify-between gap-6 px-3 py-2 text-lead font-medium marker:content-none">
+          <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-2 text-lead font-medium transition-colors duration-fast marker:content-none hover:text-brand-text">
             {item.q}
             <span
               aria-hidden="true"
