@@ -90,7 +90,9 @@ export function Section({
       {/* On ink, glow means the ink's own fixed washes plus the node field —
           the texture that gives any glass sitting on this band something to
           refract. The theme-flipping .aurora would haze a dark ground. */}
-      {glow ? <div aria-hidden="true" className={`${ink ? 'ink-aurora' : 'aurora'} -z-10`} /> : null}
+      {glow ? (
+        <div aria-hidden="true" className={`${ink ? 'ink-aurora' : 'aurora'} -z-10`} />
+      ) : null}
       {ink && glow ? (
         <div aria-hidden="true" className="node-field-ink absolute inset-0 -z-10 opacity-40" />
       ) : null}

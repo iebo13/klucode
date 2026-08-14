@@ -36,13 +36,7 @@ export function SystemDiagram({
   ];
 
   return (
-    <svg
-      viewBox="0 0 560 240"
-      role="img"
-      aria-label={label}
-      className={className}
-      fill="none"
-    >
+    <svg viewBox="0 0 560 240" role="img" aria-label={label} className={className} fill="none">
       {/* edges first, so nodes sit on top of the line ends */}
       {rows.map(({ y }) => (
         <path
@@ -68,13 +62,7 @@ export function SystemDiagram({
           {text}
         </text>
       ))}
-      <text
-        x={300}
-        y={150}
-        fontSize={12}
-        textAnchor="middle"
-        className="fill-muted font-mono"
-      >
+      <text x={300} y={150} fontSize={12} textAnchor="middle" className="fill-muted font-mono">
         {hub}
       </text>
       <text x={540} y={100} fontSize={12} textAnchor="end" className="fill-muted font-mono">
