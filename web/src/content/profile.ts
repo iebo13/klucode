@@ -71,7 +71,9 @@ export const profile = {
   // Set to null if you are a Kleinunternehmer under § 19 UStG and have no
   // USt-IdNr. The Impressum then states that instead of printing an empty
   // § 27a heading.
-  vatId: todo('USt-IdNr. (oder null bei Kleinunternehmerregelung § 19 UStG)') as string | null,
+  // Kleinunternehmer under § 19 UStG (owner-confirmed 2026-08-14): no VAT ID.
+  // The Impressum prints the § 19 statement instead of a § 27a heading.
+  vatId: null as string | null,
 
   /**
    * § 2 Nr. 11 DL-InfoV: a service provider who HOLDS professional indemnity

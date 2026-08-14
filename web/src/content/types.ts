@@ -175,7 +175,6 @@ export type Content = {
     factsTitle: string;
     facts: { label: string; value: string }[];
     portraitAlt: string;
-    portraitPlaceholder: string;
   };
 
   contact: {

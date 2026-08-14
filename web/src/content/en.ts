@@ -373,7 +373,7 @@ const en = {
     title: 'One person. Not a "we".',
     lead: 'This site says "I" throughout, because KluCode is one person. That is not modesty, it is the point: you are talking to whoever builds it.',
     paragraphs: [
-      'I am 33, hold a BSc in Computer Science and live in Düsseldorf. I spent four years employed as a frontend developer, and learned in that time which part of the job suits me best: not implementing finished specifications, but the conversation before them: working out what someone actually needs, and then building the right thing.',
+      'I am 33, hold a BSc in Computer Science and live in Düsseldorf. I spent four years employed as a frontend developer, and learned in that time which part of the job suits me best: not implementing finished specifications, but the conversation before them. Working out what someone actually needs, and then building the right thing.',
       'Alongside that I delivered three projects for my own clients: a CRM with commission management and an attached comparison portal, a point-of-sale system for a shisha bar, and a landing page with a LinkedIn campaign for a cleaning company. All three are running. All three were paid for. That is the work I want to do full time.',
       'What matters to me: I do not build software that impresses. I build software someone uses on a Monday morning without thinking about it, and that someone else can still work on two years later.',
     ],
@@ -389,8 +389,6 @@ const en = {
       { label: 'Languages', value: 'German (native), English' },
     ],
     portraitAlt: `${profile.firstName} ${profile.lastName}, freelance software developer in Düsseldorf`,
-    portraitPlaceholder:
-      'A photograph of you belongs here. A one-person brand with no face is asking for trust it has not offered. Drop the image in as public/portrait.jpg.',
   },
 
   contact: {
@@ -436,8 +434,8 @@ const en = {
       {
         heading: 'Service provider',
         paragraphs: [
-          'KluCode · individuelle Softwarelösungen',
-          `Owner: ${profile.firstName} ${profile.lastName}`,
+          'KluCode - individuelle Softwarelösungen',
+          `Inhaber ${profile.firstName} ${profile.lastName}`,
           profile.role.en,
           `${profile.street}`,
           `${profile.postalCode} ${profile.city}`,

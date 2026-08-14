@@ -13,6 +13,7 @@ import {
 } from '@/components/ui';
 import type { Content } from '@/content';
 import { filled, openTodos, profile } from '@/content/profile';
+import { asset } from '@/lib/base-path';
 import { pathFor, type Lang } from '@/lib/routes';
 
 /**
@@ -271,10 +272,19 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
           </div>
 
           <div>
-            {/* Replace with a real photograph before launch — see
-                brand/03-visual-identity.md §8. */}
-            <div className="flex aspect-[4/5] items-end rounded-lg border border-dashed border-line bg-surface-raised p-6">
-              <p className="text-small text-muted">{a.portraitPlaceholder}</p>
+            {/* The one photograph the site cannot do without: the person
+                behind the "ich". Plain <img> with asset(), matching how the
+                repo handles every hand-written public/ URL on a subpath
+                deploy. object-cover crops the near-square file to the 4:5
+                slot. */}
+            <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-line bg-surface-raised">
+              <img
+                src={asset('/me.png')}
+                alt={a.portraitAlt}
+                width={429}
+                height={421}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
             </div>
 
             <h2 className="mt-8 text-small font-medium text-muted">{a.factsTitle}</h2>

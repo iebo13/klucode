@@ -378,7 +378,7 @@ const de = {
     title: 'Eine Person, kein Wir.',
     lead: 'Auf dieser Seite steht durchgehend „ich“, weil KluCode aus einer Person besteht. Das ist keine Bescheidenheit, sondern der Punkt: Sie sprechen mit dem, der es baut.',
     paragraphs: [
-      'Ich bin 33, Informatiker (B.Sc.) und lebe in Düsseldorf. Vier Jahre habe ich als Frontend-Entwickler angestellt gearbeitet und in dieser Zeit gelernt, was mir an dem Beruf am meisten liegt: nicht das Umsetzen fertiger Vorgaben, sondern das Gespräch davor: herauszufinden, was jemand wirklich braucht, und dann das Passende zu bauen.',
+      'Ich bin 33, Informatiker (B.Sc.) und lebe in Düsseldorf. Vier Jahre habe ich als Frontend-Entwickler angestellt gearbeitet und in dieser Zeit gelernt, was mir an dem Beruf am meisten liegt: nicht das Umsetzen fertiger Vorgaben, sondern das Gespräch davor. Herauszufinden, was jemand wirklich braucht, und dann das Passende zu bauen.',
       'Parallel dazu habe ich drei Projekte für eigene Kunden umgesetzt: ein CRM mit Provisionsverwaltung und angeschlossenem Vergleichsportal, ein Kassensystem für eine Shisha-Bar und eine Landingpage samt LinkedIn-Kampagne für ein Reinigungsunternehmen. Alle drei laufen. Alle drei wurden bezahlt. Genau diese Arbeit möchte ich hauptberuflich machen.',
       'Was mir dabei wichtig ist: Ich baue keine Software, die beeindruckt. Ich baue Software, die jemand am Montagmorgen benutzt, ohne darüber nachzudenken, und die nach zwei Jahren noch jemand anderes weiterentwickeln kann.',
     ],
@@ -394,8 +394,6 @@ const de = {
       { label: 'Sprachen', value: 'Deutsch (Muttersprache), Englisch' },
     ],
     portraitAlt: `${profile.firstName} ${profile.lastName}, freiberuflicher Softwareentwickler in Düsseldorf`,
-    portraitPlaceholder:
-      'Hier gehört ein Foto von Ihnen hin. Eine Ein-Personen-Marke ohne Gesicht bittet um Vertrauen, das sie selbst nicht anbietet. Legen Sie das Bild als public/portrait.jpg ab.',
   },
 
   contact: {
@@ -441,8 +439,8 @@ const de = {
       {
         heading: 'Diensteanbieter',
         paragraphs: [
-          'KluCode · individuelle Softwarelösungen',
-          `Inhaber: ${profile.firstName} ${profile.lastName}`,
+          'KluCode - individuelle Softwarelösungen',
+          `Inhaber ${profile.firstName} ${profile.lastName}`,
           profile.role.de,
           `${profile.street}`,
           `${profile.postalCode} ${profile.city}`,
