@@ -60,12 +60,32 @@ const TRACKS: Record<string, Key[]> = {
     { at: 1, x: -250, y: -84, ry: -6, rx: 3, s: 1 },
   ],
   // Phase 01 skin: faint viridian outline and an empty room.
-  sketch: [{ at: 0, o: 1 }, { at: 0.3, o: 1 }, { at: 0.45, o: 0 }],
-  solid: [{ at: 0, o: 0 }, { at: 0.3, o: 0 }, { at: 0.45, o: 1 }],
-  draft: [{ at: 0, o: 1 }, { at: 0.28, o: 1 }, { at: 0.4, o: 0 }],
+  sketch: [
+    { at: 0, o: 1 },
+    { at: 0.3, o: 1 },
+    { at: 0.45, o: 0 },
+  ],
+  solid: [
+    { at: 0, o: 0 },
+    { at: 0.3, o: 0 },
+    { at: 0.45, o: 1 },
+  ],
+  draft: [
+    { at: 0, o: 1 },
+    { at: 0.28, o: 1 },
+    { at: 0.4, o: 0 },
+  ],
   // Phase 03: the wireframe, later replaced by the real interface.
-  wire: [{ at: 0.42, o: 0 }, { at: 0.54, o: 1 }, { at: 0.64, o: 1 }, { at: 0.74, o: 0 }],
-  ui: [{ at: 0.62, o: 0 }, { at: 0.76, o: 1 }],
+  wire: [
+    { at: 0.42, o: 0 },
+    { at: 0.54, o: 1 },
+    { at: 0.64, o: 1 },
+    { at: 0.74, o: 0 },
+  ],
+  ui: [
+    { at: 0.62, o: 0 },
+    { at: 0.76, o: 1 },
+  ],
   // The fixed price stamps on once the plan stands.
   stamp: [
     { at: 0.54, o: 0, s: 1.3, y: -8 },
@@ -80,12 +100,29 @@ const TRACKS: Record<string, Key[]> = {
     { at: 0.9, o: 0.9, y: 34, x: 40 },
     { at: 0.98, o: 0, y: 60, x: 40 },
   ],
-  week: [{ at: 0.7, o: 0 }, { at: 0.78, o: 1 }, { at: 0.88, o: 0 }],
+  week: [
+    { at: 0.7, o: 0 },
+    { at: 0.78, o: 1 },
+    { at: 0.88, o: 0 },
+  ],
   // Phase 05: the server rises, the app reports live.
-  server: [{ at: 0.86, o: 0, y: 46 }, { at: 0.96, o: 1, y: 0 }],
-  live: [{ at: 0.9, o: 0 }, { at: 1, o: 1 }],
-  barDraft: [{ at: 0, o: 1 }, { at: 0.88, o: 1 }, { at: 0.95, o: 0 }],
-  barLive: [{ at: 0.88, o: 0 }, { at: 0.96, o: 1 }],
+  server: [
+    { at: 0.86, o: 0, y: 46 },
+    { at: 0.96, o: 1, y: 0 },
+  ],
+  live: [
+    { at: 0.9, o: 0 },
+    { at: 1, o: 1 },
+  ],
+  barDraft: [
+    { at: 0, o: 1 },
+    { at: 0.88, o: 1 },
+    { at: 0.95, o: 0 },
+  ],
+  barLive: [
+    { at: 0.88, o: 0 },
+    { at: 0.96, o: 1 },
+  ],
 };
 
 /** Requirement cards: drift in during Phase 02, fold into the plan at 03. */
@@ -310,7 +347,12 @@ export function ScrollStory({
         <div
           data-stage
           className="absolute left-1/2 top-1/2"
-          style={{ width: 1120, height: 720, transform: 'translate(-50%, -50%)', perspective: '1400px' }}
+          style={{
+            width: 1120,
+            height: 720,
+            transform: 'translate(-50%, -50%)',
+            perspective: '1400px',
+          }}
         >
           {/* requirement cards (Phase 02) */}
           {st.requirements.map((r, i) => (
@@ -337,7 +379,9 @@ export function ScrollStory({
             className="absolute rounded-xl border border-line bg-surface"
             style={{ left: 500, top: 420, width: 560, height: 260, opacity: 0 }}
           >
-            <p className="mono-hud border-b border-line px-4 py-3 !text-viridian-600">{st.dbLabel}</p>
+            <p className="mono-hud border-b border-line px-4 py-3 !text-viridian-600">
+              {st.dbLabel}
+            </p>
             <div className="grid gap-3 p-4">
               <div className="h-3 w-4/5 rounded-sm bg-surface-raised" />
               <div className="h-3 w-3/5 rounded-sm bg-surface-raised" />
@@ -365,9 +409,18 @@ export function ScrollStory({
                 className="flex items-center gap-2 px-4 py-3"
                 style={{ borderBottom: '1px solid rgba(94,164,114,.25)' }}
               >
-                <span className="h-2 w-2 rounded-full" style={{ background: 'rgba(94,164,114,.4)' }} />
-                <span className="h-2 w-2 rounded-full" style={{ background: 'rgba(94,164,114,.25)' }} />
-                <span className="h-2 w-2 rounded-full" style={{ background: 'rgba(94,164,114,.25)' }} />
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: 'rgba(94,164,114,.4)' }}
+                />
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: 'rgba(94,164,114,.25)' }}
+                />
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ background: 'rgba(94,164,114,.25)' }}
+                />
               </div>
               <p className="mono-hud absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 !text-viridian-600">
                 {st.emptyLabel}
@@ -378,7 +431,10 @@ export function ScrollStory({
             <div
               data-kf="solid"
               className="absolute inset-0 overflow-hidden rounded-xl border border-line bg-surface-raised"
-              style={{ opacity: 0, boxShadow: '0 40px 110px rgba(0,0,0,.55), 0 0 90px rgba(94,164,114,.09)' }}
+              style={{
+                opacity: 0,
+                boxShadow: '0 40px 110px rgba(0,0,0,.55), 0 0 90px rgba(94,164,114,.09)',
+              }}
             >
               <div className="flex items-center justify-between border-b border-line px-4 py-3">
                 <span className="flex items-center gap-2">
@@ -387,8 +443,14 @@ export function ScrollStory({
                   <span className="h-2 w-2 rounded-full bg-viridian-400" />
                 </span>
                 <span className="relative">
-                  <span data-kf="barDraft" className="mono-hud">{st.addressBar}</span>
-                  <span data-kf="barLive" className="mono-hud absolute right-0 top-0 whitespace-nowrap !text-viridian-400" style={{ opacity: 0 }}>
+                  <span data-kf="barDraft" className="mono-hud">
+                    {st.addressBar}
+                  </span>
+                  <span
+                    data-kf="barLive"
+                    className="mono-hud absolute right-0 top-0 whitespace-nowrap !text-viridian-400"
+                    style={{ opacity: 0 }}
+                  >
                     {st.liveTab}
                   </span>
                 </span>
@@ -397,7 +459,10 @@ export function ScrollStory({
               <div className="relative" style={{ height: 'calc(100% - 41px)' }}>
                 {/* wireframe (Phase 03) */}
                 <div data-kf="wire" className="absolute inset-0 flex" style={{ opacity: 0 }}>
-                  <div className="grid content-start gap-3 border-r border-line p-4" style={{ width: 144 }}>
+                  <div
+                    className="grid content-start gap-3 border-r border-line p-4"
+                    style={{ width: 144 }}
+                  >
                     <div className="sbar-sm w-11/12 rounded-sm border border-dashed border-stone-700" />
                     <div className="sbar-sm w-3/4 rounded-sm border border-dashed border-stone-700" />
                     <div className="sbar-sm w-5/6 rounded-sm border border-dashed border-stone-700" />
@@ -408,7 +473,7 @@ export function ScrollStory({
                       <div className="h-16 flex-1 rounded-lg border border-dashed border-stone-700" />
                       <div className="h-16 flex-1 rounded-lg border border-dashed border-stone-700" />
                     </div>
-                    <div className="mt-4 grid gap-row">
+                    <div className="gap-row mt-4 grid">
                       <div className="sbar rounded-sm border border-dashed border-stone-700" />
                       <div className="sbar w-11/12 rounded-sm border border-dashed border-stone-700" />
                       <div className="sbar w-4/5 rounded-sm border border-dashed border-stone-700" />
@@ -418,7 +483,10 @@ export function ScrollStory({
 
                 {/* the living interface (Phase 04) */}
                 <div data-kf="ui" className="absolute inset-0 flex" style={{ opacity: 0 }}>
-                  <div className="grid content-start gap-3 border-r border-line p-4" style={{ width: 144 }}>
+                  <div
+                    className="grid content-start gap-3 border-r border-line p-4"
+                    style={{ width: 144 }}
+                  >
                     <div className="sbar-sm w-11/12 rounded-sm bg-viridian-400" />
                     <div className="sbar-sm w-3/4 rounded-sm bg-surface" />
                     <div className="sbar-sm w-5/6 rounded-sm bg-surface" />
@@ -426,22 +494,34 @@ export function ScrollStory({
                   </div>
                   <div className="flex-1 p-4">
                     <div className="flex gap-3">
-                      <div className="flex-1 rounded-lg border border-line bg-surface kpi-pad">
-                        <p className="font-mono text-[9px] uppercase tracking-widest text-muted">{st.kpi1Label}</p>
-                        <p className="font-display text-xl font-bold text-viridian-300">{st.kpi1Value}</p>
+                      <div className="kpi-pad flex-1 rounded-lg border border-line bg-surface">
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-muted">
+                          {st.kpi1Label}
+                        </p>
+                        <p className="font-display text-xl font-bold text-viridian-300">
+                          {st.kpi1Value}
+                        </p>
                       </div>
-                      <div className="flex-1 rounded-lg border border-line bg-surface kpi-pad">
-                        <p className="font-mono text-[9px] uppercase tracking-widest text-muted">{st.kpi2Label}</p>
-                        <p className="font-display text-xl font-bold text-viridian-300">{st.kpi2Value}</p>
+                      <div className="kpi-pad flex-1 rounded-lg border border-line bg-surface">
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-muted">
+                          {st.kpi2Label}
+                        </p>
+                        <p className="font-display text-xl font-bold text-viridian-300">
+                          {st.kpi2Value}
+                        </p>
                       </div>
-                      <div className="relative flex-1 rounded-lg border border-line bg-surface kpi-pad">
+                      <div className="kpi-pad relative flex-1 rounded-lg border border-line bg-surface">
                         <div data-kf="live" style={{ opacity: 0 }}>
-                          <p className="font-mono text-[9px] uppercase tracking-widest text-muted">{st.metricNote}</p>
-                          <p className="font-display text-xl font-bold text-viridian-300">{st.metricValue}</p>
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-muted">
+                            {st.metricNote}
+                          </p>
+                          <p className="font-display text-xl font-bold text-viridian-300">
+                            {st.metricValue}
+                          </p>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-4 grid gap-row">
+                    <div className="gap-row mt-4 grid">
                       <div className="sbar rounded-sm bg-surface" />
                       <div className="sbar w-11/12 rounded-sm bg-surface" />
                       <div className="sbar w-4/5 rounded-sm bg-surface" />
@@ -457,7 +537,11 @@ export function ScrollStory({
           <p data-kf="draft" className="mono-hud absolute" style={{ left: 760, top: 540 }}>
             {st.draftLabel}
           </p>
-          <p data-kf="week" className="mono-hud absolute !text-viridian-400" style={{ left: 800, top: 84, opacity: 0 }}>
+          <p
+            data-kf="week"
+            className="mono-hud absolute !text-viridian-400"
+            style={{ left: 800, top: 84, opacity: 0 }}
+          >
             {st.weekLabel}
           </p>
 
@@ -465,7 +549,13 @@ export function ScrollStory({
           <div
             data-kf="stamp"
             className="absolute rounded-full border-2 border-viridian-400 px-6 py-3 font-display text-lg font-bold text-viridian-300"
-            style={{ left: 560, top: 470, opacity: 0, rotate: '-4deg', background: 'rgba(94,164,114,.08)' }}
+            style={{
+              left: 560,
+              top: 470,
+              opacity: 0,
+              rotate: '-4deg',
+              background: 'rgba(94,164,114,.08)',
+            }}
           >
             {st.priceStamp}
           </div>
@@ -474,7 +564,12 @@ export function ScrollStory({
           <div data-kf="server" className="absolute" style={{ left: 320, top: 452, opacity: 0 }}>
             <div
               className="rounded-lg border border-line bg-surface"
-              style={{ width: 380, height: 90, transform: 'rotateX(56deg)', transformOrigin: 'center top' }}
+              style={{
+                width: 380,
+                height: 90,
+                transform: 'rotateX(56deg)',
+                transformOrigin: 'center top',
+              }}
             />
             <div className="absolute left-1/2 top-6 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-lg border border-line bg-surface-raised px-4 py-3">
               <span
