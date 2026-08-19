@@ -90,15 +90,61 @@ const de = {
 
   home: {
     heroEyebrow: 'Softwareentwicklung · Düsseldorf',
-    heroTitle: 'Software, mit der Ihr Betrieb',
-    heroTitleAccent: 'tatsächlich arbeitet.',
+    heroTitle: 'Am Anfang steht kein Angebot.',
+    heroTitleAccent: 'Ein Gespräch.',
     heroLead:
-      'Web-Anwendungen, interne Tools und Websites — vom ersten Klick bis zum laufenden Server. Ein Ansprechpartner, ein Festpreis, und der Mensch im Termin ist derselbe, der den Code schreibt.',
+      'Sie erzählen, was in Ihrem Betrieb gerade nicht läuft. Ich baue daraus die Software, mit der er tatsächlich arbeitet — scrollen Sie, und Sie sehen, wie.',
     heroProof: [
       'Drei Systeme im Produktivbetrieb',
       'Informatik B.Sc. · 4 Jahre Berufserfahrung',
       'Festpreis vor Projektstart',
     ],
+
+    story: {
+      label: 'Vom Gespräch zum laufenden System',
+      heroPhase: 'Phase 01 — Das Gespräch · 30 Minuten',
+      phases: [
+        {
+          phase: 'Phase 02 — Verstehen',
+          title: 'Erst zuhören. Dann entscheiden, was gebaut wird.',
+          body: 'Sie erzählen, wie Ihr Betrieb arbeitet — ich sortiere, was Ihre Software können muss. Und was nicht. Jede Anforderung, die rausfliegt, spart Geld.',
+        },
+        {
+          phase: 'Phase 03 — Der Plan',
+          title: 'Der Preis steht, bevor die erste Zeile Code entsteht.',
+          body: 'Sie bekommen eine schriftliche Leistungsbeschreibung und einen Festpreis. Keine Stundenschätzung, kein offenes Ende — Sie wissen vorher, was es kostet.',
+        },
+        {
+          phase: 'Phase 04 — Der Bau',
+          title: 'Nach zwei Wochen klicken Sie durch die erste Version.',
+          body: 'Kein Zwischenstand auf Folien — eine lauffähige Anwendung mit Ihren echten Abläufen. Danach entscheiden Sie, was als Nächstes gebaut wird.',
+        },
+      ],
+      finale: {
+        phase: 'Phase 05 — Live',
+        title: 'Klug gebaut.',
+        body: 'Der Code gehört Ihnen, mit allen Zugängen. Der Betrieb läuft — und ab 90 € im Monat halte ich ihn am Laufen.',
+      },
+      scrollHint: 'Scrollen — Ihr Projekt entsteht',
+      stage: {
+        addressBar: 'ihr-betrieb.de',
+        emptyLabel: '— noch leer —',
+        draftLabel: 'Ihre Software · Entwurf 00',
+        requirements: ['Provisionslogik', 'Schichtplan', 'Rechnungen', 'Kundenliste', 'Auswertung'],
+        discarded: 'Noch ein Newsletter',
+        priceStamp: 'Festpreis — steht.',
+        weekLabel: 'Woche 02 — läuft bereits',
+        dbLabel: 'Datenbank — PostgreSQL',
+        kpi1Label: 'Umsatz',
+        kpi1Value: '48.230 €',
+        kpi2Label: 'Provision',
+        kpi2Value: '7.912 €',
+        serverLabel: 'Server · Plesk — live · 99,9 %',
+        liveTab: 'Ihr System — im Produktivbetrieb',
+        metricValue: '4 Min.',
+        metricNote: 'Monatsabrechnung — vorher: 3 Tage',
+      },
+    },
 
     problemEyebrow: 'Die Ausgangslage',
     problemTitle: 'Zwei Angebote, und beide passen nicht.',

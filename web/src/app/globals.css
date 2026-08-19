@@ -77,6 +77,70 @@
 }
 
 @layer components {
+  /* ------------------------------------------------------------------ */
+  /* The cinematic layer — see docs/superpowers/specs/
+     2026-08-19-werkstatt-scroll-story-design.md. */
+
+  /* Film grain over the whole page: SVG turbulence at ~4.5% alpha, fixed so
+     it does not scroll with content. pointer-events: none keeps every
+     interaction underneath it. */
+  .grain::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* The mono HUD register: phase tags, stage captions, rail numbers. */
+  .mono-hud {
+    font-family: var(--kc-font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--kc-stone-400);
+  }
+
+  /* Requirement cards floating through the stage in Phase 02. */
+  .stage-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 0.625rem 1rem;
+    border-radius: 0.625rem;
+    border: 1px solid var(--kc-border);
+    background: var(--kc-surfaceRaised);
+    font-family: var(--kc-font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--kc-text);
+    white-space: nowrap;
+  }
+
+  .stage-card-discard {
+    color: var(--kc-textMuted);
+    text-decoration: line-through;
+    border-style: dashed;
+  }
+
+  /* Abstract content bars inside the staged app. Off the spacing scale on
+     purpose: this is scenery at a fixed board size, not layout. */
+  .sbar {
+    height: 14px;
+  }
+  .sbar-sm {
+    height: 10px;
+  }
+  .kpi-pad {
+    padding: 10px;
+  }
+  .gap-row {
+    gap: 10px;
+  }
+
   /* The house graphic device: the logo's node graph, scaled up as a faint
      background texture. It is the only decoration the brand owns. */
   .node-field {

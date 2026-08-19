@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import { Logo } from '@/components/logo';
-import { ThemeToggle } from '@/components/theme-toggle';
 import type { Content } from '@/content';
 import { profile } from '@/content/profile';
 import { NAV_KEYS, alternatePath, pathFor, type Lang, type PageKey } from '@/lib/routes';
@@ -47,7 +46,6 @@ export function Header({
   }, [open]);
 
   const links = NAV_KEYS.map((k) => ({ key: k, href: pathFor(k, lang), label: nav[k] }));
-  const themeLabels = { toDark: ui.themeToDark, toLight: ui.themeToLight };
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-4 md:px-6">
@@ -89,8 +87,6 @@ export function Header({
           >
             {ui.switchLang}
           </Link>
-
-          <ThemeToggle labels={themeLabels} />
 
           <Link
             href={pathFor('contact', lang)}
@@ -163,7 +159,6 @@ export function Header({
             <span className="text-small text-muted">
               {ui.availablePrefix} {profile.availableFrom[lang]}
             </span>
-            <ThemeToggle labels={themeLabels} />
           </div>
         </div>
       </nav>

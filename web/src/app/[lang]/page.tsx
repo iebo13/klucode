@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { JsonLd } from '@/components/json-ld';
 import { Shell } from '@/components/shell';
+import { ScrollStory } from '@/components/story/scroll-story';
 import {
   ArrowLink,
   ButtonLink,
@@ -10,7 +11,6 @@ import {
   Eyebrow,
   Faq,
   FigureSlot,
-  InkPanel,
   RHYTHM,
   Section,
   SectionHead,
@@ -63,74 +63,25 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
     <Shell lang={lang} current="home">
       <JsonLd data={pageSchema(lang, c, 'home')} />
 
-      {/* ---------------------------------------------------------------- hero */}
-      <section className="relative isolate overflow-hidden">
-        <div aria-hidden="true" className="aurora -z-10" />
-        <div aria-hidden="true" className="node-field absolute inset-0 -z-10 opacity-50" />
-        <div className="relative mx-auto max-w-container px-6 pb-section pt-16 md:px-8 md:pt-24">
-          <Eyebrow>{h.heroEyebrow}</Eyebrow>
-          {/* The headline keeps the full container width — narrowing it to make
-              room for the figure cost it two extra line breaks and most of its
-              impact. text-brand-text, not text-brand: the accent was
-              viridian-500 at 2.79:1, so the biggest word on the site failed AA
-              for large text, in defiance of the rule tokens.css states in its
-              own header comment. viridian-700 measures 5.27:1 here. */}
-          <h1 className={`${RHYTHM.heading} max-w-4xl text-display`}>
-            {h.heroTitle} <span className="text-brand-text">{h.heroTitleAccent}</span>
-          </h1>
-
-          <div className={`${RHYTHM.lead} grid gap-8 lg:grid-cols-12 lg:gap-12`}>
-            <div className="lg:col-span-7">
-              <p className="max-w-measure text-lead text-muted">{h.heroLead}</p>
-
-              <div className="mt-8 flex flex-wrap gap-4">
-                <ButtonLink href={pathFor('contact', lang)}>{c.ui.ctaPrimary}</ButtonLink>
-                <ButtonLink href={pathFor('work', lang)} variant="secondary">
-                  {c.ui.ctaSecondary}
-                </ButtonLink>
-              </div>
-
-              <ul className="mt-12 flex flex-wrap gap-3">
-                {h.heroProof.map((p) => (
-                  <li
-                    key={p}
-                    className="flex items-center gap-2 rounded-full border border-line bg-surface-raised px-4 py-2 text-small text-muted"
-                  >
-                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-brand" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Reserved for a screenshot of a real system. Correct ratio now, so
-                dropping one in later is a file drop, not a layout change. */}
-            <FigureSlot className="hidden aspect-[4/3] lg:col-span-5 lg:block" />
-          </div>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------- problem */}
-      {/* Three bad options and the pitch. The pitch used to get `border-l-2
-          border-brand pl-7` — the weakest emphasis device in the system — while
-          the three things it argues against each got a card. Now it is the
-          fourth cell of a 2x2 and it is inverted, so the visual weight matches
-          the argument. Same markup cost. */}
-      <Section tint>
-        <SectionHead eyebrow={h.problemEyebrow} title={h.problemTitle} lead={h.problemLead} />
-        <div className="mt-8 grid gap-6 md:mt-12 md:grid-cols-2">
-          {h.problemCards.map((card) => (
-            <Card key={card.title}>
-              <h3 className="text-h3">{card.title}</h3>
-              <p className="mt-3 text-muted">{card.body}</p>
-            </Card>
-          ))}
-          <InkPanel className="flex flex-col justify-center">
-            <h3 className="font-display text-h2">{h.answerTitle}</h3>
-            <p className="mt-4 max-w-measure text-lead text-ink-muted">{h.answerBody}</p>
-          </InkPanel>
-        </div>
-      </Section>
+      {/* ----------------------------------------------------- the scroll story */}
+      {/* „Vom Gespräch zum laufenden System": five full-viewport phases over
+          one sticky 3D stage on which the client's future app assembles
+          itself — sketched frame, requirement cards, wireframe + fixed price,
+          living interface, docked on its server. The story carries the
+          narrative; the sections below carry the conversion. Design:
+          docs/superpowers/specs/2026-08-19-werkstatt-scroll-story-design.md */}
+      <ScrollStory
+        hero={{
+          eyebrow: h.heroEyebrow,
+          title: h.heroTitle,
+          accent: h.heroTitleAccent,
+          lead: h.heroLead,
+          proof: h.heroProof,
+        }}
+        story={h.story}
+        ctaPrimary={{ label: c.ui.ctaPrimary, href: pathFor('contact', lang) }}
+        ctaSecondary={{ label: c.ui.ctaSecondary, href: pathFor('work', lang) }}
+      />
 
       {/* ------------------------------------------------------------ services */}
       {/* Two of these are revenue lines and two are supporting work. A uniform
