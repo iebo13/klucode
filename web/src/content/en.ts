@@ -90,15 +90,61 @@ const en = {
 
   home: {
     heroEyebrow: 'Software development · Remote',
-    heroTitle: 'One senior engineer.',
-    heroTitleAccent: 'Front end to server.',
+    heroTitle: 'It starts with a conversation.',
+    heroTitleAccent: 'Not a quote.',
     heroLead:
-      'React, Next.js, TypeScript, Node.js. I take a defined slice of your product and ship it — or slot into your team as capacity that does not need managing. Day rate or fixed price, agreed before anything starts.',
+      'Tell me which slice of your product needs shipping — or which process your business still runs by hand. Scroll, and watch how it gets built: end to end, by one engineer.',
     heroProof: [
       'Three systems in production',
       'BSc Computer Science · 4 years professional',
       'From €680/day · bookable from five days',
     ],
+
+    story: {
+      label: 'From conversation to running system',
+      heroPhase: 'Phase 01 — The conversation · 30 minutes',
+      phases: [
+        {
+          phase: 'Phase 02 — Understand',
+          title: 'Listen first. Then decide what gets built.',
+          body: 'You explain how your business and product work — I sort out what the software must do, and what it must not. Every requirement that gets cut saves money.',
+        },
+        {
+          phase: 'Phase 03 — The plan',
+          title: 'The price is fixed before the first line of code.',
+          body: 'You get a written scope and a fixed price — or a day rate against a defined slice. No hour estimates drifting upward, no open end.',
+        },
+        {
+          phase: 'Phase 04 — The build',
+          title: 'After two weeks you click through the first version.',
+          body: 'No slide-deck status updates — a running application with your real workflows. Then you decide what gets built next.',
+        },
+      ],
+      finale: {
+        phase: 'Phase 05 — Live',
+        title: 'Clever, not complicated.',
+        body: 'The code is yours, with every credential. The system runs — and from €90 a month I keep it running.',
+      },
+      scrollHint: 'Scroll — your project takes shape',
+      stage: {
+        addressBar: 'your-business.app',
+        emptyLabel: '— still empty —',
+        draftLabel: 'Your software · draft 00',
+        requirements: ['Commission logic', 'Shift plan', 'Invoicing', 'Client list', 'Reporting'],
+        discarded: 'Another newsletter',
+        priceStamp: 'Fixed price — set.',
+        weekLabel: 'Week 02 — already running',
+        dbLabel: 'Database — PostgreSQL',
+        kpi1Label: 'Revenue',
+        kpi1Value: '€48,230',
+        kpi2Label: 'Commission',
+        kpi2Value: '€7,912',
+        serverLabel: 'Server · Plesk — live · 99.9%',
+        liveTab: 'Your system — in production',
+        metricValue: '4 min',
+        metricNote: 'Monthly settlement — before: 3 days',
+      },
+    },
 
     problemEyebrow: 'The situation',
     problemTitle: 'Three ways to add capacity. Each costs more than it looks.',

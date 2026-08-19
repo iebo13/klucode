@@ -9,6 +9,7 @@
 export type Card = { title: string; body: string };
 export type Faq = { q: string; a: string };
 export type Step = { title: string; body: string };
+export type StoryPhase = { phase: string; title: string; body: string };
 
 export type Service = {
   key: string;
@@ -107,6 +108,44 @@ export type Content = {
     heroTitleAccent: string;
     heroLead: string;
     heroProof: string[];
+    /**
+     * The five-phase scroll story „Vom Gespräch zum laufenden System": the
+     * hero is Phase 01 (the hero fields above carry its copy), `phases` are
+     * 02–04, and the finale is Phase 05, where the assembled app goes live
+     * and the tagline lands. `stage` holds every string that appears inside
+     * the aria-hidden 3D scene — it must exist in both languages even though
+     * screen readers never meet it, because sighted readers do.
+     */
+    story: {
+      /** The strip above the scene, e.g. „Vom Gespräch zum laufenden System". */
+      label: string;
+      /** The hero's phase tag, e.g. „Phase 01 — Das Gespräch · 30 Minuten". */
+      heroPhase: string;
+      phases: StoryPhase[];
+      finale: StoryPhase;
+      /** The affordance under the hero — a few words beside a small arrow. */
+      scrollHint: string;
+      stage: {
+        addressBar: string;
+        emptyLabel: string;
+        draftLabel: string;
+        /** Requirement cards that float in during Phase 02. */
+        requirements: string[];
+        /** The one requirement that gets cut — and visibly flies out. */
+        discarded: string;
+        priceStamp: string;
+        weekLabel: string;
+        dbLabel: string;
+        kpi1Label: string;
+        kpi1Value: string;
+        kpi2Label: string;
+        kpi2Value: string;
+        serverLabel: string;
+        liveTab: string;
+        metricValue: string;
+        metricNote: string;
+      };
+    };
     problemEyebrow: string;
     problemTitle: string;
     problemLead: string;
