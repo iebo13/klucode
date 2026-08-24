@@ -271,7 +271,13 @@ Required, not optional, so `satisfies Content` fails the build if only one
 language has it. Budget added to `check-copy.mjs`: 62 characters, one line in
 a 26rem column.
 
-No German is hard-coded anywhere under `components/crossroads/`.
+No German is hard-coded anywhere under `components/crossroads/`. The texture
+builders draw only strings handed to them, which is asserted rather than
+trusted (see section 11, case 8).
+
+The house copy rule applies to every string added here, in both languages and
+inside the textures: no em dash and no semicolon in anything a visitor reads.
+A colon, a comma or two sentences instead.
 
 ## 9. Performance budget
 
@@ -328,6 +334,9 @@ Chromium only. Playwright, against the built static export:
 6. At each of the four stops, in both languages, the focused row is the one
    the camera is looking at.
 7. Zero console errors across a full scroll of the section.
+8. Every string the texture builders draw came from the labels object they
+   were handed, asserted with a recording 2D context stub. This is what keeps
+   the mock interfaces from quietly becoming German-only.
 
 Unchanged and still required: the contrast audit, the tokens sync check,
 `typecheck`, `lint`, `check:copy`, `check:meta`, `check:profile`,
