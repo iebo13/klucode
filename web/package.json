@@ -13,6 +13,7 @@
     "check:meta": "node scripts/check-meta.mjs",
     "check:copy": "node scripts/check-copy.mjs",
     "check:palette": "node scripts/check-scene-palette.mjs",
+    "check:bundle": "node scripts/check-bundle.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:unit": "playwright test --config=playwright.config.ts",

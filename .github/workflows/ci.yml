@@ -83,6 +83,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # The site's pitch is that it loads fast, and the 3D services section is
+      # the first thing on it heavy enough to make that untrue by accident.
+      - name: JavaScript budget
+        run: npm run check:bundle
+
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
