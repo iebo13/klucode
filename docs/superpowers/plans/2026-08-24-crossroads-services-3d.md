@@ -1389,21 +1389,34 @@ import {
 } from 'three';
 
 import { PALETTE } from './palette';
-import { focusAt, progressOf, segmentAt } from './progress';
+import { focusAt, segmentAt } from './progress';
 import { createRegistry } from './registry';
 import type { Handle, Stop, Way } from './types';
 
 /**
- * Positive angle swings a lane to the left, because rotating local -Z about
+ * The four lanes, left to right across the fan.
+ *
+ * A positive angle swings a lane to the left, because rotating local -Z about
  * +Y sends it to (-sin a, 0, -cos a). Way 01 is therefore leftmost, and the
  * four read left to right in the order they are priced.
+ *
+ * `back` is how far the camera stands off the object at the end of a lane, and
+ * `aimY` the height it looks at. Both are per-lane because one distance cannot
+ * frame a monitor and an office, and one height cannot hold a rack and the
+ * cloud above it.
+ *
+ * One array of objects rather than four parallel arrays: four arrays indexed
+ * in lockstep are exactly the shape that drifts, and under this project's
+ * `noUncheckedIndexedAccess` every one of those reads would have needed a
+ * guard anyway.
  */
-const ANGLES = [0.8, 0.28, -0.28, -0.8];
-const DIST = [16, 14, 14, 16];
-/** How far to stand back from each object. An office is a room, a rack is a box. */
-const BACK = [10, 11, 14.5, 13];
-/** What the camera looks at, by height: a monitor, a system, a room, a cloud. */
-const AIM_Y = [2.5, 2.8, 1.7, 4.1];
+const LANES = [
+  { angle: 0.8, dist: 16, back: 10, aimY: 2.5 },
+  { angle: 0.28, dist: 14, back: 11, aimY: 2.8 },
+  { angle: -0.28, dist: 14, back: 14.5, aimY: 1.7 },
+  { angle: -0.8, dist: 16, back: 13, aimY: 4.1 },
+] as const;
+
 const Y_AXIS = new Vector3(0, 1, 0);
 
 /** Stand `back` short of a target, on its own lane, at eye height. */
@@ -1415,6 +1428,15 @@ function standOff(target: Vector3, back: number): [number, number, number] {
 }
 
 export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonly Way[]): Handle {
+  // The floor is laid out for exactly four. A fifth service would need its own
+  // angle, its own lane length, its own standoff and its own object, so the
+  // honest failure is here rather than a lane with nothing at the end of it.
+  if (ways.length !== LANES.length) {
+    throw new Error(
+      `crossroads: the floor is laid out for ${LANES.length} lanes but ${ways.length} ways were given`,
+    );
+  }
+
   const reg = createRegistry();
   const renderer = new WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -1458,24 +1480,23 @@ export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonl
   scene.add(hub);
 
   /** One lane per way: a rotated group and the lit strip running down it. */
-  const lanes = ways.map((_way, i) => {
+  const lanes = LANES.map((geom) => {
     const group = new Group();
-    group.rotation.y = ANGLES[i];
+    group.rotation.y = geom.angle;
     scene.add(group);
 
-    const d = DIST[i];
     const strip = new Mesh(
-      reg.track(new PlaneGeometry(2.1, d)),
+      reg.track(new PlaneGeometry(2.1, geom.dist)),
       reg.track(
         new MeshBasicMaterial({ color: PALETTE.accent, transparent: true, opacity: 0.09, side: DoubleSide }),
       ),
     );
     strip.rotation.x = -Math.PI / 2;
-    strip.position.set(0, 0.014, -d / 2);
+    strip.position.set(0, 0.014, -geom.dist / 2);
     group.add(strip);
 
-    const target = new Vector3(0, AIM_Y[i], -d).applyAxisAngle(Y_AXIS, ANGLES[i]);
-    return { group, target, built: 0 };
+    const target = new Vector3(0, geom.aimY, -geom.dist).applyAxisAngle(Y_AXIS, geom.angle);
+    return { group, target, back: geom.back, built: 0 };
   });
 
   const STOPS: Stop[] = [
@@ -1483,7 +1504,7 @@ export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonl
     ...lanes.map((lane, i) => ({
       at: 0.18 + i * 0.19,
       focus: i,
-      pos: standOff(lane.target, BACK[i]),
+      pos: standOff(lane.target, lane.back),
       look: [lane.target.x, lane.target.y, lane.target.z] as [number, number, number],
     })),
     { at: 1, focus: -1, pos: [0, 5, 15], look: [0, 2, -9] },
@@ -1491,7 +1512,9 @@ export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonl
 
   const pos = new Vector3();
   const look = new Vector3();
-  const to = new Vector3();
+  // Named scratch and not `to`, because layout() also has a stop called `to`
+  // and one of the two would have to be renamed at the point of use.
+  const scratch = new Vector3();
 
   let progress = 0;
   let dirty = true;
@@ -1515,9 +1538,9 @@ export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonl
    * read this from the render loop and named the wrong service for a frame.
    */
   function layout(p: number) {
-    const { from, to: next, t } = segmentAt(p, STOPS);
-    pos.set(from.pos[0], from.pos[1], from.pos[2]).lerp(to.set(next.pos[0], next.pos[1], next.pos[2]), t);
-    look.set(from.look[0], from.look[1], from.look[2]).lerp(to.set(next.look[0], next.look[1], next.look[2]), t);
+    const { from, to, t } = segmentAt(p, STOPS);
+    pos.set(from.pos[0], from.pos[1], from.pos[2]).lerp(scratch.set(to.pos[0], to.pos[1], to.pos[2]), t);
+    look.set(from.look[0], from.look[1], from.look[2]).lerp(scratch.set(to.look[0], to.look[1], to.look[2]), t);
     camera.position.copy(pos);
     camera.lookAt(look);
 
