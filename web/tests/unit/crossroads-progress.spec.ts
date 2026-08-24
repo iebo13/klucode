@@ -63,6 +63,17 @@ test('a way whose stop is behind us is built, however we got here', () => {
   expect(buildTargets(0.76, STOPS, 4)).toEqual([1, 1, 1, 1]);
 });
 
+test('the build runs ahead of the camera, finishing before it arrives', () => {
+  // Way 01 is built and way 02 is part way there, half through the segment
+  // between them. This is the only assertion that observes the 1.35 factor at
+  // all: everywhere else the blend is either zero or already overridden by the
+  // passed rule, so a mutated factor would go unnoticed.
+  const t = buildTargets((0.18 + 0.37) / 2, STOPS, 4);
+  expect(t[0]).toBe(1);
+  expect(t[1]).toBeCloseTo(0.675, 5);
+  expect(t.slice(2)).toEqual([0, 0]);
+});
+
 test('the ratchet keeps what is already built', () => {
   expect(ratchet([1, 1, 0, 0], [0, 0, 0, 0])).toEqual([1, 1, 0, 0]);
   expect(ratchet([0, 0, 0, 0], [0.4, 0, 0, 0])).toEqual([0.4, 0, 0, 0]);
@@ -74,6 +85,8 @@ test('focus is the junction at both ends and the way in the middle', () => {
   expect(focusAt(1, STOPS, 4)).toBe(-1);
   expect(focusAt(0.18, STOPS, 4)).toBe(0);
   expect(focusAt(0.75, STOPS, 4)).toBe(3);
+  expect(focusAt(0.37, STOPS, 4)).toBe(1);
+  expect(focusAt(0.56, STOPS, 4)).toBe(2);
 });
 
 test('focus hands over between two ways in one clean crossing', () => {

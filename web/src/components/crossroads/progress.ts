@@ -16,7 +16,11 @@ export const smooth = (t: number): number => t * t * (3 - 2 * t);
 export function progressOf(top: number, height: number, stageHeight: number): number {
   const travel = height - stageHeight;
   if (travel <= 0) return 0;
-  return clamp01(-top / travel);
+  const value = clamp01(-top / travel);
+  // -0 is neither below 0 nor above 1, so clamp01 lets it through, and
+  // Object.is tells it apart from 0. That difference has no meaning here and
+  // would only ever surface as a baffling failed assertion.
+  return value === 0 ? 0 : value;
 }
 
 /**
@@ -87,9 +91,12 @@ export function ratchet(current: readonly number[], targets: readonly number[]):
  * Which way the camera is on, or -1 at the junction.
  *
  * Weights are monotonic inside a segment, so exactly one way is ever the
- * highest and focus hands over from one row to the next at the segment's
- * midpoint, in one clean crossing. There is deliberately no dead zone: naming
- * nobody for part of every transit would read as a bug, not as restraint.
+ * highest and focus hands over from one row to the next in a single clean
+ * crossing near the segment's midpoint. There is deliberately no dead zone:
+ * naming nobody for part of every transit would read as a bug, not as
+ * restraint. Which way wins at the exact midpoint is decided by floating point
+ * rounding and is not guaranteed in either direction, which is why nothing
+ * asserts on that one instant.
  *
  * The 0.45 floor is not about that handover, which the tie-break already
  * settles. It decides the junction. In the opening and closing segments a

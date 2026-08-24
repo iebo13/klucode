@@ -47,3 +47,17 @@ test('disposeAll is idempotent, because unmount can race', () => {
   expect(a.calls()).toBe(1);
   expect(r.size()).toBe(0);
 });
+
+test('one resource refusing to free does not leak the rest', () => {
+  const r = createRegistry();
+  const good = fake();
+  r.track({
+    dispose: () => {
+      throw new Error('nope');
+    },
+  });
+  r.track(good);
+  r.disposeAll();
+  expect(good.calls()).toBe(1);
+  expect(r.size()).toBe(0);
+});

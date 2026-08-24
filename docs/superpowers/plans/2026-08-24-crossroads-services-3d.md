@@ -1087,7 +1087,7 @@ cd web && npm run test:unit
 
 Expected: all pass.
 
-Two things worth understanding before you debug a failure here. Smoothstep at a segment's exact midpoint is 0.5, so both neighbouring ways weigh 0.5 there and the strict `>` in the tie-break hands that instant to the earlier one. That is why the handover test probes either side of the midpoint rather than sitting on it. And `segmentAt` compares with `>=`, so landing exactly on a stop puts you at the start of that stop's segment: `segmentAt(0.18, STOPS).from.focus` is 0, not -1.
+Two things worth understanding before you debug a failure here. Smoothstep at a segment's exact midpoint is 0.5 in real-number arithmetic, so both neighbouring ways weigh 0.5 there, but which one the strict `>` in the tie-break hands that instant to is decided by IEEE-754 rounding, not by which way is earlier: at the real stop values here, `(0.275 - 0.18) / (0.37 - 0.18)` rounds to `0.50000000000000011`, so it is actually the later way that wins. That is why the handover test probes either side of the midpoint rather than sitting on it. And `segmentAt` compares with `>=`, so landing exactly on a stop puts you at the start of that stop's segment: `segmentAt(0.18, STOPS).from.focus` is 0, not -1.
 
 - [ ] **Step 6: Write the failing registry tests**
 

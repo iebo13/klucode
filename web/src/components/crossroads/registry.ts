@@ -20,7 +20,15 @@ export function createRegistry() {
     },
     size: (): number => items.size,
     disposeAll(): void {
-      for (const item of items) item.dispose();
+      for (const item of items) {
+        try {
+          item.dispose();
+        } catch (error) {
+          // One resource refusing to free is not a reason to leak the rest.
+          // This runs on unmount, where there is nobody left to tell.
+          console.warn('crossroads: a resource failed to dispose', error);
+        }
+      }
       items.clear();
     },
   };
