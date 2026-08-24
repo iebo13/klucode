@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLink, Eyebrow, RHYTHM } from '@/components/ui';
 import type { Lang } from '@/lib/routes';
 
-import { progressOf } from './progress';
+import { approachBeat, progressOf } from './progress';
 import type { Handle, ServiceKey, Way } from './types';
 
 /**
@@ -86,8 +86,30 @@ function canMount(): boolean {
   }
 }
 
+/**
+ * The opening argument, which used to be a section of its own above this one.
+ *
+ * Three options that do not fit, then the one that does. It was always the same
+ * argument as the four ways below it, split in half by a section boundary: the
+ * page said "here is why the obvious answers are wrong" and then, separately,
+ * "here are four ways to work with me". Joined, the answer stops being a static
+ * panel and becomes the moment the camera arrives at the junction.
+ */
+export type Problem = {
+  eyebrow: string;
+  title: string;
+  lead: string;
+  cards: readonly { title: string; body: string }[];
+  answerTitle: string;
+  answerBody: string;
+};
+
+/** How many blocks the approach is divided into: the lead, three cards, the answer. */
+const APPROACH_BLOCKS = 5;
+
 export function Crossroads({
   lang,
+  problem,
   eyebrow,
   title,
   link,
@@ -95,6 +117,7 @@ export function Crossroads({
   ways,
 }: {
   lang: Lang;
+  problem: Problem;
   eyebrow: string;
   title: string;
   link: { href: string; label: string };
@@ -112,6 +135,17 @@ export function Crossroads({
   const copyRef = useRef<HTMLDivElement>(null);
   const [enhanced, setEnhanced] = useState(false);
   const [focus, setFocus] = useState(-1);
+  /**
+   * Which block of the opening argument is showing, or -1 once the camera has
+   * arrived and the column is about the four ways instead.
+   *
+   * An integer rather than the raw progress, and that is the whole reason it
+   * can be state at all: drive() runs on every scroll frame, and React bails
+   * out of a re-render when the value it is handed is the one it already has.
+   * A float would re-render the whole section sixty times a second to move an
+   * opacity that changes five times in the entire journey.
+   */
+  const [beat, setBeat] = useState(0);
   // How many of the four have finished building, as an integer. Reflected onto
   // the section so the browser suite can assert on the reveal without a debug
   // hook shipping to production: it is honest state, it is not announced to a
@@ -150,9 +184,14 @@ export function Crossroads({
       raf = 0;
       if (!handle) return;
       const rect = section.getBoundingClientRect();
-      handle.set(progressOf(rect.top, rect.height, stage.clientHeight));
+      const p = progressOf(rect.top, rect.height, stage.clientHeight);
+      handle.set(p);
       setFocus(handle.focus());
       setBuilt(handle.built());
+      // Read from the same progress the camera was just given, not from a
+      // second measurement, so the column and the camera can never disagree
+      // about where in the section the reader is.
+      setBeat(approachBeat(p, APPROACH_BLOCKS));
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(drive);
@@ -188,6 +227,79 @@ export function Crossroads({
       handle?.stop();
     };
   }, [enhanced, ordered, lang]);
+
+  /**
+   * The opening argument's own moment, for everyone who never sees the scene.
+   *
+   * Most visitors are here: a phone, a tablet held upright, a reduced-motion
+   * request, a browser with no WebGL. They get the whole section as stacked
+   * text, and the three options that do not fit are the best writing on the
+   * site sitting in a list styled exactly like the price board under it.
+   *
+   * So each one fails as you leave it. It is read at full strength, and once
+   * the next one arrives it settles back and a rule draws part way across its
+   * heading. Three failures accumulate above the answer, which is the shape of
+   * the argument. An IntersectionObserver and a CSS transition, about a
+   * kilobyte, and it reaches the readers the camera never will.
+   *
+   * `active` is the furthest block that has reached the reading band, and it
+   * only ever grows: these are read in order, and a block that failed does not
+   * un-fail because you scrolled back up to check.
+   */
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    // The scene is the desktop version of this and does it with a camera.
+    if (enhanced) return;
+    // A reduced-motion request is honoured by not moving anything, which here
+    // means every block stays at full strength and nothing is ever struck
+    // through. That is the same answer canMount() gives, for the same reason.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const col = copyRef.current;
+    if (!col) return;
+
+    const blocks = Array.from(col.querySelectorAll<HTMLElement>('.crossroads-beat'));
+    if (blocks.length === 0) return;
+
+    /**
+     * The furthest block whose top has crossed the reading line.
+     *
+     * Measured across every block rather than read off the observer's entries,
+     * and that is the whole point of the shape. An entry only arrives for a
+     * block that crossed the boundary, so a scroll that JUMPS, which is an
+     * anchor link, a restored offset, the End key, or a browser returning you
+     * to where you were, hands over a callback naming one block and says
+     * nothing about the three it flew past. Measured, they are simply behind
+     * the line, and behind the line is the only thing being asked.
+     *
+     * The line sits 65% down the viewport rather than at its foot, because a
+     * tall phone shows two of these at once and a block is not read the instant
+     * its first pixel appears.
+     */
+    const measure = () => {
+      const line = window.innerHeight * 0.65;
+      let highest = 0;
+      blocks.forEach((el, i) => {
+        if (el.getBoundingClientRect().top < line) highest = i;
+      });
+      // Only ever forwards. These are read in order, and an option that failed
+      // does not un-fail because the reader scrolled back up to check it.
+      setActive((was) => (highest > was ? highest : was));
+    };
+
+    // The observer is the cheap trigger, not the measurement: it fires when any
+    // block crosses the band, which is exactly when the answer can change, and
+    // costs nothing on the frames in between.
+    const io = new IntersectionObserver(measure, {
+      rootMargin: '-35% 0px -30% 0px',
+      threshold: 0,
+    });
+
+    for (const el of blocks) io.observe(el);
+    // Once at mount, for the reader who arrives already scrolled down.
+    measure();
+    return () => io.disconnect();
+  }, [enhanced]);
 
   /**
    * Keeps the row the camera is looking at inside the column that scrolls.
@@ -253,40 +365,98 @@ export function Crossroads({
                 bounded by the stage and scrolls what will not fit. It is
                 taller than any viewport the scene mounts on. */}
             <div ref={copyRef} className="crossroads-copy">
-              <Eyebrow onInk>{eyebrow}</Eyebrow>
-              <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
+              {/* Two acts, and in the enhanced state they share one grid cell.
+                  That is not a layout trick, it is what keeps this column the
+                  height it already was: stacked in flow the section's copy is
+                  the problem argument PLUS the price board, and the board alone
+                  already overruns a 1024x736 stage by 500px. Overlaid, the
+                  column is the taller of the two rather than their sum, and the
+                  approach adds nothing to the scroll the column has to do.
 
-              <ol className="crossroads-ways mt-8 divide-y divide-ink-line border-y border-ink-line">
-                {ordered.map((way, i) => (
-                  <li
-                    key={way.key}
-                    data-key={way.key}
-                    data-focus={focus === i}
-                    className="grid gap-1 py-4 transition-opacity"
-                  >
-                    <p className="font-mono text-eyebrow text-ink-accent">
-                      {String(i + 1).padStart(2, '0')}
-                    </p>
-                    <h3 className="text-h3">{way.name}</h3>
-                    <p className="text-small text-ink-muted">{way.forWhom}</p>
-                    <p className="crossroads-reads text-small text-ink-muted">{way.reads}</p>
-                    <p className="font-display text-h3 font-medium text-ink-accent">
-                      <span className="font-sans text-small font-normal text-ink-muted">
-                        {fromLabel}{' '}
-                      </span>
-                      {way.price}
-                      <span className="mt-1 block font-sans text-small font-normal text-ink-muted">
-                        {way.priceNote}
-                      </span>
-                    </p>
-                  </li>
-                ))}
-              </ol>
+                  Both acts stay in the DOM and neither is ever display:none or
+                  visibility:hidden. A reader on a screen reader at 1440px gets
+                  data-enhanced="true" like everyone else, and hiding act one
+                  after the camera passed it would delete half the section's
+                  argument for exactly the people who cannot see the camera
+                  move. Opacity leaves it in the accessibility tree, in order. */}
+              <div className="crossroads-acts">
+                <div className="crossroads-act" data-live={beat >= 0}>
+                  <Eyebrow onInk>{problem.eyebrow}</Eyebrow>
+                  <h2 className={`${RHYTHM.heading} text-h2`}>{problem.title}</h2>
 
-              <div className="mt-8">
-                <ArrowLink onInk href={link.href}>
-                  {link.label}
-                </ArrowLink>
+                  <div className="crossroads-beats mt-8">
+                    <div className="crossroads-beat" data-live={beat === 0}>
+                      <p className="max-w-measure text-lead text-ink-muted">{problem.lead}</p>
+                    </div>
+
+                    {problem.cards.map((card, i) => (
+                      <div
+                        key={card.title}
+                        className="crossroads-beat crossroads-card"
+                        data-live={beat === i + 1}
+                        // Struck through once the next block has been reached,
+                        // and only in the fallback, where these are stacked and
+                        // read in order. In the enhanced state they are one at
+                        // a time and the camera is doing this job.
+                        data-passed={active > i + 1}
+                      >
+                        <h3 className="text-h3">{card.title}</h3>
+                        <p className="mt-3 max-w-measure text-ink-muted">{card.body}</p>
+                      </div>
+                    ))}
+
+                    {/* The answer, and it lands on arrival. In the old layout
+                        this was an ink panel sitting still at the bottom of a
+                        section. Here it is the last thing said before the
+                        camera reaches the junction, which is the only reason
+                        the two sections were worth joining. */}
+                    <div
+                      className="crossroads-beat crossroads-answer"
+                      data-live={beat === APPROACH_BLOCKS - 1}
+                    >
+                      <h3 className="text-h3 text-ink-accent">{problem.answerTitle}</h3>
+                      <p className="mt-3 max-w-measure text-ink-muted">{problem.answerBody}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="crossroads-act" data-live={beat < 0}>
+                  <Eyebrow onInk>{eyebrow}</Eyebrow>
+                  <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
+
+                  <ol className="crossroads-ways mt-8 divide-y divide-ink-line border-y border-ink-line">
+                    {ordered.map((way, i) => (
+                      <li
+                        key={way.key}
+                        data-key={way.key}
+                        data-focus={focus === i}
+                        className="grid gap-1 py-4 transition-opacity"
+                      >
+                        <p className="font-mono text-eyebrow text-ink-accent">
+                          {String(i + 1).padStart(2, '0')}
+                        </p>
+                        <h3 className="text-h3">{way.name}</h3>
+                        <p className="text-small text-ink-muted">{way.forWhom}</p>
+                        <p className="crossroads-reads text-small text-ink-muted">{way.reads}</p>
+                        <p className="font-display text-h3 font-medium text-ink-accent">
+                          <span className="font-sans text-small font-normal text-ink-muted">
+                            {fromLabel}{' '}
+                          </span>
+                          {way.price}
+                          <span className="mt-1 block font-sans text-small font-normal text-ink-muted">
+                            {way.priceNote}
+                          </span>
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+
+                  <div className="mt-8">
+                    <ArrowLink onInk href={link.href}>
+                      {link.label}
+                    </ArrowLink>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -11,7 +11,6 @@ import {
   Card,
   Eyebrow,
   Faq,
-  InkPanel,
   RHYTHM,
   Section,
   SectionHead,
@@ -130,40 +129,31 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </div>
       </section>
 
-      {/* ------------------------------------------------------------- problem */}
-      {/* Three bad options as hairline rows — the same list device as the
-          price board, so the page has ONE way of setting a list — and the
-          answer as a single full-width ink slab: the frame's material
-          reappearing mid-page, once, for the sentence the section argues
-          towards. */}
-      <Section>
-        <SectionHead eyebrow={h.problemEyebrow} title={h.problemTitle} lead={h.problemLead} />
-        <div className="mt-8 divide-y divide-line border-y border-line md:mt-12">
-          {h.problemCards.map((card) => (
-            <div key={card.title} className="grid gap-2 py-6 md:grid-cols-12 md:gap-8 md:py-8">
-              <h3 className="text-h3 md:col-span-4">{card.title}</h3>
-              <p className="max-w-measure text-muted md:col-span-8">{card.body}</p>
-            </div>
-          ))}
-        </div>
-        <InkPanel className="mt-8 md:mt-12">
-          <div className="gap-8 md:grid md:grid-cols-12">
-            <h3 className="text-h3 md:col-span-4">{h.answerTitle}</h3>
-            <p className="mt-4 max-w-measure text-ink-muted md:col-span-8 md:mt-0">
-              {h.answerBody}
-            </p>
-          </div>
-        </InkPanel>
-      </Section>
+      {/* --------------------------------------------------- problem + services */}
+      {/* THE CROSSROADS, and „Die Ausgangslage" is now the first act of it.
+          „Vier Wege zur Zusammenarbeit" is already a spatial metaphor, so it is
+          one: four lanes off a junction, and at the end of each the thing you
+          would actually get.
 
-      {/* ------------------------------------------------------------ services */}
-      {/* THE CROSSROADS. „Vier Wege zur Zusammenarbeit" is already a spatial
-          metaphor, so it is one: four lanes off a junction, and at the end of
-          each the thing you would actually get. The rows to the right are the
-          section's content and its fallback at once, which is why there is
-          exactly one copy of them. See components/crossroads. */}
+          The problem used to be a section of its own, immediately above. It was
+          always the same argument split in half by a section boundary: three
+          options that do not fit, then the one that does, then four ways to
+          take it. Joined, „Die dritte Möglichkeit" stops being a static panel
+          and becomes the moment the camera arrives at the junction, which is
+          the only reason the merge was worth making.
+
+          The rows are the section's content and its fallback at once, which is
+          why there is exactly one copy of them. See components/crossroads. */}
       <Crossroads
         lang={lang}
+        problem={{
+          eyebrow: h.problemEyebrow,
+          title: h.problemTitle,
+          lead: h.problemLead,
+          cards: h.problemCards,
+          answerTitle: h.answerTitle,
+          answerBody: h.answerBody,
+        }}
         eyebrow={h.servicesEyebrow}
         title={h.servicesTitle}
         link={{ href: pathFor('services', lang), label: h.servicesLink }}

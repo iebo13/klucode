@@ -381,8 +381,14 @@
 
    svh rather than vh, because a mobile browser's vh includes a toolbar that
    is not there, and the stage would be taller than what you can see. */
+/* 560svh, and it was 420. The section now opens with the argument that used to
+   sit above it as „Die Ausgangslage", and the camera spends that argument
+   closing the distance to the junction. 140svh of approach against the same
+   320svh of crossroads, so the four ways keep exactly the pacing they had.
+   APPROACH_END in progress.ts is 0.3, which is that split, and the two have to
+   agree: 140 / (560 - 100). */
 .crossroads-track {
-  height: 420svh;
+  height: 560svh;
 }
 
 .crossroads-stage {
@@ -502,6 +508,132 @@
    both themes: check_contrast.py audits token pairs and will not stop you. */
 [data-enhanced='true'] .crossroads-ways li[data-focus='false'] {
   opacity: 0.7;
+}
+
+/* --- the two acts --------------------------------------------------------
+   In the fallback these are two ordinary blocks stacked down the page, and
+   that is the whole of „Die Ausgangslage" followed by the price board, in the
+   order the page used to have them as separate sections. Nothing is hidden and
+   nothing moves.
+
+   In the enhanced state each set shares a single grid cell, so the container is
+   as tall as its tallest child rather than the sum of them. That is what lets
+   the approach cost the copy column nothing: the price board alone already
+   overruns a 1024x736 stage by 500px, and stacking the problem argument on top
+   of it in flow would have doubled the internal scrolling this section was
+   already criticised for. */
+.crossroads-acts,
+.crossroads-beats {
+  display: grid;
+  gap: 3rem;
+}
+
+[data-enhanced='true'] .crossroads-acts,
+[data-enhanced='true'] .crossroads-beats {
+  gap: 0;
+}
+
+[data-enhanced='true'] .crossroads-act,
+[data-enhanced='true'] .crossroads-beat {
+  grid-area: 1 / 1;
+}
+
+/* Opacity and nothing else. Not display, not visibility, not hidden: a reader
+   using a screen reader at 1440px gets data-enhanced="true" like everybody
+   else, and removing act one from the tree once the camera has passed it would
+   delete half this section's argument for precisely the people who cannot see
+   the camera move. At zero opacity the text is still read, still in order.
+
+   pointer-events is the part that does have to be switched, or the invisible
+   act would swallow clicks meant for the visible one. */
+[data-enhanced='true'] .crossroads-act,
+[data-enhanced='true'] .crossroads-beat {
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-enhanced='true'] .crossroads-act[data-live='true'],
+[data-enhanced='true'] .crossroads-beat[data-live='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-enhanced='true'] .crossroads-act,
+  [data-enhanced='true'] .crossroads-beat {
+    transition:
+      opacity 380ms ease,
+      transform 380ms ease;
+    transform: translateY(0.75rem);
+  }
+
+  [data-enhanced='true'] .crossroads-act[data-live='true'],
+  [data-enhanced='true'] .crossroads-beat[data-live='true'] {
+    transform: none;
+  }
+}
+
+/* --- the fallback's own moment -------------------------------------------
+   Everyone who never sees the scene reads this section as stacked text, and
+   that is most visitors: every phone, every tablet held upright, every
+   reduced-motion request, every browser without WebGL. The three options that
+   do not fit are the best writing on the site, and they were set in a list
+   styled exactly like the price board below them.
+
+   So each one fails as you leave it. It is read at full strength, and once the
+   next has been reached it settles back and a rule draws part of the way across
+   its heading. Three struck rows accumulate above the answer, which is the
+   shape the argument already has.
+
+   0.7 and not lower, and it is the same accessibility floor as the price rows
+   above: text-ink-muted is stone.300 (#C1C5C2), and composited over the ink
+   surface it measures 5.33:1 in the light theme and 4.52:1 in the dark. Both
+   clear the 4.5:1 that body text needs. check_contrast.py audits token pairs
+   and cannot see a CSS opacity, so this number has to be defended here. */
+[data-enhanced='false'] .crossroads-card[data-passed='true'] {
+  opacity: 0.7;
+}
+
+[data-enhanced='false'] .crossroads-card h3 {
+  position: relative;
+  display: inline-block;
+}
+
+[data-enhanced='false'] .crossroads-card h3::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 56%;
+  height: 1px;
+  width: 0;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+/* Part of the way, not all of it. A full strike reads as deleted text, and
+   none of these three options is wrong, they are just not for you. */
+[data-enhanced='false'] .crossroads-card[data-passed='true'] h3::after {
+  width: 72%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-enhanced='false'] .crossroads-card {
+    transition: opacity 420ms ease;
+  }
+
+  [data-enhanced='false'] .crossroads-card h3::after {
+    transition: width 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+}
+
+/* The answer is the one block in the approach that is an arrival rather than
+   another complaint, so it is the one block that gets a surface under it. */
+.crossroads-answer {
+  /* --kc-inkAccent, which is the generated token. Tailwind's `ink-accent`
+     utility maps to it in tailwind.config.ts, but the utility name is not a
+     custom property and `var(--color-ink-accent)` resolves to nothing. */
+  border-left: 2px solid var(--kc-inkAccent);
+  padding-left: 1.25rem;
 }
 
 @media (prefers-reduced-motion: no-preference) {

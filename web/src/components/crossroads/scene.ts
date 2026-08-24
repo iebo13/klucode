@@ -35,7 +35,7 @@ import {
 
 import { BUILDERS, LINE_ALPHA } from './objects';
 import { PALETTE } from './palette';
-import { buildTargets, focusAt, ratchet, segmentAt } from './progress';
+import { APPROACH_END, buildTargets, focusAt, ratchet, segmentAt } from './progress';
 import { createRegistry } from './registry';
 import type { Handle, SceneLabels, ServiceKey, Stop, Way } from './types';
 
@@ -366,10 +366,49 @@ export function boot(
   const WIDE_FIT_H = 35.9;
   const WIDE_FIT_V = 15.2;
 
+  /**
+   * The approach: two stops short of the junction, on the same lens.
+   *
+   * The section now opens with the argument for why the two obvious options do
+   * not fit, and the camera spends that argument closing the distance. Holding
+   * the wide shot's half-angles fixed and moving only the camera is what makes
+   * it read as an approach rather than as a zoom: the four ways cover 64% of
+   * the frame from the first stop, 80% from the second and 100% on arrival, so
+   * they are visible and out of reach the whole way in.
+   *
+   * The fog does the rest. At the first stop the far lanes are 45 units off and
+   * a third of their contrast is gone, which is the point: you can see that
+   * there are four of them and not yet what they are.
+   */
+  const APPROACH: Stop[] = [
+    { at: 0, focus: -1, pos: [0, 9, 28], look: [0, 0, -8], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
+    {
+      at: APPROACH_END * 0.55,
+      focus: -1,
+      pos: [0, 7.5, 20],
+      look: [0, 0, -9],
+      fitH: WIDE_FIT_H,
+      fitV: WIDE_FIT_V,
+    },
+  ];
+
   const STOPS: Stop[] = [
-    { at: 0, focus: -1, pos: [0, 6, 13], look: [0, 0, -10], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
+    ...APPROACH,
+    {
+      at: APPROACH_END,
+      focus: -1,
+      pos: [0, 6, 13],
+      look: [0, 0, -10],
+      fitH: WIDE_FIT_H,
+      fitV: WIDE_FIT_V,
+    },
+    // The four ways keep the spacing they had when the crossroads was a section
+    // of its own, remapped into what is left after the approach rather than
+    // written out again. Restating them as new literals is how a change to the
+    // approach quietly re-paces the part of the journey it was not meant to
+    // touch.
     ...lanes.map((lane, i) => ({
-      at: 0.18 + i * 0.19,
+      at: APPROACH_END + (0.18 + i * 0.19) * (1 - APPROACH_END),
       focus: i,
       pos: standOff(lane.target, lane.back),
       look: [lane.target.x, lane.target.y, lane.target.z] as [number, number, number],

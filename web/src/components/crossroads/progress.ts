@@ -2,6 +2,43 @@ import type { Stop } from './types';
 
 export const clamp01 = (t: number): number => (t < 0 ? 0 : t > 1 ? 1 : t);
 
+/**
+ * Where the approach ends and the crossroads begins, as scroll progress.
+ *
+ * The section opens a long way short of the junction and closes the distance
+ * while the reader is told why the two obvious options do not fit. Arriving is
+ * the beat that carries the answer.
+ *
+ * It lives here, in the one module with no three.js import, because two things
+ * need it and they are in different files: scene.ts lays the camera stops out
+ * around it, and index.tsx decides which half of the copy column is showing.
+ * Two copies of this number would drift, and the symptom would be the camera
+ * reaching the junction while the column is still arguing about agencies.
+ *
+ * 0.3 of a 560svh section is 140svh of approach against 320svh of crossroads,
+ * so the four ways keep exactly the pacing they had when the crossroads was a
+ * section of its own.
+ */
+export const APPROACH_END = 0.3;
+
+/**
+ * Which block of the opening argument is showing, 0 to 4, or -1 once the
+ * camera has arrived and the section is about the four ways instead.
+ *
+ * 0 is the heading and the lead, 1 to 3 are the three options that do not fit,
+ * and 4 is the answer they are all there to set up. Even fifths of the
+ * approach: the three middle blocks are the same length because they are the
+ * same kind of thing, and nothing here should feel like it is being rushed
+ * past or dwelt on.
+ */
+export function approachBeat(p: number, blocks = 5): number {
+  if (p >= APPROACH_END) return -1;
+  const t = clamp01(p / APPROACH_END);
+  // Math.min guards the single value t === 1 cannot reach here but which a
+  // future APPROACH_END of 0 would hand straight through.
+  return Math.min(blocks - 1, Math.floor(t * blocks));
+}
+
 /** Smoothstep. Eases both ends of every camera move. */
 export const smooth = (t: number): number => t * t * (3 - 2 * t);
 

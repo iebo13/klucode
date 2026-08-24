@@ -1,5 +1,19 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { APPROACH_END } from '../../src/components/crossroads/progress';
+
+/**
+ * Scroll progress at which the camera is standing at way `i`.
+ *
+ * The same expression scene.ts uses, imported from the same constant, because
+ * the four ways moved when the section grew an opening argument in front of
+ * them. Four literals would have to be found and corrected by hand every time
+ * the approach changes length, and the failure they produce in the meantime is
+ * a test that scrolls to the middle of the problem copy and reports that no
+ * service is in focus, which says nothing about what actually broke.
+ */
+const wayAt = (i: number) => APPROACH_END + (0.18 + i * 0.19) * (1 - APPROACH_END);
+
 /** Makes every WebGL context request fail, the way a locked-down browser does. */
 async function withoutWebGL(page: Page) {
   await page.addInitScript(() => {
@@ -232,7 +246,7 @@ test('the row the camera is looking at is inside the column that scrolls', async
   // the fold of a scroller the visitor has no reason to have found.
   await page.setViewportSize({ width: 1024, height: 736 });
   await page.goto('/de/');
-  for (const p of [0.18, 0.37, 0.56, 0.75]) {
+  for (const p of [wayAt(0), wayAt(1), wayAt(2), wayAt(3)]) {
     await scrollToProgress(page, p);
     const seen = await page.evaluate(() => {
       const col = document.querySelector('.crossroads-copy') as HTMLElement;
@@ -265,7 +279,7 @@ test('the enhanced state dims the unfocused rows no further than AA allows', asy
   // so this is the only gate that would notice it drifting back.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
-  await scrollToProgress(page, 0.18);
+  await scrollToProgress(page, wayAt(0));
 
   const rows = page.locator(`${section} li[data-key]`);
   await expect(rows).toHaveCount(4);
@@ -320,7 +334,7 @@ test('a still page costs no frames, and a moving one still gets them', async ({ 
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
-  await scrollToProgress(page, 0.18);
+  await scrollToProgress(page, wayAt(0));
   await page.waitForTimeout(400);
 
   const count = () => page.evaluate(() => (window as unknown as { __raf: number }).__raf);
@@ -334,7 +348,7 @@ test('a still page costs no frames, and a moving one still gets them', async ({ 
   // that frame different objects, so identical pixels mean set() reached a
   // loop that never woke up.
   const atFirst = await page.locator(`${section} canvas`).screenshot();
-  await scrollToProgress(page, 0.56);
+  await scrollToProgress(page, wayAt(2));
   await page.waitForTimeout(200);
   const atThird = await page.locator(`${section} canvas`).screenshot();
   expect(atThird.equals(atFirst), 'a parked loop did not restart on set()').toBe(false);
@@ -353,10 +367,10 @@ for (const lang of ['de', 'en'] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/${lang}/`);
     const stops: [number, string][] = [
-      [0.18, 'website'],
-      [0.37, 'app'],
-      [0.56, 'capacity'],
-      [0.75, 'care'],
+      [wayAt(0), 'website'],
+      [wayAt(1), 'app'],
+      [wayAt(2), 'capacity'],
+      [wayAt(3), 'care'],
     ];
     // The same four keys in the same order in both languages, because the
     // component sorts by ORDER before anything reads the ways. en.ts lists
@@ -370,3 +384,171 @@ for (const lang of ['de', 'en'] as const) {
     }
   });
 }
+
+/* --- the opening argument ------------------------------------------------
+   „Die Ausgangslage" used to be a section of its own above this one. Merged,
+   it is the first act of the same journey, and the two things worth pinning
+   are that it is complete for everyone and that it hands over cleanly. */
+
+test('the opening argument reaches every visitor, scene or no scene', async ({ page }) => {
+  // The fallback is where most people read this: every phone, every tablet
+  // held upright, every reduced-motion request. Losing a card here would lose
+  // it for the majority, and the copy column is the only copy of it now.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/de/');
+  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+  await expect(page.locator(`${section} canvas`)).toHaveCount(0);
+
+  for (const text of ['Die Agentur', 'Der Baukasten', 'Also weiter wie bisher']) {
+    await expect(page.locator(section).getByText(text, { exact: true })).toBeVisible();
+  }
+  await expect(page.locator(`${section} .crossroads-answer`)).toBeVisible();
+  // And the four ways are still under it, so the merged section carries both
+  // halves of the argument rather than trading one for the other.
+  await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
+});
+
+test('the approach shows the argument, and the junction hands over to the ways', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
+
+  const acts = page.locator(`${section} .crossroads-act`);
+  await expect(acts).toHaveCount(2);
+
+  // Through the whole approach the problem is showing and the price board is
+  // not, and nothing has begun to build: the section must not answer the
+  // question while it is still asking it.
+  for (const p of [0, 0.1, 0.2, APPROACH_END - 0.01]) {
+    await scrollToProgress(page, p);
+    await expect(acts.nth(0), `act one is hidden at ${p}`).toHaveAttribute('data-live', 'true');
+    await expect(acts.nth(1), `act two is showing at ${p}`).toHaveAttribute('data-live', 'false');
+    await expect(page.locator(section)).toHaveAttribute('data-built', '0');
+  }
+
+  // Past the junction the column is the four ways.
+  await scrollToProgress(page, APPROACH_END + 0.02);
+  await expect(acts.nth(0)).toHaveAttribute('data-live', 'false');
+  await expect(acts.nth(1)).toHaveAttribute('data-live', 'true');
+
+  // Five blocks, and exactly one of them is ever the live one.
+  const beats = page.locator(`${section} .crossroads-beat`);
+  await expect(beats).toHaveCount(5);
+  for (const p of [0.02, 0.09, 0.15, 0.21, 0.27]) {
+    await scrollToProgress(page, p);
+    await expect(
+      page.locator(`${section} .crossroads-beat[data-live="true"]`),
+      `not exactly one block at ${p}`,
+    ).toHaveCount(1);
+  }
+});
+
+test('both acts stay readable to a screen reader, whichever one is showing', async ({ page }) => {
+  // Opacity, never display or visibility. A reader using a screen reader at
+  // 1440px gets the enhanced state like everybody else, and removing act one
+  // from the tree once the camera has passed it would delete half this
+  // section's argument for precisely the people who cannot watch it move.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
+  await scrollToProgress(page, wayAt(1));
+
+  const actOne = page.locator(`${section} .crossroads-act`).first();
+  // Polled, because the acts carry a 380ms fade whenever motion is allowed and
+  // the one that just lost the floor is still travelling when the scroll
+  // helper returns.
+  await expect
+    .poll(() => actOne.evaluate((el) => Number(getComputedStyle(el).opacity)), {
+      message: 'act one should be faded out here',
+    })
+    .toBe(0);
+
+  const still = await actOne.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { display: s.display, visibility: s.visibility };
+  });
+  expect(still.display, 'act one was removed from the layout').not.toBe('none');
+  expect(still.visibility, 'act one was removed from the accessibility tree').toBe('visible');
+});
+
+test('the fallback strikes each option through once you have passed it', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/de/');
+  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+
+  const cards = page.locator(`${section} .crossroads-card`);
+  await expect(cards).toHaveCount(3);
+  // Nothing has failed before it has been read.
+  for (let i = 0; i < 3; i += 1) {
+    await expect(cards.nth(i)).toHaveAttribute('data-passed', 'false');
+  }
+
+  // Scroll past all three and the first two are struck. The third is the one
+  // still being read at the answer, and a card is only marked once the NEXT
+  // block has been reached.
+  await page.locator(`${section} .crossroads-answer`).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(600);
+  await expect(cards.nth(0)).toHaveAttribute('data-passed', 'true');
+  await expect(cards.nth(1)).toHaveAttribute('data-passed', 'true');
+
+  // 0.7 and not lower. Same accessibility floor as the price rows: composited
+  // over ink, text-ink-muted at 0.7 measures 5.33:1 in the light theme and
+  // 4.52:1 in the dark, against the 4.5:1 body text needs. check_contrast.py
+  // audits token pairs and cannot see a CSS opacity, so this is the only gate
+  // that would catch it drifting.
+  await expect
+    .poll(() => cards.nth(0).evaluate((el) => Number(getComputedStyle(el).opacity)))
+    .toBeCloseTo(0.7, 2);
+});
+
+test('a reduced-motion visitor is never handed a struck-through option', async ({ page }) => {
+  // The fallback covers reduced motion as well as phones, and honouring the
+  // request means nothing moves and nothing is dimmed: every option stays at
+  // full strength, which is exactly the static page this section had before.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+
+  await page.locator(`${section} .crossroads-answer`).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(600);
+
+  const cards = page.locator(`${section} .crossroads-card`);
+  for (let i = 0; i < 3; i += 1) {
+    await expect(cards.nth(i), `option ${i} was struck through`).toHaveAttribute(
+      'data-passed',
+      'false',
+    );
+    expect(
+      await cards.nth(i).evaluate((el) => Number(getComputedStyle(el).opacity)),
+      `option ${i} was dimmed`,
+    ).toBe(1);
+  }
+});
+
+test('a jumped scroll does not leave the options behind it unstruck', async ({ page }) => {
+  // The anchor-link case, and the same one the build ratchet exists for. An
+  // IntersectionObserver only reports the blocks that crossed its boundary, so
+  // a scroll that flies past three of them names one and says nothing about
+  // the rest. Measuring every block against the reading line instead is what
+  // makes this work.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/de/');
+  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+
+  await page.evaluate(() => {
+    const answer = document.querySelector('#services .crossroads-answer');
+    answer?.scrollIntoView({ block: 'center', behavior: 'instant' });
+  });
+  await page.waitForTimeout(700);
+
+  const cards = page.locator(`${section} .crossroads-card`);
+  for (let i = 0; i < 3; i += 1) {
+    await expect(cards.nth(i), `option ${i} was skipped rather than passed`).toHaveAttribute(
+      'data-passed',
+      'true',
+    );
+  }
+});
