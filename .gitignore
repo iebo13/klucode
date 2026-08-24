@@ -27,3 +27,7 @@ yarn-error.log*
 # Playwright MCP session artifacts (screenshots/snapshots from design verification)
 .playwright-mcp/
 de-dark-hero.png
+
+# Isolated worktrees and subagent scratch, both machine-local
+.claude/worktrees/
+.superpowers/
