@@ -552,10 +552,8 @@ Adjust the leading path if the ignore file lives inside `web/`.
 In `.github/workflows/ci.yml`, after the `Format check` step and before `Build`:
 
 ```yaml
-      # The repo had no browser tests until the 3D services section, whose two
-      # worst failure modes (a sticky stage painting over the section below, a
-      # scroll jump leaving an object half-built) are invisible to a typecheck
-      # and to every check-*.mjs script.
+      # lib/routes.ts decides every URL on the site, localised slugs and all,
+      # and had no test until now.
       - name: Unit tests
         run: npm run test:unit
 ```
@@ -566,6 +564,10 @@ And after the first `Build` step:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      # The repo had no browser tests until the 3D services section, whose two
+      # worst failure modes (a sticky stage painting over the section below, a
+      # scroll jump leaving an object half-built) are invisible to a typecheck
+      # and to every check-*.mjs script.
       - name: Browser tests
         run: npm run test:e2e
 ```
