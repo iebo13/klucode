@@ -9,14 +9,21 @@ import {
 } from '../../src/components/crossroads/progress';
 import type { Stop } from '../../src/components/crossroads/types';
 
-/** The real shape: a junction, four ways, a closing shot. */
+/**
+ * The real shape: a junction, four ways, a closing shot.
+ *
+ * pos, look and the two half-angles are here because Stop carries them, not
+ * because anything under test reads them. Every function in progress.ts works
+ * from `at` and `focus` alone, which is exactly why it can be tested with no
+ * GPU, no canvas and no browser.
+ */
 const STOPS: Stop[] = [
-  { at: 0.0, focus: -1, pos: [0, 3.6, 13], look: [0, 2.0, -8] },
-  { at: 0.18, focus: 0, pos: [0, 2.7, 0], look: [0, 2.5, -16] },
-  { at: 0.37, focus: 1, pos: [0, 2.7, 0], look: [0, 2.8, -14] },
-  { at: 0.56, focus: 2, pos: [0, 2.7, 0], look: [0, 1.7, -14] },
-  { at: 0.75, focus: 3, pos: [0, 2.7, 0], look: [0, 4.1, -16] },
-  { at: 1.0, focus: -1, pos: [0, 5.0, 15], look: [0, 2.0, -9] },
+  { at: 0.0, focus: -1, pos: [0, 4.6, 17], look: [0, 2.0, -7], fitH: 33.1, fitV: 9.7 },
+  { at: 0.18, focus: 0, pos: [0, 2.4, 0], look: [0, 2.33, -17], fitH: 24, fitV: 18 },
+  { at: 0.37, focus: 1, pos: [0, 2.4, 0], look: [0, 2.6, -17], fitH: 24, fitV: 18 },
+  { at: 0.56, focus: 2, pos: [0, 2.4, 0], look: [0, 0.98, -17], fitH: 24, fitV: 18 },
+  { at: 0.75, focus: 3, pos: [0, 2.4, 0], look: [0, 2.78, -17], fitH: 24, fitV: 18 },
+  { at: 1.0, focus: -1, pos: [0, 6.0, 19], look: [0, 2.0, -8], fitH: 31.1, fitV: 9 },
 ];
 
 test('progress is zero before the section and one after it', () => {

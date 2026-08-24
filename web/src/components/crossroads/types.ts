@@ -28,6 +28,21 @@ export type Stop = {
   focus: number;
   pos: [number, number, number];
   look: [number, number, number];
+  /**
+   * The half-angles this shot has to cover, in degrees, horizontally and
+   * vertically. Not a field of view: the field of view is worked out from
+   * these and the aspect the canvas actually has, in scene.ts.
+   *
+   * A PerspectiveCamera's fov is VERTICAL, so one number gives a narrow column
+   * far less horizontal room than a wide one, and this canvas ranges from
+   * 470px wide to 980px. A single fov either cropped the office in half on a
+   * laptop or, set wide enough not to, pushed every object so far away that the
+   * dashboard could not be read on any screen. Two half-angles say what the
+   * shot must contain and let each viewport spend its own aspect on satisfying
+   * both.
+   */
+  fitH: number;
+  fitV: number;
 };
 
 /** What boot() hands back. The component talks to the scene only through this. */

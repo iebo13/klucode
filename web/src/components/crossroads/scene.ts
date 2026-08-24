@@ -19,6 +19,7 @@ import {
   DoubleSide,
   FogExp2,
   Group,
+  MathUtils,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
@@ -65,10 +66,10 @@ import type { Handle, SceneLabels, ServiceKey, Stop, Way } from './types';
  * what turns that into a loud failure at the first frame.
  */
 const LANES = [
-  { key: 'website', angle: 0.8, dist: 16, back: 10, aimY: 2.5 },
-  { key: 'app', angle: 0.28, dist: 14, back: 11, aimY: 2.8 },
-  { key: 'capacity', angle: -0.28, dist: 14, back: 14.5, aimY: 1.7 },
-  { key: 'care', angle: -0.8, dist: 16, back: 13, aimY: 4.1 },
+  { key: 'website', angle: 0.8, dist: 17, back: 9.1, aimY: 2.33 },
+  { key: 'app', angle: 0.28, dist: 17, back: 11.4, aimY: 2.6 },
+  { key: 'capacity', angle: -0.28, dist: 17, back: 13.2, aimY: 0.98 },
+  { key: 'care', angle: -0.8, dist: 17, back: 11.2, aimY: 2.78 },
   // satisfies rather than a type annotation, so the literal values stay literal
   // for the check in boot() while a mistyped key is still a compile error.
 ] as const satisfies readonly {
@@ -78,6 +79,39 @@ const LANES = [
   back: number;
   aimY: number;
 }[];
+
+/**
+ * The lane lens, as the half-angles every close-up has to cover.
+ *
+ * One lens for all four stops, and the standoff above does the framing. Giving
+ * each stop the field of view that suits its own object frames all four
+ * perfectly and makes the world breathe: measured, the journey ran 40°, 64°,
+ * 67°, 37° across four adjacent stops, a two-to-one change of focal length
+ * while the camera is already moving. A prime lens and a different standoff is
+ * what a camera operator does instead, and it leaves exactly one deliberate
+ * change of lens in the sequence, at either end, for the wide shot.
+ *
+ * Every object sits inside 85% of this on its binding axis, which is where the
+ * standoffs come from: measured at 1024x736, 1440x900 and 1920x1080, nothing is
+ * cropped and the only neighbouring object that appears anywhere is 0.6% of the
+ * frame at one corner of the care stop.
+ */
+const LANE_FIT_H = 24;
+const LANE_FIT_V = 18;
+
+/** Eye height for the four close-ups. Roughly standing, in this world's scale. */
+const CAM_Y = 2.4;
+
+/**
+ * Field of view for a shot that must cover these half-angles at this aspect.
+ *
+ * Vertical, because that is the only fov three.js takes. Whichever of the two
+ * requirements the aspect makes harder is the one that sets it, so both are
+ * always satisfied and a wide monitor spends its extra width on air around the
+ * subject rather than on a different composition.
+ */
+const fovFor = (fitH: number, fitV: number, aspect: number) =>
+  2 * Math.max(fitV, MathUtils.radToDeg(Math.atan(Math.tan(MathUtils.degToRad(fitH)) / aspect)));
 
 /**
  * How solid a thing must be before it is drawn at all, and therefore before it
@@ -109,7 +143,7 @@ function standOff(target: Vector3, back: number): [number, number, number] {
   const p = flat
     .divideScalar(length)
     .multiplyScalar(length - back)
-    .setY(2.7);
+    .setY(CAM_Y);
   return [p.x, p.y, p.z];
 }
 
@@ -161,8 +195,16 @@ export function boot(
 
   const scene = new Scene();
   scene.background = new Color(PALETTE.background);
-  scene.fog = new FogExp2(PALETTE.background, 0.022);
+  // 0.014, and it was 0.022. The wide shot at either end now stands 34 units
+  // off the far lanes so it can hold all four without a lens wide enough to
+  // bend them, and at 0.022 that distance washed 47% of the contrast out of the
+  // two outer objects. At 0.014 it costs 20%, which still reads as depth, and
+  // the floor's far edge is still 51% gone by the time it arrives.
+  scene.fog = new FogExp2(PALETTE.background, 0.014);
 
+  // The 50 is a placeholder. Every field of view in this scene is computed in
+  // layout() from the stop's half-angles and the canvas aspect, and layout()
+  // runs before the first frame.
   const camera = new PerspectiveCamera(50, 2, 0.1, 200);
 
   /**
@@ -198,15 +240,42 @@ export function boot(
 
   const key = new SpotLight(PALETTE.lightKey, 70, 40, Math.PI / 3.4, 0.65, 1.05);
   key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.mapSize.set(2048, 2048);
   key.shadow.camera.far = 40;
   key.shadow.bias = -0.002;
+  /**
+   * A soft edge, and it had none.
+   *
+   * One spotlight with a hard shadow put a black trapezoid on the floor behind
+   * every object, edge as sharp as the geometry that cast it, which reads as a
+   * hole rather than as shade. A real light of that apparent size has a
+   * penumbra, and PCFSoftShadowMap will draw one, but only as wide as `radius`
+   * says, and the default is 1: barely a pixel at this map size.
+   *
+   * 4 against a 2048 map is roughly the softness 2 would have given at 1024,
+   * plus the extra resolution, so the edge is soft without the blur turning
+   * into visible steps. The map costs 16 MB of depth texture once, and it is
+   * redrawn only on the frames the scroll actually changes something.
+   */
+  key.shadow.radius = 4;
   scene.add(key, key.target);
   const fill = new PointLight(PALETTE.lightFill, 80, 40, 1.4);
   scene.add(fill);
 
+  // 300 across, and it was 120.
+  //
+  // The floor has no edge in the fiction, so the fog has to be what ends it. At
+  // the old density 0.022 the edge at 60 units was 69% gone and nobody saw it.
+  // Lowering the density to 0.014 for the wide shot left it only 38% gone, and
+  // it turned up in the close-ups as a hard horizontal line with flat black
+  // above: a wall behind the scene rather than distance. At 150 units out the
+  // fog has taken 99% of it before it arrives, whatever the camera is doing,
+  // and the camera's far plane at 200 finishes the job on the corners.
+  //
+  // It costs nothing. One plane, two triangles, and no more pixels than before,
+  // because every pixel it added is fog-coloured.
   const ground = new Mesh(
-    reg.track(new PlaneGeometry(120, 120)),
+    reg.track(new PlaneGeometry(300, 300)),
     reg.track(new MeshStandardMaterial({ color: PALETTE.floor, roughness: 0.97 })),
   );
   ground.rotation.x = -Math.PI / 2;
@@ -275,15 +344,41 @@ export function boot(
     return { group, target, back: geom.back, units, built: 0 };
   });
 
+  /**
+   * The two wide shots, which stand off the fan far enough to hold all four
+   * lanes at once. Their half-angles are wider than a close-up's by design:
+   * this is the establishing shot and the only change of lens in the sequence.
+   *
+   * They are also tilted well down, and that is the part that took measuring.
+   * Four objects on a flat floor occupy a band 36° across and 15° tall, and the
+   * canvas is a portrait column, so a lens wide enough for the band always
+   * leaves the height over-supplied. No camera position fixes that: raising the
+   * camera spreads the fan horizontally by as much as it gains vertically, and
+   * the best height in a sweep of 169,000 still had the objects covering barely
+   * a fifth of the frame.
+   *
+   * What fills the frame is the floor, and how much floor there is depends on
+   * the tilt alone. At the first draft's 6° the horizon sat near the middle and
+   * the whole top half was flat unlit background. At 15° down the floor and its
+   * four lit lanes carry 67% of the height and the objects sit on them rather
+   * than floating in the dark.
+   */
+  const WIDE_FIT_H = 35.9;
+  const WIDE_FIT_V = 15.2;
+
   const STOPS: Stop[] = [
-    { at: 0, focus: -1, pos: [0, 3.6, 13], look: [0, 2, -8] },
+    { at: 0, focus: -1, pos: [0, 6, 13], look: [0, 0, -10], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
     ...lanes.map((lane, i) => ({
       at: 0.18 + i * 0.19,
       focus: i,
       pos: standOff(lane.target, lane.back),
       look: [lane.target.x, lane.target.y, lane.target.z] as [number, number, number],
+      fitH: LANE_FIT_H,
+      fitV: LANE_FIT_V,
     })),
-    { at: 1, focus: -1, pos: [0, 5, 15], look: [0, 2, -9] },
+    // The same shot from further back and a touch higher, so the section ends
+    // by releasing the place rather than by cutting away from it.
+    { at: 1, focus: -1, pos: [0, 7.2, 15.5], look: [0, 0.2, -10], fitH: 32.8, fitV: 13.5 },
   ];
 
   const pos = new Vector3();
@@ -310,7 +405,11 @@ export function boot(
     if (w === 0 || h === 0) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    // layout() computes the field of view from the new aspect and calls
+    // updateProjectionMatrix itself, so there is deliberately no second call
+    // here: a resize that only set the aspect would leave the camera holding
+    // the field of view worked out for the previous shape of the canvas.
+    layout(progress);
     invalidate();
   }
 
@@ -330,6 +429,17 @@ export function boot(
       .lerp(scratch.set(to.look[0], to.look[1], to.look[2]), t);
     camera.position.copy(pos);
     camera.lookAt(look);
+
+    // The lens, from what this shot has to cover and the aspect the canvas
+    // currently has. Interpolated across the segment like the position is, so a
+    // move between two shots with different half-angles is one continuous
+    // change rather than a cut.
+    camera.fov = fovFor(
+      from.fitH + (to.fitH - from.fitH) * t,
+      from.fitV + (to.fitV - from.fitV) * t,
+      camera.aspect,
+    );
+    camera.updateProjectionMatrix();
 
     // Light whatever is being looked at, not the junction it was lit from.
     key.position.set(look.x * 0.75 + pos.x * 0.25, 7, look.z * 0.75 + pos.z * 0.25 + 4.5);

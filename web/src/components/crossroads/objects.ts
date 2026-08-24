@@ -84,6 +84,15 @@ function piece(
   rx = 0,
   ry = 0,
   mat?: Material,
+  /**
+   * Squash on one or more axes. Applied to the blueprint as well as to the
+   * solid, which is the only reason it is a parameter here rather than a
+   * `mesh.scale.set()` at the call site: the LineSegments below copies the
+   * mesh's placement, and a scale set on the mesh alone would leave the drawing
+   * describing a shape the solid does not have. That is the one thing this
+   * whole directory is built to make impossible.
+   */
+  scale?: readonly [number, number, number],
 ) {
   const material = mat ?? u.mats[0];
   if (material === undefined) {
@@ -98,6 +107,7 @@ function piece(
   const mesh = new Mesh(ctx.track(geo), material);
   mesh.position.set(x, y, z);
   mesh.rotation.set(rx, ry, 0);
+  if (scale) mesh.scale.set(scale[0], scale[1], scale[2]);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
 
@@ -106,6 +116,7 @@ function piece(
   const edges = new LineSegments(ctx.track(new EdgesGeometry(geo)), u.line);
   edges.position.copy(mesh.position);
   edges.rotation.copy(mesh.rotation);
+  edges.scale.copy(mesh.scale);
 
   ctx.lane.add(mesh, edges);
   return mesh;
@@ -151,20 +162,30 @@ function buildApp(ctx: BuildContext): Unit[] {
   );
   piece(ctx, screen, new PlaneGeometry(5.6, 3.15), 0, 3.4, z + 0.13, 0, 0, screenMat(ctx, map));
 
+  // The database and the server are drawn in from ±3.4 to ±2.75.
+  //
+  // They set this way's width, and its width set the camera's distance, and
+  // that distance is what decides how big the dashboard is on screen. Flung
+  // out to ±3.4 they made the unit 8.65 across, so the camera had to stand far
+  // enough back to see both of them and the dashboard shrank to fit a frame
+  // sized for two objects that are not the point. Pulled in, the same three
+  // things read as one system and the screen is the largest thing in the shot,
+  // which is the correct order: the dashboard is the argument, the database
+  // and the server are what it stands on.
   const db = unit(ctx, PALETTE.metalMid, 0.55, 0.3);
-  piece(ctx, db, new CylinderGeometry(1.05, 1.05, 1.4, 24), -3.4, 0.72, z + 1.8);
-  piece(ctx, db, new CylinderGeometry(1.07, 1.07, 0.1, 24), -3.4, 1.45, z + 1.8);
-  piece(ctx, db, new CylinderGeometry(1.07, 1.07, 0.1, 24), -3.4, 1.05, z + 1.8);
+  piece(ctx, db, new CylinderGeometry(0.95, 0.95, 1.4, 24), -2.5, 0.72, z + 0.9);
+  piece(ctx, db, new CylinderGeometry(0.97, 0.97, 0.1, 24), -2.5, 1.45, z + 0.9);
+  piece(ctx, db, new CylinderGeometry(0.97, 0.97, 0.1, 24), -2.5, 1.05, z + 0.9);
 
   const server = unit(ctx, PALETTE.metalDark, 0.45, 0.4);
-  piece(ctx, server, new BoxGeometry(1.4, 2.3, 1.1), 3.5, 1.15, z + 1.7);
+  piece(ctx, server, new BoxGeometry(1.3, 2.3, 1.1), 2.5, 1.15, z + 0.9);
   for (let k = 0; k < 5; k += 1) {
-    piece(ctx, server, new BoxGeometry(1.12, 0.1, 0.06), 3.5, 0.5 + k * 0.4, z + 2.27);
+    piece(ctx, server, new BoxGeometry(1.04, 0.1, 0.06), 2.5, 0.5 + k * 0.4, z + 1.47);
   }
 
   const wire = unit(ctx, PALETTE.accent, 0.4);
-  piece(ctx, wire, new BoxGeometry(2.3, 0.07, 0.07), -1.9, 1.5, z + 1.2);
-  piece(ctx, wire, new BoxGeometry(2.3, 0.07, 0.07), 2, 1.7, z + 1.1);
+  piece(ctx, wire, new BoxGeometry(1.6, 0.07, 0.07), -1.6, 1.5, z + 0.6);
+  piece(ctx, wire, new BoxGeometry(1.6, 0.07, 0.07), 1.6, 1.7, z + 0.55);
 
   return [frame, screen, db, server, wire];
 }
@@ -187,23 +208,46 @@ function buildCapacity(ctx: BuildContext): Unit[] {
   // `as const`, so destructuring reads two numbers rather than two
   // `number | undefined`s under noUncheckedIndexedAccess.
   const legs = [
-    [-1.2, 0.5],
-    [1.2, 0.5],
-    [-1.2, -0.5],
-    [1.2, -0.5],
+    [-1.0, 0.5],
+    [1.0, 0.5],
+    [-1.0, -0.5],
+    [1.0, -0.5],
   ] as const;
 
-  [-3.6, 0, 3.6].forEach((x, k) => {
-    piece(ctx, desks, new BoxGeometry(2.7, 0.14, 1.35), x, 0.78, z);
-    for (const [dx, dz] of legs) {
-      piece(ctx, desks, new BoxGeometry(0.12, 0.78, 0.12), x + dx, 0.39, z + dz);
+  /**
+   * Three desks, staggered rather than in a rank.
+   *
+   * Three desks 2.7 wide at ±3.6 behind a partition 11.5 wide made this way
+   * 11.5 across, against the monitor's 5.4 and the rack's 1.9. A row is the
+   * widest arrangement three desks have, and the width was the whole problem:
+   * the camera had to stand far enough back to see both ends, and from there
+   * two neighbouring lanes were in the shot while the office itself filled a
+   * third of the frame's height. Narrower desks at ±2.8, with the free one
+   * forward of the other two, hold the same three seats in 7.9 and give the
+   * room some depth instead of a straight line.
+   *
+   * The free seat still reads as the offer, and for the same reason: the other
+   * two are taken. Standing forward of them only makes it the first thing seen.
+   */
+  const DESKS = [
+    { x: -2.8, dz: -0.55 },
+    { x: 0, dz: 0.75 },
+    { x: 2.8, dz: -0.55 },
+  ] as const;
+
+  DESKS.forEach((desk, k) => {
+    const { x } = desk;
+    const dz = z + desk.dz;
+    piece(ctx, desks, new BoxGeometry(2.3, 0.14, 1.35), x, 0.78, dz);
+    for (const [lx, lz] of legs) {
+      piece(ctx, desks, new BoxGeometry(0.12, 0.78, 0.12), x + lx, 0.39, dz + lz);
     }
-    piece(ctx, metal, new BoxGeometry(1.35, 0.85, 0.07), x, 1.42, z - 0.28);
-    piece(ctx, metal, new BoxGeometry(0.12, 0.28, 0.12), x, 0.99, z - 0.28);
-    piece(ctx, screens, new PlaneGeometry(1.24, 0.76), x, 1.42, z - 0.235, 0, 0, shared);
+    piece(ctx, metal, new BoxGeometry(1.35, 0.85, 0.07), x, 1.42, dz - 0.28);
+    piece(ctx, metal, new BoxGeometry(0.12, 0.28, 0.12), x, 0.99, dz - 0.28);
+    piece(ctx, screens, new PlaneGeometry(1.24, 0.76), x, 1.42, dz - 0.235, 0, 0, shared);
 
     const free = k === 1;
-    const cz = z + (free ? 1.5 : 1.05);
+    const cz = dz + (free ? 1.5 : 1.05);
     const turn = free ? 0.4 : 0;
     piece(ctx, metal, new BoxGeometry(0.6, 0.1, 0.6), x, 0.52, cz, 0, turn);
     piece(ctx, metal, new BoxGeometry(0.6, 0.66, 0.09), x, 0.86, cz + 0.28, 0, turn);
@@ -218,7 +262,9 @@ function buildCapacity(ctx: BuildContext): Unit[] {
   });
 
   // A low partition behind, so it reads as a room and not three desks in a void.
-  piece(ctx, desks, new BoxGeometry(11.5, 1.5, 0.16), 0, 0.75, z - 1.5);
+  // 7.6 rather than 11.5, which keeps it just inside the desks it stands behind
+  // instead of being the widest thing in the scene by half again.
+  piece(ctx, desks, new BoxGeometry(7.6, 1.5, 0.16), 0, 0.75, z - 2.1);
 
   return [desks, metal, screens, people];
 }
@@ -232,23 +278,46 @@ function buildCare(ctx: BuildContext): Unit[] {
     piece(ctx, rack, new BoxGeometry(1.55, 0.11, 0.06), 0, 0.4 + k * 0.33, z + 0.63);
   }
 
+  /**
+   * The cloud, rebuilt: four flattened puffs at 4.9 rather than five round
+   * ones at 6.4.
+   *
+   * Five spheres of near-equal radius stacked into a lump is the shape a
+   * cartoon cloud has, and next to a rack and an office drawn as plain
+   * rectangular volumes it was the one object on the whole floor that looked
+   * illustrated. Squashing each puff to just over half its height takes the
+   * lump out: it reads as a bank of cloud rather than as the icon for one.
+   *
+   * The drop from 6.4 to 4.9 is framing. At 6.4 this way stood 7.55 units tall
+   * against the monitor's 4.65, so the camera had to stand off far enough to
+   * fit a column two thirds of which was empty air between the rack and the
+   * weather, and at that distance the office on the next lane was in the shot.
+   * Lowered, the whole way is 5.55 tall and the uplink still separates the two.
+   */
   const cloud = unit(ctx, PALETTE.cloud, 0.95);
+  const SQUASH = [1, 0.55, 0.85] as const;
   const puffs: [number, number, number, number][] = [
-    [0, 6.4, 0, 1.15],
-    [-1.35, 6.15, 0.2, 0.85],
-    [1.35, 6.2, -0.15, 0.92],
-    [-0.7, 6.75, -0.3, 0.75],
-    [0.8, 6.8, 0.25, 0.7],
+    [0, 4.85, 0, 1.25],
+    [-1, 4.7, 0.15, 0.9],
+    [1, 4.75, -0.15, 0.95],
+    [0.05, 5.15, 0, 0.72],
   ];
   for (const [px, py, pz, r] of puffs) {
-    piece(ctx, cloud, new SphereGeometry(r, 18, 14), px, py, z + pz);
+    piece(ctx, cloud, new SphereGeometry(r, 18, 14), px, py, z + pz, 0, 0, undefined, SQUASH);
   }
 
   // The uplink: rungs climbing from the rack into the cloud, so the two read
   // as one system rather than as a box with weather above it.
+  //
+  // Five rungs over the 1.16 units between them, widening as they go. Three
+  // small squares evenly spaced read as three separate marks with gaps twice
+  // their own size, which is a dotted line, not a connection. Widening them
+  // gives the run a direction: it starts the width of a cable at the rack and
+  // arrives the width of the cloud it joins.
   const link = unit(ctx, PALETTE.accent, 0.4);
-  for (let k = 0; k < 6; k += 1) {
-    piece(ctx, link, new BoxGeometry(0.26, 0.09, 0.26), 0, 3.25 + k * 0.42, z);
+  for (let k = 0; k < 5; k += 1) {
+    const w = 0.22 + k * 0.11;
+    piece(ctx, link, new BoxGeometry(w, 0.07, w), 0, 3.22 + k * 0.24, z);
   }
 
   // The status light, which is the whole proposition of this way in one lamp.
