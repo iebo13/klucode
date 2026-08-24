@@ -186,6 +186,7 @@ const de = {
         key: 'website',
         name: 'Website & Landingpage',
         forWhom: 'Für Betriebe, die online gefunden werden und Anfragen bekommen wollen.',
+        reads: 'Ein Ding. Eine Seite, die lädt und Anfragen bringt.',
         body: 'Eine Seite, die lädt, auf dem Handy funktioniert und bei Google auffindbar ist. Handgebaut, ohne Baukasten-Ballast: deshalb schnell, und deshalb später erweiterbar.',
         includes: [
           'Aufbau, Text-Struktur und Gestaltung',
@@ -201,6 +202,7 @@ const de = {
         key: 'app',
         name: 'Individuelle Web-Anwendung',
         forWhom: 'Für Abläufe, die heute in Excel, auf Papier oder in WhatsApp hängen.',
+        reads: 'Kein Bildschirm, ein System. Oberfläche, Datenbank, Server.',
         body: 'CRM, Kassensystem, Auswertung, internes Werkzeug, Portal. Gebaut für Ihren Ablauf statt umgekehrt, inklusive Datenbank, Benutzerverwaltung und Server. Das ist die Arbeit, die ich am liebsten mache.',
         includes: [
           'Analyse des Ist-Ablaufs, gemeinsam mit den Menschen, die ihn ausführen',
@@ -217,6 +219,7 @@ const de = {
         key: 'capacity',
         name: 'Entwickler-Kapazität',
         forWhom: 'Für Agenturen und Produktteams, die Frontend-Kapazität brauchen.',
+        reads: 'Ein freier Platz in einem Team, das schon arbeitet.',
         body: 'React, Next.js, TypeScript, Node.js. Ich arbeite mich in bestehenden Code ein, halte mich an Ihre Konventionen und kann in einen Kundentermin, ohne dass es Ihnen unangenehm wird.',
         includes: [
           'React · Next.js · TypeScript · Node.js · PostgreSQL',
@@ -233,6 +236,7 @@ const de = {
         key: 'care',
         name: 'Betrieb & Wartung',
         forWhom: 'Für alle, die etwas laufen haben. Von mir oder von jemand anderem.',
+        reads: 'Der Server bleibt online, und jemand schaut hin.',
         body: 'Software, die niemand pflegt, wird nach zwei Jahren zum Sicherheitsproblem. Der günstigste Weg, das zu vermeiden, ist ein kleiner monatlicher Betrag statt einer großen Rechnung im Notfall.',
         includes: [
           'Updates und Sicherheits-Patches',

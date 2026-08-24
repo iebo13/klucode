@@ -182,6 +182,7 @@ const en = {
         key: 'capacity',
         name: 'Development capacity',
         forWhom: 'For agencies and product teams that need frontend capacity.',
+        reads: 'A free seat in a team that is already working.',
         body: 'React, Next.js, TypeScript, Node.js. I pick up existing code, follow your conventions, and can join a client call without embarrassing you.',
         includes: [
           'React · Next.js · TypeScript · Node.js · PostgreSQL',
@@ -198,6 +199,7 @@ const en = {
         key: 'website',
         name: 'Website & landing page',
         forWhom: 'For businesses that need to be found and to receive enquiries.',
+        reads: 'One thing. A page that loads and brings enquiries.',
         body: 'A page that loads, works on a phone and can be found. Hand-built, without site-builder weight, which is why it is fast, and why it can grow later.',
         includes: [
           'Structure, copy architecture and design',
@@ -213,6 +215,7 @@ const en = {
         key: 'app',
         name: 'Custom web application',
         forWhom: 'For work stuck in Excel, on paper or in WhatsApp.',
+        reads: 'Not a screen, a system. Interface, database, server.',
         body: 'CRM, point of sale, reporting, internal tooling, portals. Built around your process rather than the other way round, including database, user management and server. This is the work I like most.',
         includes: [
           'Analysis of the current process, with the people who run it',
@@ -229,6 +232,7 @@ const en = {
         key: 'care',
         name: 'Maintenance & operations',
         forWhom: 'For anyone running something, built by me or by someone else.',
+        reads: 'The server stays up, and someone is watching it.',
         body: 'Software nobody maintains becomes a security problem within two years. The cheapest way to avoid that is a small monthly amount instead of a large emergency invoice.',
         includes: [
           'Updates and security patches',

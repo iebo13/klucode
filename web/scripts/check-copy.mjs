@@ -70,6 +70,13 @@ const SLOTS = [
   },
   // One line under a service name on a homepage card at 375px.
   { label: 'services[].forWhom', chars: 78, pick: (c) => c.services.items.map((s) => s.forWhom) },
+  // One line under a heading in a 26rem column beside the canvas. Longer than
+  // this wraps to two lines and the four rows stop lining up.
+  {
+    label: 'service reads',
+    chars: 62,
+    pick: (c) => c.services.items.map((s) => s.reads),
+  },
   // Sits beside the price; wraps into the number if it grows.
   {
     label: 'services[].priceNote',

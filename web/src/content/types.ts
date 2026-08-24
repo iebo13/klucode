@@ -10,10 +10,27 @@ export type Card = { title: string; body: string };
 export type Faq = { q: string; a: string };
 export type Step = { title: string; body: string };
 
+/**
+ * The four services, as a closed set.
+ *
+ * Declared here because the content files own these keys. The homepage's 3D
+ * section keys its objects off this union, so adding a service is a compile
+ * error in the scene until it has something to stand at the end of its lane,
+ * which is the correct order of events.
+ */
+export type ServiceKey = 'website' | 'app' | 'capacity' | 'care';
+
 export type Service = {
-  key: string;
+  key: ServiceKey;
   name: string;
   forWhom: string;
+  /**
+   * One line naming what the object at the end of this way actually is. Shown
+   * beside the 3D crossroads on the homepage, where the reader can see the
+   * object but has not been told what they are looking at. Required rather
+   * than optional so a half-translated section is a compile error.
+   */
+  reads: string;
   body: string;
   includes: string[];
   price: string;
