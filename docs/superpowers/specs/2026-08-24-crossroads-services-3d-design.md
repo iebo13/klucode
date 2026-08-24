@@ -97,7 +97,7 @@ export type Handle = {
   set(p: number): void;
   /** Index of the way in focus, or -1 at the junction. Never stale. */
   focus(): number;
-  /** Share of the four objects that are built, 0 to 1. */
+  /** How many of the four ways are finished, 0 to 4. A count, not a fraction. */
   built(): number;
   /** Cancels the loop, drops listeners, disposes every GPU resource. */
   stop(): void;

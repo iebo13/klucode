@@ -2900,8 +2900,18 @@ Import `BUILDERS` and `buildTargets` and `ratchet`. At the end of `layout(p)`, a
     lanes.forEach((lane, i) => {
       lane.built = next[i];
       for (const u of lane.units) {
-        for (const m of u.mats) m.opacity = next[i];
-        u.line.opacity = 0.62 * (1 - next[i]);
+        for (const m of u.mats) {
+          m.opacity = next[i];
+          // Not decoration. three.js renders shadows from a depth material that
+          // copies `visible` and reads `alphaTest`, and never looks at `opacity`
+          // or `transparent` at all (WebGLShadowMap gates the whole draw on
+          // `material.visible`). Without this, an object at opacity 0 lays its
+          // full solid silhouette on the floor: the shadow arrives before the
+          // thing does, which is precisely backwards for a scene whose whole
+          // argument is that the drawing becomes the object.
+          m.visible = next[i] > 0.5;
+        }
+        u.line.opacity = LINE_ALPHA * (1 - next[i]);
       }
     });
 ```
@@ -2910,7 +2920,9 @@ Import `BUILDERS` and `buildTargets` and `ratchet`. At the end of `layout(p)`, a
 
 - [ ] **Step 8: Reflect the count into the DOM**
 
-In `index.tsx`, add `const [built, setBuilt] = useState(0);`, set it in `drive()` with `setBuilt(Math.round(handle.built() * ways.length))`, and put `data-built={built}` on the `<section>` beside `data-enhanced`.
+In `index.tsx`, add `const [built, setBuilt] = useState(0);`, set it in `drive()` with `setBuilt(handle.built())`, and put `data-built={built}` on the `<section>` beside `data-enhanced`.
+
+`built()` returns a COUNT of finished ways, 0 to 4, not a fraction. Rounding a mean of four fractional ramps would let the attribute read `2` when one way is finished and another is half way, which is not a count of anything. Change `built()` in `scene.ts` to `lanes.filter((l) => l.built >= 1).length` and correct its JSDoc on `Handle` to say so. The attribute is only defensible as production DOM if it is genuinely the state its name claims.
 
 This attribute exists so the browser suite can assert on the state machine without a debug hook shipping to production. It is honest state, it is `aria-hidden` by virtue of being an attribute, and it costs one integer.
 
