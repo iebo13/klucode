@@ -1,7 +1,11 @@
 # klucode.de — the website
 
 The KluCode website. Next.js 15 (App Router) exported to static files —
-no server, no database, no runtime dependencies.
+no server, no database, no runtime dependencies. The browser downloads no
+JavaScript it does not need: the homepage's 3D services section is a
+separate chunk, fetched only when the section actually mounts, and never on
+a phone, never under reduced motion, and never without WebGL. `npm run
+check:bundle` fails the build if that stops being true.
 
 ```bash
 # from this directory (web/) — or from the repo root, whose package.json
@@ -123,10 +127,15 @@ src/
   lib/routes.ts          localised slugs and the language switch
   lib/schema.ts          JSON-LD, generated from content/ — never hand-written
 scripts/
-  check-spacing.mjs      off-scale spacing utilities produce no CSS, silently
-  check-meta.mjs         title / description uniqueness and length budget
-  check-copy.mjs         copy that has to fit a narrow slot still fits it
-  check-profile.mjs      the go-live gate: no «placeholders» left in out/
+  check-spacing.mjs        off-scale spacing utilities produce no CSS, silently
+  check-meta.mjs           title / description uniqueness and length budget
+  check-copy.mjs           copy that has to fit a narrow slot still fits it
+  check-profile.mjs        the go-live gate: no «placeholders» left in out/
+  check-bundle.mjs         the JS budget gate: eager stays flat, the deferred scene chunk stays capped
+  check-scene-palette.mjs  crossroads objects draw only from the token palette, never a literal colour
+tests/
+  unit/                    the pure suite (test:unit): no browser, no build, fast enough to run on every save
+  e2e/                     the browser suite (test:e2e), driven against the built export rather than a dev server
 ```
 
 ### Structured data

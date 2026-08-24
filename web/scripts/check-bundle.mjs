@@ -20,7 +20,7 @@ import { gzipSync } from 'node:zlib';
 
 const BASE = JSON.parse(readFileSync('scripts/bundle-baseline.json', 'utf8'));
 const EAGER_SLACK = 2 * 1024;
-const DEFERRED_CAP = 200 * 1024;
+const DEFERRED_CAP = 155 * 1024;
 
 /**
  * What identifies a deferred chunk.
