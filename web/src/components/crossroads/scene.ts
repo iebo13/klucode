@@ -136,7 +136,26 @@ export function boot(
   });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.08;
+  /**
+   * 0.72, and it was 1.08.
+   *
+   * The old exposure sat far enough into the ACES shoulder that the palette
+   * stopped meaning anything. Sampled off the rendered canvas at each lane
+   * stop: the metalDark rack, token #5C605C, came out #ADA183, three times the
+   * token's luminance and plainly cream. The metalMid database, token #757975,
+   * came out #C0B294, and the metal monitor frame, token #A8ADA9, came out
+   * #E3DDCD, close enough to white that the shoulder had eaten most of its hue.
+   * Three materials that separate the rack from the database from the bezel
+   * were reading as one warm cream at three brightnesses, so the token
+   * guarantee in section 5.7 of the spec was decorative here.
+   *
+   * At 0.72 the same three sample #616462, #6D6B63 and #AEA38A. The rack is
+   * within six points a channel of its token, and the three are 39 and 65
+   * points apart, so they read as three greys rather than three creams.
+   *
+   * This is the level. The cast is the light balance below.
+   */
+  renderer.toneMappingExposure = 0.72;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFSoftShadowMap;
 
@@ -145,15 +164,45 @@ export function boot(
   scene.fog = new FogExp2(PALETTE.background, 0.022);
 
   const camera = new PerspectiveCamera(50, 2, 0.1, 200);
-  scene.add(new AmbientLight(PALETTE.lightAmbient, 1.0));
 
-  const key = new SpotLight(PALETTE.lightKey, 200, 40, Math.PI / 3.4, 0.65, 1.05);
+  /**
+   * Three lights, and what matters is the ratio between two of them.
+   *
+   * lightKey is #FFD9A4, which is tungsten. Lit by that alone, a neutral grey
+   * is not grey, it is khaki, and no amount of exposure fixes a cast. The key
+   * used to run at 200 against a fill of 26, and at the standoff distances the
+   * camera actually uses that put the key roughly ten times the fill: every
+   * surface in the scene was the key's colour. The metalDark rack sampled
+   * #ADA183 against its #5C605C token, warm by 37 points between red and blue.
+   *
+   * The fix is the cool fill, not the ambient. AmbientLight multiplies a
+   * colour that is already dark in linear terms, so at any sane intensity it
+   * is a rounding error next to a spotlight: raising it from 1.0 to 0.85 and
+   * back moved the rack by two points a channel. The fill is #7FA8D0 and sits
+   * at the camera, so key at 70 against fill at 80 lands close to neutral
+   * where it counts and leaves the rack at #616462, six points a channel off
+   * its token.
+   *
+   * What it cost: the warmth is now in the pool of light on the floor and on
+   * the wood, which is where a warm key belongs, rather than on every surface
+   * at once. The scene is dimmer. The drama survives because the key is still
+   * directional, still the only thing casting a shadow, and still swings to
+   * whatever the camera is looking at.
+   *
+   * What it did not cost: the build. Measured on the same frame, a built
+   * surface against the blueprint standing beside it was 2.46 times its
+   * luminance before and is 2.53 times after. The lines themselves read bluer
+   * for it: sampled #83988E before, #4A7078 now, against a #5CC2F0 token.
+   */
+  scene.add(new AmbientLight(PALETTE.lightAmbient, 0.6));
+
+  const key = new SpotLight(PALETTE.lightKey, 70, 40, Math.PI / 3.4, 0.65, 1.05);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.far = 40;
   key.shadow.bias = -0.002;
   scene.add(key, key.target);
-  const fill = new PointLight(PALETTE.lightFill, 26, 40, 1.4);
+  const fill = new PointLight(PALETTE.lightFill, 80, 40, 1.4);
   scene.add(fill);
 
   const ground = new Mesh(
