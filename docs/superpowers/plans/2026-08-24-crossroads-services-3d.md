@@ -2619,7 +2619,9 @@ python3 brand/tokens/build_css.py \
   && git diff --exit-code -- brand/tokens/tokens.css web/src/app/tokens.css
 ```
 
-Expected: `scene palette: 13 colours match their tokens`, and no CSS diff, which is the point of the `scene` family.
+Expected: `scene palette: 16 colours match their tokens`, and no CSS diff, which is the point of the `scene` family.
+
+Sixteen, not thirteen. Task 1 wrote seven and Task 6 added three more when the three light colours turned out to be bare hex with no token behind them, so this task starts from ten.
 
 - [ ] **Step 3: Write the failing objects test**
 
