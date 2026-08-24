@@ -3,3 +3,5 @@ node_modules
 out
 public
 src/app/tokens.css
+test-results
+playwright-report

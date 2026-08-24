@@ -8,10 +8,9 @@ export const smooth = (t: number): number => t * t * (3 - 2 * t);
 /**
  * How far the reader has travelled through the section, 0 to 1.
  *
- * The stage is sticky with a negative bottom margin equal to its own height,
- * so its margin box is zero tall and the section's height is the track's
- * height alone. The distance actually scrollable is therefore the section
- * height minus one stage.
+ * The stage is sticky inside the track, and the track is the only thing in
+ * the section with a height of its own. The distance the stage can actually
+ * travel is therefore the section's height minus one stage.
  */
 export function progressOf(top: number, height: number, stageHeight: number): number {
   const travel = height - stageHeight;

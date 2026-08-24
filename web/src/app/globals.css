@@ -360,3 +360,81 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- the crossroads ------------------------------------------------------
+   The stage is sticky INSIDE the track, and the track is the only thing in
+   the section with a height. No negative margins anywhere, and that is the
+   whole point.
+
+   The first 3D attempt zeroed the stage's layout height with a negative
+   bottom margin equal to its height, and so did the first draft of this plan.
+   It does not work. A sticky element's travel is its containing block's
+   height minus its own MARGIN box, and a -100svh margin makes that margin box
+   zero tall, which hands the stage one extra viewport of travel. It then
+   releases a full viewport late and paints over whatever follows. Nesting it
+   in the track instead gives a travel of 420svh minus 100svh, which is
+   exactly right and needs no arithmetic to stay in step.
+
+   The same bug had a quieter second symptom: progressOf divides by
+   (section height - stage height), so the journey finished a whole viewport
+   before the stage unstuck, and the last viewport of scrolling did nothing.
+
+   svh rather than vh, because a mobile browser's vh includes a toolbar that
+   is not there, and the stage would be taller than what you can see. */
+.crossroads-track {
+  height: 420svh;
+}
+
+.crossroads-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.crossroads-view {
+  height: 100%;
+  min-height: 0;
+}
+
+.crossroads-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* No scene means no journey: the track stops being four viewports of runway,
+   the stage stops sticking, and the section is just the rows at their own
+   height. This covers all three refusals at once, which a width media query
+   would not: reduced motion and a missing WebGL context happen at any width.
+
+   The track is collapsed rather than hidden. It WRAPS the copy now, so
+   display:none here would take the whole section with it. */
+[data-enhanced='false'] .crossroads-track {
+  height: auto;
+}
+
+[data-enhanced='false'] .crossroads-stage {
+  position: static;
+  height: auto;
+  overflow: visible;
+}
+
+[data-enhanced='false'] .crossroads-view {
+  display: none;
+}
+
+/* The line naming the object only means anything next to the object. */
+[data-enhanced='false'] .crossroads-reads {
+  display: none;
+}
+
+.crossroads-ways li[data-focus='false'] {
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .crossroads-ways li {
+    transition: opacity 240ms ease;
+  }
+}

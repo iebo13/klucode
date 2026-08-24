@@ -303,9 +303,10 @@ A colon, a comma or two sentences instead.
 
 ## 9. Performance budget
 
-three.js is a build-time dependency. It is imported through
-`next/dynamic(..., { ssr: false })`, so it never enters First Load JS for any
-page, including this one.
+three.js is a build-time dependency. It is reached through a dynamic `import()`
+inside the mount effect of a client component, so it never enters First Load JS
+for any page, including this one. (`next/dynamic` wraps React components and
+the scene is a plain module, so it is the wrong tool here.)
 
 Two gates, in a new `web/scripts/check-bundle.mjs` that joins the five
 `check-*.mjs` scripts the repo already runs:

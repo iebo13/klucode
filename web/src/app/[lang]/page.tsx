@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { Crossroads } from '@/components/crossroads';
 import { JsonLd } from '@/components/json-ld';
 import { Shell } from '@/components/shell';
 import { SystemDiagram } from '@/components/diagram';
@@ -156,44 +157,18 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ------------------------------------------------------------ services */}
-      {/* THE PRICE BAND. A price board, not a card grid: four rows on
-          hairlines, every offer set in the same sizes, price and delivery
-          time on the right — the register of a Werkstatt price list. It sits
-          on a textured ink band: the frame's material carrying the page's
-          commercial core, with the node field underneath giving the surface
-          the depth the glass language runs on. */}
-      <Section ink glow>
-        <SectionHead
-          onInk
-          eyebrow={h.servicesEyebrow}
-          title={h.servicesTitle}
-          aside={
-            <ArrowLink onInk href={pathFor('services', lang)}>
-              {h.servicesLink}
-            </ArrowLink>
-          }
-        />
-        <div className="mt-8 divide-y divide-ink-line border-y border-ink-line md:mt-12">
-          {c.services.items.map((s) => (
-            <div
-              key={s.key}
-              className="grid gap-2 py-6 md:grid-cols-12 md:items-baseline md:gap-8 md:py-8"
-            >
-              <h3 className="text-h3 md:col-span-4">{s.name}</h3>
-              <p className="max-w-measure text-small text-ink-muted md:col-span-4">{s.forWhom}</p>
-              <p className="font-display text-h2 font-medium text-ink-accent md:col-span-4 md:text-right">
-                <span className="font-sans text-small font-normal text-ink-muted">
-                  {c.ui.from}{' '}
-                </span>
-                {s.price}
-                <span className="mt-1 block font-sans text-small font-normal text-ink-muted">
-                  {s.priceNote}
-                </span>
-              </p>
-            </div>
-          ))}
-        </div>
-      </Section>
+      {/* THE CROSSROADS. „Vier Wege zur Zusammenarbeit" is already a spatial
+          metaphor, so it is one: four lanes off a junction, and at the end of
+          each the thing you would actually get. The rows to the right are the
+          section's content and its fallback at once, which is why there is
+          exactly one copy of them. See components/crossroads. */}
+      <Crossroads
+        eyebrow={h.servicesEyebrow}
+        title={h.servicesTitle}
+        link={{ href: pathFor('services', lang), label: h.servicesLink }}
+        fromLabel={c.ui.from}
+        ways={c.services.items}
+      />
 
       {/* ---------------------------------------------------------------- work */}
       {/* STRUCTURAL EXCEPTION 1 of 2: full-bleed. This is the proof section and
