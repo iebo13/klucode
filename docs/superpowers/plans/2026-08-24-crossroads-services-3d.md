@@ -1986,9 +1986,8 @@ The drawing functions take a context interface declared here rather than the DOM
 - Create: `web/src/components/crossroads/surfaces.ts`
 - Create: `web/tests/unit/crossroads-textures.spec.ts`
 - Modify: `web/src/components/crossroads/types.ts` (add `SceneLabels`)
-- Modify: `web/src/components/crossroads/scene.ts` (`boot` gains a fourth parameter)
-- Modify: `web/src/components/crossroads/index.tsx` (passes `LABELS[lang]`, so it gains a `lang` prop)
-- Modify: `web/src/app/[lang]/page.tsx` (passes `lang`)
+
+Nothing else. `scene.ts`, `index.tsx` and `page.tsx` are untouched in this task: see step 8.
 
 **Interfaces:**
 - Consumes: `Ctx` is new here.
@@ -1997,7 +1996,7 @@ The drawing functions take a context interface declared here rather than the DOM
   - `LANDING_SIZE`, `DASHBOARD_SIZE`, `WORK_SIZE`, each `readonly [number, number]`
   - `paint(w: number, h: number, draw: (g: Ctx) => void): CanvasTexture` from `./surfaces`
   - `LABELS: Record<'de' | 'en', SceneLabels>` from `./labels`
-  - **Changed:** `boot(canvas, host, ways, labels: SceneLabels): Handle`
+  - Nothing changes in `boot`. Task 8 gives it its fourth parameter, when the objects that read these textures exist.
 
 - [ ] **Step 1: Add the labels type**
 
@@ -2529,13 +2528,13 @@ export function paint(w: number, h: number, draw: (g: Ctx) => void): CanvasTextu
 }
 ```
 
-- [ ] **Step 8: Thread the labels through**
+- [ ] **Step 8: Change nothing in the scene**
 
-In `scene.ts`, change the signature to `boot(canvas, host, ways, labels: SceneLabels)` and import `SceneLabels` as a type. Nothing consumes it yet, so add the eslint-suppressing usage in Task 8 rather than here, or simply do Steps 8 and 9 of this task together with Task 8 if lint objects to an unused parameter.
+Deliberately. `boot` keeps its three-parameter signature and `index.tsx` keeps its props. Nothing in this task touches `scene.ts`, `index.tsx` or `page.tsx`.
 
-In `index.tsx`, add a `lang: Lang` prop, import `LABELS`, and pass `LABELS[lang]` as the fourth argument to `boot`. Add `lang` to the effect's dependency array.
+Threading `labels` into `boot` now would add a parameter nothing reads, which fails `@typescript-eslint/no-unused-vars`, and naming it `_labels` to dodge that only buys a rename in the next task. The objects that consume these textures arrive in Task 8, so the signature changes there, in one move, when there is something to consume them.
 
-In `page.tsx`, pass `lang={lang}` to `<Crossroads>`.
+What this task produces stands alone and is fully tested on its own: three modules and their unit suite.
 
 - [ ] **Step 9: Run everything and commit**
 
@@ -2569,8 +2568,9 @@ The blueprint edges are built by `EdgesGeometry` from the very same geometry ins
 - Create: `web/tests/unit/crossroads-objects.spec.ts`
 - Modify: `web/src/components/crossroads/palette.ts` (five more colours)
 - Modify: `brand/tokens/tokens.json` (the `color.scene` family gains four swatches)
-- Modify: `web/src/components/crossroads/scene.ts` (build the lanes, run the reveal)
-- Modify: `web/src/components/crossroads/index.tsx` (reflect `built` into the DOM)
+- Modify: `web/src/components/crossroads/scene.ts` (build the lanes, run the reveal, and take `labels` as a fourth parameter)
+- Modify: `web/src/components/crossroads/index.tsx` (reflect `built` into the DOM, gain a `lang` prop, pass `LABELS[lang]` to `boot`)
+- Modify: `web/src/app/[lang]/page.tsx` (pass `lang` to `<Crossroads>`)
 - Modify: `web/tests/e2e/crossroads.spec.ts` (two more cases)
 
 **Interfaces:**
