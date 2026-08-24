@@ -41,3 +41,35 @@ export type Handle = {
   /** Cancels the loop, drops listeners, disposes every GPU resource. */
   stop(): void;
 };
+
+/**
+ * Every word drawn inside the scene.
+ *
+ * The mock interfaces are furniture, not site copy, so they live beside the
+ * code that draws them rather than in the content files. They still localise,
+ * and `Record<Lang, SceneLabels>` is what makes a half-translated scene a
+ * compile error.
+ */
+export type SceneLabels = {
+  landing: {
+    brand: string;
+    nav: readonly [string, string, string];
+    cta: string;
+    eyebrow: string;
+    headline: readonly [string, string];
+    lead: readonly [string, string];
+    action: string;
+    cards: readonly (readonly [string, string])[];
+  };
+  dashboard: {
+    app: string;
+    nav: readonly string[];
+    /** Index of the highlighted nav item. The screen is on this page. */
+    navActive: number;
+    title: string;
+    action: string;
+    kpis: readonly (readonly [string, string])[];
+    chartNote: string;
+    rows: readonly (readonly [string, string])[];
+  };
+};
