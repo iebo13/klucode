@@ -1151,6 +1151,7 @@ Note a deliberate departure from the spec, which said `next/dynamic`. `next/dyna
   - `boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonly Way[]): Handle` from `./scene`
   - `Crossroads` from `./index`, props `{ lang, eyebrow, title, link: { href, label }, fromLabel, ways }`
   - The DOM contract every e2e test and Task 8 depend on: `section#services[data-enhanced]`, `.crossroads-stage`, `.crossroads-track`, `canvas[data-scene="kc-crossroads"]`, and one `li[data-key][data-focus]` per way.
+  - `ORDER: ServiceKey[]` and `inOrder(ways)`: the canonical left-to-right order, applied before anything reads the ways. `de.ts` and `en.ts` list the four services in different orders, and the scene's geometry is tuned as a set, so the component sorts rather than trusting the prop.
 
 - [ ] **Step 1: Install three.js**
 
@@ -1498,15 +1499,33 @@ Create `web/src/components/crossroads/index.tsx`:
 ```tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowLink, Eyebrow, RHYTHM } from '@/components/ui';
 
 import { progressOf } from './progress';
-import type { Handle, Way } from './types';
+import type { Handle, ServiceKey, Way } from './types';
 
 /** Set on the canvas so scripts/check-bundle.mjs can find the chunk after minification. */
 const SCENE_MARKER = 'kc-crossroads';
+
+/**
+ * The order the four ways stand in, left to right, in every language.
+ *
+ * The content files do not agree on this: de.ts lists the services in the
+ * order they are priced, en.ts leads with developer capacity. That is each
+ * language's own editorial call and the services page keeps it. The scene
+ * cannot: the fan is tuned as a set, with the outer lanes longer than the
+ * inner two and each camera standoff matched to the lane it stands on. Fed a
+ * different order it would frame the wrong objects from the wrong distances.
+ *
+ * So the crossroads sorts, and the column beside it sorts with it, because
+ * the rows and the lanes are the same four things in the same order.
+ */
+const ORDER: ServiceKey[] = ['website', 'app', 'capacity', 'care'];
+
+const inOrder = (ways: readonly Way[]): Way[] =>
+  ORDER.map((key) => ways.find((w) => w.key === key)).filter((w): w is Way => w !== undefined);
 
 /**
  * Whether this visitor gets the scene at all.
@@ -1547,6 +1566,10 @@ export function Crossroads({
   const [enhanced, setEnhanced] = useState(false);
   const [focus, setFocus] = useState(-1);
 
+  // Sorted once, and everything downstream reads this: the scene, the rows,
+  // and the numbering. The prop's own order is never used.
+  const ordered = useMemo(() => inOrder(ways), [ways]);
+
   // Decided on the client and re-decided when the width query flips, because
   // rotating a tablet crosses the 46rem line in both directions.
   useEffect(() => {
@@ -1583,7 +1606,7 @@ export function Crossroads({
       .then(({ boot }) => {
         if (cancelled) return;
         canvas.dataset.scene = SCENE_MARKER;
-        handle = boot(canvas, stage, ways);
+        handle = boot(canvas, stage, ordered);
         drive();
         window.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('resize', onScroll, { passive: true });
@@ -1602,7 +1625,7 @@ export function Crossroads({
       window.removeEventListener('resize', onScroll);
       handle?.stop();
     };
-  }, [enhanced, ways]);
+  }, [enhanced, ordered]);
 
   return (
     <section
@@ -1623,7 +1646,7 @@ export function Crossroads({
             <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
 
             <ol className="crossroads-ways mt-8 divide-y divide-ink-line border-y border-ink-line">
-              {ways.map((way, i) => (
+              {ordered.map((way, i) => (
                 <li
                   key={way.key}
                   data-key={way.key}
@@ -2780,6 +2803,9 @@ for (const lang of ['de', 'en'] as const) {
       [0.56, 'capacity'],
       [0.75, 'care'],
     ];
+    // The same four keys in the same order in both languages, because the
+    // component sorts by ORDER before anything reads the ways. en.ts lists
+    // them differently and this is the test that says so on purpose.
     for (const [p, key] of stops) {
       await scrollToProgress(page, p);
       await expect(page.locator('#services li[data-focus="true"]')).toHaveAttribute('data-key', key);
