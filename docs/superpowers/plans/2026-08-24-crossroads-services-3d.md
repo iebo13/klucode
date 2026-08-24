@@ -64,7 +64,7 @@ The scene needs colours as numbers, and three.js cannot read CSS custom properti
 **Files:**
 - Create: `web/scripts/check-scene-palette.mjs`
 - Create: `web/src/components/crossroads/palette.ts`
-- Modify: `brand/tokens/tokens.json` (add `color.semantic.blueprint`)
+- Modify: `brand/tokens/tokens.json` (add a new `color.scene` family holding `blueprint`)
 - Modify: `brand/tokens/tokens.css`, `web/src/app/tokens.css` (regenerated, never hand-edited)
 - Modify: `web/package.json` (add the `check:palette` script)
 
