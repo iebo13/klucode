@@ -59,11 +59,17 @@ jobs:
 
       - run: npm ci
 
+      # check:palette is here as well as in ci.yml because the scene's sixteen
+      # hex literals are a hand-kept copy of the tokens, and a token edit that
+      # lands straight on main never sees a pull request. A scene painted in
+      # slightly wrong greens still looks like a scene, so nothing downstream
+      # would notice.
       - name: Verify
         run: |
           npm run typecheck
           npm run lint
           npm run format:check
+          npm run check:palette
           npm run test:unit
 
       - name: Build

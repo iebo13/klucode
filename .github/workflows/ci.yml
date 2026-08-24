@@ -72,6 +72,14 @@ jobs:
       - name: Copy fits its slots
         run: npm run check:copy
 
+      # The 3D scene cannot read a CSS custom property, so palette.ts carries
+      # sixteen hex literals instead. This is the only thing that keeps them
+      # honest, and drift is invisible on screen: a scene painted in slightly
+      # wrong greens still looks like a scene. Without this step the literals
+      # are simply a second, unchecked copy of the tokens.
+      - name: Scene palette matches the tokens
+        run: npm run check:palette
+
       - name: Format check
         run: npm run format:check
 

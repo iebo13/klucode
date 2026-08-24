@@ -25,6 +25,18 @@ function resolve(path) {
 
 const DECL = /^\s*(\w+):\s*0x([0-9a-fA-F]{6}),\s*\/\/\s*([\w.]+)\s*$/gm;
 
+/**
+ * How many colours palette.ts is expected to carry.
+ *
+ * An exact count rather than a zero-guard, which only ever caught total format
+ * collapse. One line that loses its trailing token comment, or gains a space
+ * the pattern does not allow, simply drops out of the match: the script would
+ * still exit 0, one colour lighter and that colour now free to drift, which is
+ * the failure this file exists to stop. Adding or removing a colour is a
+ * deliberate act and moving this number with it is part of that act.
+ */
+const EXPECTED = 16;
+
 const problems = [];
 let checked = 0;
 for (const [, name, hex, path] of source.matchAll(DECL)) {
@@ -35,8 +47,12 @@ for (const [, name, hex, path] of source.matchAll(DECL)) {
   }
 }
 
-if (checked === 0) {
-  problems.push('no palette entries matched `name: 0xRRGGBB, // token.path`');
+if (checked !== EXPECTED) {
+  problems.push(
+    `matched ${checked} entries of the ${EXPECTED} expected. A line that does not read ` +
+      '`name: 0xRRGGBB, // token.path` is not checked at all, so either fix the line or ' +
+      'move EXPECTED in this script to match the palette.',
+  );
 }
 
 if (problems.length > 0) {
