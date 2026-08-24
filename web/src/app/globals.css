@@ -397,6 +397,51 @@
   min-height: 0;
 }
 
+/* Measured, in Chromium, at every viewport the mount predicate allows. The
+   copy column is 1097px tall: four rows of 219, plus the eyebrow, the h2 and
+   the link. The stage is exactly one viewport and clips. So it does not fit
+   anywhere, not even at 1920x1080, and it was overflowing by 459px at
+   1024x736, 301px at 1440x900 and 121px at 1920x1080, cut off at the bottom
+   with the fourth price inside the cut.
+
+   Three things caused that and all three are fixed here.
+
+   The grid row was auto, so it sized to the tallest item and simply overhung
+   the container. Bounded to minmax(0, 1fr) it is the content box, which is
+   also what stops the canvas being sized by the copy beside it: the drawing
+   buffer measured 640x1097 for a box 640x900 at 1440x900, so the camera was
+   framing a portrait aspect and a fifth of the render sat under the clip.
+
+   items-center then has to go with it. Centring sizes an item to its content
+   and centres it in the row, which leaves the column 1097px tall again and
+   overflow-y with nothing to act on. Stretched, the column is the row.
+
+   And the padding: 104px top and bottom is the section rhythm, which is right
+   in the fallback where the stage is static, and is 208px of a fixed viewport
+   here. The top keeps 80px because the site header is FIXED and occupies the
+   first 69px of every viewport, so an eyebrow at 0 would sit under it. */
+[data-enhanced='true'] .crossroads-layout {
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  padding-block: 5rem 1.5rem;
+}
+
+/* What is left over after all that still does not fit, so it scrolls rather
+   than being cut off: 293px of it at 1440x900 and 500px at 1024x736.
+
+   min-height: 0 is what makes the scroll possible at all. A grid item's
+   automatic minimum size is its content, so without it the column refuses to
+   be shorter than 1097px and overflow-y has nothing to do.
+
+   Deliberately NOT overscroll-behavior: contain. Chaining is what lets a
+   wheel over this column carry on into the page scroll that drives the whole
+   section once the column reaches its end. Containing it would trap the
+   visitor in a 26rem box in the middle of the journey. */
+[data-enhanced='true'] .crossroads-copy {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .crossroads-stage canvas {
   display: block;
   width: 100%;
@@ -443,9 +488,20 @@
    0.55 alpha over ink to exactly the visitors the fallback exists for: the
    phone, the reduced-motion request, the browser without WebGL, the page with
    no JavaScript. check_contrast.py cannot catch that, because the dimming is
-   a CSS opacity rather than a token pair it can audit. */
+   a CSS opacity rather than a token pair it can audit.
+
+   0.7 and not 0.55, and the number is an accessibility floor rather than a
+   taste call. At any scroll position at most one of the four rows is
+   undimmed, so the other three are the steady state of this section, not a
+   transient, and they carry the prices. text-ink-muted is stone.300
+   (#C1C5C2); composited at 0.55 over the ink surface it measures 3.83:1 in
+   the light theme (stone.950) and 3.39:1 in the dark one (stone.900), against
+   the 4.5:1 that 14px body text needs. At 0.7 the same two are 5.33:1 and
+   4.52:1, which clears AA in both, and the de-emphasis is still plainly
+   visible beside a row at full strength. Do not lower it without recomputing
+   both themes: check_contrast.py audits token pairs and will not stop you. */
 [data-enhanced='true'] .crossroads-ways li[data-focus='false'] {
-  opacity: 0.55;
+  opacity: 0.7;
 }
 
 @media (prefers-reduced-motion: no-preference) {

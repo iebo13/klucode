@@ -8,7 +8,24 @@ import type { Lang } from '@/lib/routes';
 import { progressOf } from './progress';
 import type { Handle, ServiceKey, Way } from './types';
 
-/** Set on the canvas so scripts/check-bundle.mjs can find the chunk after minification. */
+/**
+ * The scene's readiness signal, written onto the canvas immediately before
+ * boot() and read by the browser suite.
+ *
+ * Not a bundle marker, whatever it once was. scripts/check-bundle.mjs
+ * deliberately does NOT match on this, and says why at length above its
+ * THREE_MARKER: it is a DOM attribute written by this file, this file is a
+ * client component, so it lives in the EAGER page chunk. Matching on it
+ * measured 2 kB of component and reported that as the deferred budget, which
+ * is a gate that cannot fail.
+ *
+ * Its real job is timing. data-enhanced only flips after hydration, and until
+ * it does the track collapses to auto height, the section is exactly one stage
+ * tall, and every scroll position computes to the junction. A test that
+ * measures before this attribute lands scrolls to p=0 whatever it asked for.
+ * Because it is set on the line before boot(), its presence also means there
+ * is a handle listening for the scroll that follows.
+ */
 const SCENE_MARKER = 'kc-crossroads';
 
 /**
@@ -92,6 +109,7 @@ export function Crossroads({
   // 640 wide and the whole scene was squashed by a factor of two and a half.
   const viewRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const copyRef = useRef<HTMLDivElement>(null);
   const [enhanced, setEnhanced] = useState(false);
   const [focus, setFocus] = useState(-1);
   // How many of the four have finished building, as an integer. Reflected onto
@@ -171,6 +189,34 @@ export function Crossroads({
     };
   }, [enhanced, ordered, lang]);
 
+  /**
+   * Keeps the row the camera is looking at inside the column that scrolls.
+   *
+   * Measured, the copy column is 1097px tall and taller than the stage at
+   * every viewport the scene mounts on, so it scrolls: 301px of it at
+   * 1440x900 and 462px at the 1024x736 floor. Without this the camera arrives
+   * at way 03 with row 03 below the fold of a scroller the visitor has no
+   * reason to have found, and the highlight names something nobody can see.
+   *
+   * scrollTop rather than scrollIntoView, and that is the whole point:
+   * scrollIntoView walks every scrollable ancestor including the document, and
+   * the document scroll is what drives this section. Moving one box's own
+   * offset cannot fight it.
+   */
+  useEffect(() => {
+    if (!enhanced || focus < 0) return;
+    const col = copyRef.current;
+    const row = col?.querySelector('li[data-focus="true"]');
+    if (!col || !row) return;
+    const box = col.getBoundingClientRect();
+    const seat = row.getBoundingClientRect();
+    const below = seat.bottom - box.bottom;
+    const above = seat.top - box.top;
+    // Nearest edge only. A row already in view is left exactly where it is.
+    if (below > 0) col.scrollTop += below;
+    else if (above < 0) col.scrollTop += above;
+  }, [enhanced, focus]);
+
   return (
     <section
       id="services"
@@ -203,7 +249,10 @@ export function Crossroads({
               {enhanced ? <canvas ref={canvasRef} aria-hidden="true" /> : null}
             </div>
 
-            <div>
+            {/* crossroads-copy, because in the enhanced state this column is
+                bounded by the stage and scrolls what will not fit. It is
+                taller than any viewport the scene mounts on. */}
+            <div ref={copyRef} className="crossroads-copy">
               <Eyebrow onInk>{eyebrow}</Eyebrow>
               <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
 

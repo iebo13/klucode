@@ -191,6 +191,100 @@ async function scrollToProgress(page: Page, p: number) {
   await page.waitForTimeout(90);
 }
 
+test('the copy column fits its stage at the smallest viewport that mounts', async ({ page }) => {
+  // Measured before this was fixed: the grid row was auto, so it sized to the
+  // 1097px copy column and overhung the one-viewport stage, which clips. The
+  // column ran 459px past the bottom at 1024x736, 301px at 1440x900 and 121px
+  // even at 1920x1080, with the fourth price inside the cut. The canvas went
+  // with it: a 640x1097 drawing buffer for a box 640x900.
+  //
+  // 1024x736 is the floor the mount predicate allows, so it is where this is
+  // tightest.
+  await page.setViewportSize({ width: 1024, height: 736 });
+  await page.goto('/de/');
+  await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
+
+  const fit = await page.evaluate(() => {
+    const stage = document.querySelector('.crossroads-stage') as HTMLElement;
+    const col = document.querySelector('.crossroads-copy') as HTMLElement;
+    const view = document.querySelector('.crossroads-view') as HTMLElement;
+    const canvas = document.querySelector('.crossroads-stage canvas') as HTMLCanvasElement;
+    const s = stage.getBoundingClientRect();
+    const c = col.getBoundingClientRect();
+    return {
+      below: Math.round(c.bottom - s.bottom),
+      above: Math.round(s.top - c.top),
+      canvasOverflow: Math.round(canvas.height - view.getBoundingClientRect().height),
+      scrollable: col.scrollHeight > col.clientHeight,
+    };
+  });
+  expect(fit.below, 'the copy column overhangs the stage').toBeLessThanOrEqual(0);
+  expect(fit.above, 'the copy column overhangs the stage').toBeLessThanOrEqual(0);
+  expect(fit.canvasOverflow, 'the canvas is sized by the copy beside it').toBeLessThanOrEqual(1);
+  // It does not fit at any viewport this mounts on, so it must be reachable
+  // rather than merely uncut.
+  expect(fit.scrollable, 'nothing left to scroll, so the rows were cut instead').toBe(true);
+});
+
+test('the row the camera is looking at is inside the column that scrolls', async ({ page }) => {
+  // The other half of the fit. At the 1024x736 floor the column shows about
+  // two and a bit of its four rows, so ways 03 and 04 come into focus below
+  // the fold of a scroller the visitor has no reason to have found.
+  await page.setViewportSize({ width: 1024, height: 736 });
+  await page.goto('/de/');
+  for (const p of [0.18, 0.37, 0.56, 0.75]) {
+    await scrollToProgress(page, p);
+    const seen = await page.evaluate(() => {
+      const col = document.querySelector('.crossroads-copy') as HTMLElement;
+      const row = col.querySelector('li[data-focus="true"]');
+      if (!row) return null;
+      const b = col.getBoundingClientRect();
+      const r = row.getBoundingClientRect();
+      return {
+        key: row.getAttribute('data-key'),
+        above: r.top - b.top,
+        below: r.bottom - b.bottom,
+      };
+    });
+    expect(seen, `no row in focus at ${p}`).not.toBeNull();
+    expect(seen?.above ?? -1, `the focused row is above the column at ${p}`).toBeGreaterThanOrEqual(
+      -1,
+    );
+    expect(seen?.below ?? 1, `the focused row is below the column at ${p}`).toBeLessThanOrEqual(1);
+  }
+});
+
+test('the enhanced state dims the unfocused rows no further than AA allows', async ({ page }) => {
+  // The mirror of the fallback assertion above, and it pins a number nothing
+  // else in the repo can see. At any scroll position at most one row is
+  // undimmed, so the other three are this section's steady state and they
+  // carry the prices. text-ink-muted is stone.300: composited at 0.55 over the
+  // ink surface it measured 3.83:1 in the light theme and 3.39:1 in the dark
+  // one, against the 4.5:1 that 14px body text needs. 0.7 gives 5.33:1 and
+  // 4.52:1. check_contrast.py audits token pairs and a CSS opacity is not one,
+  // so this is the only gate that would notice it drifting back.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await scrollToProgress(page, 0.18);
+
+  const rows = page.locator(`${section} li[data-key]`);
+  await expect(rows).toHaveCount(4);
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+
+  for (let i = 0; i < 4; i += 1) {
+    const row = rows.nth(i);
+    const focused = (await row.getAttribute('data-focus')) === 'true';
+    // Polled rather than read once: the rows carry a 240ms opacity transition
+    // whenever motion is allowed, and the row that just took focus is still
+    // travelling when scrollToProgress returns.
+    await expect
+      .poll(() => row.evaluate((el) => Number(getComputedStyle(el).opacity)), {
+        message: `row ${i} settles at the wrong opacity`,
+      })
+      .toBeCloseTo(focused ? 1 : 0.7, 2);
+  }
+});
+
 test('jumping straight to the end leaves nothing as a drawing', async ({ page }) => {
   // The anchor-link case. Before the passed rule this reported two of four and
   // the skipped ways stayed as line drawings for the rest of the visit.
