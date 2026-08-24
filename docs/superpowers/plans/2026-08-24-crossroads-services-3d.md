@@ -1054,9 +1054,12 @@ export function ratchet(current: readonly number[], targets: readonly number[]):
  * Which way the camera is on, or -1 at the junction.
  *
  * Weights are monotonic inside a segment, so exactly one way is ever the
- * highest and focus hands over from one row to the next at the segment's
- * midpoint, in one clean crossing. There is deliberately no dead zone: naming
- * nobody for part of every transit would read as a bug, not as restraint.
+ * highest and focus hands over from one row to the next in a single clean
+ * crossing near the segment's midpoint. There is deliberately no dead zone:
+ * naming nobody for part of every transit would read as a bug, not as
+ * restraint. Which way wins at the exact midpoint is decided by floating point
+ * rounding and is not guaranteed in either direction, which is why nothing
+ * asserts on that one instant.
  *
  * The 0.45 floor is not about that handover, which the tie-break already
  * settles. It decides the junction. In the opening and closing segments a
