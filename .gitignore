@@ -28,6 +28,10 @@ yarn-error.log*
 .playwright-mcp/
 de-dark-hero.png
 
+# Playwright test runner output (web/playwright.config.ts, web/playwright.e2e.config.ts)
+/web/test-results/
+/web/playwright-report/
+
 # Isolated worktrees and subagent scratch, both machine-local
 .claude/worktrees/
 .superpowers/

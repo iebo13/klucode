@@ -14,7 +14,10 @@
     "check:copy": "node scripts/check-copy.mjs",
     "check:palette": "node scripts/check-scene-palette.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:unit": "playwright test --config=playwright.config.ts",
+    "test:e2e": "playwright test --config=playwright.e2e.config.ts",
+    "test": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {
     "next": "15.1.6",
@@ -22,6 +25,7 @@
     "react-dom": "19.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.10.6",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",

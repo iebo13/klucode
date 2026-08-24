@@ -75,8 +75,21 @@ jobs:
       - name: Format check
         run: npm run format:check
 
+      # The repo had no browser tests until the 3D services section, whose two
+      # worst failure modes (a sticky stage painting over the section below, a
+      # scroll jump leaving an object half-built) are invisible to a typecheck
+      # and to every check-*.mjs script.
+      - name: Unit tests
+        run: npm run test:unit
+
       - name: Build
         run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: npm run test:e2e
 
       # The site is served from a subpath on GitHub Pages, which is where
       # static exports usually break — and the breakage is invisible in a
