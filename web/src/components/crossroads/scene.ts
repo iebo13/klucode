@@ -62,6 +62,27 @@ const LANES = [
   { angle: -0.8, dist: 16, back: 13, aimY: 4.1 },
 ] as const;
 
+/**
+ * How solid a thing must be before it is drawn at all, and therefore before it
+ * casts a shadow.
+ *
+ * A three.js shadow is binary: the depth material copies `visible` and nothing
+ * else, so the shadow cannot fade in with the object and SOME step is
+ * unavoidable. All this number chooses is where the step falls.
+ *
+ * Halfway, measured across way 01's whole ramp against 0.75 and 0.3. At 0.75
+ * the frame-to-frame change at the crossing was more than double the largest
+ * anywhere else in the move, and the blueprint has faded to 0.16 by then, so
+ * the drawing is gone before the thing turns up. At 0.5 the crossing is smaller
+ * than the ordinary change between two later frames of the same move, and the
+ * blueprint is still at 0.31 and plainly legible when the solid takes over, so
+ * the handover has no hole in it. Lower thresholds measure smoother only
+ * because way 01 is barely in frame that early, and they put a full-strength
+ * shadow under an object that is still a ghost, which is the bug this line
+ * exists to fix.
+ */
+const BUILD_VISIBLE_AT = 0.5;
+
 const Y_AXIS = new Vector3(0, 1, 0);
 
 /** Stand `back` short of a target, on its own lane, at eye height. */
@@ -247,7 +268,19 @@ export function boot(
       const built = next[i] ?? lane.built;
       lane.built = built;
       for (const u of lane.units) {
-        for (const m of u.mats) m.opacity = built;
+        for (const m of u.mats) {
+          m.opacity = built;
+          // Not decoration. three.js renders shadows from a depth material that
+          // copies `visible` and reads `alphaTest`, and never looks at
+          // `opacity` or `transparent` at all: WebGLShadowMap gates the whole
+          // shadow draw on `material.visible`. Without this an object at
+          // opacity 0 lays its full solid silhouette on the floor, so the
+          // shadow arrives before the thing does, which is precisely backwards
+          // for a scene whose whole argument is that the drawing becomes the
+          // object. It also keeps the main pass from drawing meshes nobody can
+          // see.
+          m.visible = built > BUILD_VISIBLE_AT;
+        }
         // The drawing fades out as the thing fades in, so the two are never
         // both at full strength and the object never reads as a wireframe cage
         // around a solid.
@@ -277,7 +310,10 @@ export function boot(
       dirty = true;
     },
     focus: () => focusAt(progress, STOPS, lanes.length),
-    built: () => lanes.reduce((n, l) => n + l.built, 0) / lanes.length,
+    // A count of finished ways, not a mean of four ramps. Averaging read 2
+    // with one way finished and another half done, which is a count of nothing
+    // and made data-built a name for something the DOM did not hold.
+    built: () => lanes.filter((l) => l.built >= 1).length,
     stop() {
       alive = false;
       if (raf) cancelAnimationFrame(raf);

@@ -134,7 +134,7 @@ export function Crossroads({
       const rect = section.getBoundingClientRect();
       handle.set(progressOf(rect.top, rect.height, stage.clientHeight));
       setFocus(handle.focus());
-      setBuilt(Math.round(handle.built() * ordered.length));
+      setBuilt(handle.built());
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(drive);
