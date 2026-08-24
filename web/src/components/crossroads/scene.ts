@@ -36,7 +36,7 @@ import { BUILDERS, LINE_ALPHA } from './objects';
 import { PALETTE } from './palette';
 import { buildTargets, focusAt, ratchet, segmentAt } from './progress';
 import { createRegistry } from './registry';
-import type { Handle, SceneLabels, Stop, Way } from './types';
+import type { Handle, SceneLabels, ServiceKey, Stop, Way } from './types';
 
 /**
  * The four lanes, left to right across the fan.
@@ -54,13 +54,30 @@ import type { Handle, SceneLabels, Stop, Way } from './types';
  * in lockstep are exactly the shape that drifts, and under this project's
  * `noUncheckedIndexedAccess` every one of those reads would have needed a
  * guard anyway.
+ *
+ * `key` is on the lane for the same reason. `back` and `aimY` are tuned for
+ * one particular object, and until they carried a key the only thing pairing
+ * them with that object was the order of the array in a different module.
+ * Objects are chosen by key and cameras were chosen by position, so reordering
+ * ORDER in index.tsx, or booting from a second surface that sorts its own way,
+ * would have left every object framed from another object's distance with
+ * nothing raised and nothing to see in a stack trace. The check in boot() is
+ * what turns that into a loud failure at the first frame.
  */
 const LANES = [
-  { angle: 0.8, dist: 16, back: 10, aimY: 2.5 },
-  { angle: 0.28, dist: 14, back: 11, aimY: 2.8 },
-  { angle: -0.28, dist: 14, back: 14.5, aimY: 1.7 },
-  { angle: -0.8, dist: 16, back: 13, aimY: 4.1 },
-] as const;
+  { key: 'website', angle: 0.8, dist: 16, back: 10, aimY: 2.5 },
+  { key: 'app', angle: 0.28, dist: 14, back: 11, aimY: 2.8 },
+  { key: 'capacity', angle: -0.28, dist: 14, back: 14.5, aimY: 1.7 },
+  { key: 'care', angle: -0.8, dist: 16, back: 13, aimY: 4.1 },
+  // satisfies rather than a type annotation, so the literal values stay literal
+  // for the check in boot() while a mistyped key is still a compile error.
+] as const satisfies readonly {
+  key: ServiceKey;
+  angle: number;
+  dist: number;
+  back: number;
+  aimY: number;
+}[];
 
 /**
  * How solid a thing must be before it is drawn at all, and therefore before it
@@ -191,6 +208,16 @@ export function boot(
       // index really is not a promise and this project bans the shortcut.
       throw new Error(`crossroads: lane ${i} was laid out with no way to put on it`);
     }
+    // The lane's standoff and look height are tuned for one object, and the
+    // object is chosen by key. If the caller hands the ways in another order
+    // the two silently disagree: every object appears, framed from the wrong
+    // distance, with nothing to notice. boot() takes any four ways and trusts
+    // the caller sorted them, so this is where that trust is checked.
+    if (way.key !== geom.key) {
+      throw new Error(
+        `crossroads: lane ${i} is tuned for ${geom.key} but was given ${way.key}. The ways must arrive in the order LANES lays out.`,
+      );
+    }
     // Keyed by the way, not by position, so a lane can never be handed the
     // object belonging to a different service.
     const units = BUILDERS[way.key]({ lane: group, z: -geom.dist, track: reg.track, labels });
@@ -217,7 +244,14 @@ export function boot(
   const scratch = new Vector3();
 
   let progress = 0;
-  let dirty = true;
+  /**
+   * The pending draw, or 0 for none.
+   *
+   * It doubles as the dirty flag, which is why there is no second boolean: a
+   * frame is scheduled exactly when there is something to draw, and frame()
+   * clears it as its first act. Two flags saying the same thing is the shape
+   * that drifts.
+   */
   let raf = 0;
   let alive = true;
 
@@ -228,7 +262,7 @@ export function boot(
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    dirty = true;
+    invalidate();
   }
 
   /**
@@ -291,23 +325,39 @@ export function boot(
 
   function frame() {
     raf = 0;
-    if (dirty) {
-      dirty = false;
-      renderer.render(scene, camera);
-    }
-    if (alive) raf = requestAnimationFrame(frame);
+    // stop() cancels the pending callback, but a cancellation that lands in the
+    // same frame the callback was already dispatched in would still draw into a
+    // disposed renderer.
+    if (!alive) return;
+    renderer.render(scene, camera);
+  }
+
+  /**
+   * Asks for one frame, and parks afterwards.
+   *
+   * The loop used to reschedule unconditionally, so an rAF callback stayed
+   * alive for the whole visit even with the section four viewports away and
+   * nothing dirty. That is a permanent cost on a page whose pitch is that it
+   * costs the visitor nothing, and it bought nothing: every change to the
+   * scene arrives through set() or resize(), and both of them come through
+   * here. So nothing is scheduled unless something changed, and one already
+   * scheduled frame absorbs any number of further changes before it runs.
+   */
+  function invalidate() {
+    if (!alive || raf !== 0) return;
+    raf = requestAnimationFrame(frame);
   }
 
   resize();
   layout(0);
-  raf = requestAnimationFrame(frame);
+  invalidate();
   window.addEventListener('resize', resize, { passive: true });
 
   return {
     set(p) {
       progress = p < 0 ? 0 : p > 1 ? 1 : p;
       layout(progress);
-      dirty = true;
+      invalidate();
     },
     focus: () => focusAt(progress, STOPS, lanes.length),
     // A count of finished ways, not a mean of four ramps. Averaging read 2
@@ -315,8 +365,12 @@ export function boot(
     // and made data-built a name for something the DOM did not hold.
     built: () => lanes.filter((l) => l.built >= 1).length,
     stop() {
+      // Works whether the loop is running or parked: raf is 0 when parked, and
+      // clearing alive keeps invalidate() from restarting it if a late scroll
+      // frame calls set() after teardown.
       alive = false;
       if (raf) cancelAnimationFrame(raf);
+      raf = 0;
       window.removeEventListener('resize', resize);
       reg.disposeAll();
       renderer.dispose();

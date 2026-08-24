@@ -294,6 +294,60 @@ test('jumping straight to the end leaves nothing as a drawing', async ({ page })
   await expect(page.locator('#services')).toHaveAttribute('data-built', '4');
 });
 
+test('a still page costs no frames, and a moving one still gets them', async ({ page }) => {
+  // The loop used to reschedule unconditionally, so a callback stayed alive
+  // for the whole visit with the section four viewports away and nothing to
+  // draw. Measured here at 60 callbacks a second before the change and 0
+  // after, which is the only permanent cost this section imposed on a page
+  // whose pitch is that it costs the visitor nothing.
+  //
+  // Every rAF on the page is counted, not just the scene's, because that is
+  // the number that matters and because a minified callback cannot be told
+  // apart from another one. The component's own scroll handler uses rAF too,
+  // and it schedules nothing while nobody scrolls.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __raf: number };
+    w.__raf = 0;
+    const real = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (cb: FrameRequestCallback) =>
+      real((t) => {
+        w.__raf += 1;
+        cb(t);
+      });
+  });
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await scrollToProgress(page, 0.18);
+  await page.waitForTimeout(400);
+
+  const count = () => page.evaluate(() => (window as unknown as { __raf: number }).__raf);
+  const before = await count();
+  await page.waitForTimeout(1000);
+  expect((await count()) - before, 'the loop is still running with nothing to draw').toBeLessThan(
+    5,
+  );
+
+  // Parked is only correct if it restarts. The canvas is captured at two stops
+  // that frame different objects, so identical pixels mean set() reached a
+  // loop that never woke up.
+  const atFirst = await page.locator(`${section} canvas`).screenshot();
+  await scrollToProgress(page, 0.56);
+  await page.waitForTimeout(200);
+  const atThird = await page.locator(`${section} canvas`).screenshot();
+  expect(atThird.equals(atFirst), 'a parked loop did not restart on set()').toBe(false);
+
+  // And stop() has to work from either state. Crossing below the mount query
+  // fires the scene's own resize listener, which asks for a frame, and flips
+  // data-enhanced, which tears the scene down: a cancel with a frame pending.
+  await page.setViewportSize({ width: 800, height: 900 });
+  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+  await page.waitForTimeout(300);
+  expect(errors, 'tearing down a scene with a frame pending threw').toEqual([]);
+});
+
 for (const lang of ['de', 'en'] as const) {
   test(`${lang}: every stop names its own service`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });

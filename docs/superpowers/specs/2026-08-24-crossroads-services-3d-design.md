@@ -117,8 +117,12 @@ is read immediately after `set()` to highlight a row, and if the state lived
 in the render loop it would name the previous stop's service. The prototype
 had exactly that bug.
 
-`frame()` renders behind a `dirty` flag, so a still page costs one empty rAF
-callback and no GPU work.
+A frame is scheduled only when `set()` or `resize()` has changed something, and
+the loop parks after drawing it, so a still page costs no rAF callback and no
+GPU work at all. An unconditional reschedule behind a `dirty` flag was the
+first version of this and it kept a callback alive for the whole visit with the
+section four viewports away, which is a permanent cost on a page whose pitch is
+that it costs the visitor nothing.
 
 ### 5.3 Data flow
 
