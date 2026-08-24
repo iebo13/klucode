@@ -101,15 +101,15 @@ export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonl
   scene.fog = new FogExp2(PALETTE.background, 0.022);
 
   const camera = new PerspectiveCamera(50, 2, 0.1, 200);
-  scene.add(new AmbientLight(0x44546c, 1.0));
+  scene.add(new AmbientLight(PALETTE.lightAmbient, 1.0));
 
-  const key = new SpotLight(0xffd9a4, 200, 40, Math.PI / 3.4, 0.65, 1.05);
+  const key = new SpotLight(PALETTE.lightKey, 200, 40, Math.PI / 3.4, 0.65, 1.05);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.far = 40;
   key.shadow.bias = -0.002;
   scene.add(key, key.target);
-  const fill = new PointLight(0x7fa8d0, 26, 40, 1.4);
+  const fill = new PointLight(PALETTE.lightFill, 26, 40, 1.4);
   scene.add(fill);
 
   const ground = new Mesh(

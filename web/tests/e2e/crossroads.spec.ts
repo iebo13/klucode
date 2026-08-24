@@ -51,6 +51,29 @@ test.describe('the four ways are readable however the visitor arrives', () => {
     await expect(page.locator(`${section} li[data-key="care"]`)).toContainText('90');
   });
 
+  // 800 wide clears the old 46rem gate and fails the new one. Between the two
+  // the scene used to boot into a single-column stack inside a stage fixed at
+  // 100svh with overflow hidden, and the copy was cut off with nothing to
+  // scroll to it.
+  test('on a narrow laptop, too narrow for two columns', async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 900 });
+    await page.goto('/de/');
+    await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
+    await expect(page.locator(`${section} canvas`)).toHaveCount(0);
+    await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+  });
+
+  // Wide enough and too short: a 1366x768 laptop has roughly 640px of viewport
+  // and the price board is taller than that. The grid centres it, so the stage
+  // clipped it at both ends. Width alone never said anything about this.
+  test('on a short laptop, wide enough but not tall enough', async ({ page }) => {
+    await page.setViewportSize({ width: 1366, height: 640 });
+    await page.goto('/de/');
+    await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
+    await expect(page.locator(`${section} canvas`)).toHaveCount(0);
+    await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+  });
+
   test('with JavaScript switched off entirely', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
@@ -59,6 +82,31 @@ test.describe('the four ways are readable however the visitor arrives', () => {
     await expect(page.locator(`${section} li[data-key="website"]`)).toContainText('2.500');
     await context.close();
   });
+});
+
+test('the fallback is not a dimmed copy of the enhanced state', async ({ page }) => {
+  // Two regressions in one place, both invisible to every other gate here.
+  // The dimming rule was unscoped, and in the fallback every row carries
+  // data-focus="false", so the whole price board was served at 0.55 alpha to
+  // exactly the visitors the fallback exists for. check_contrast.py cannot see
+  // an opacity. The grid was also left at two columns with the view column
+  // display:none, so the copy sat in the 1fr track with the 26rem one empty
+  // beside it.
+  await page.setViewportSize({ width: 1440, height: 640 });
+  await page.goto('/de/');
+  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+
+  const rows = page.locator(`${section} li[data-key]`);
+  await expect(rows).toHaveCount(4);
+  for (let i = 0; i < 4; i += 1) {
+    const opacity = await rows.nth(i).evaluate((el) => getComputedStyle(el).opacity);
+    expect(opacity, `row ${i} is dimmed in the fallback`).toBe('1');
+  }
+
+  const columns = await page
+    .locator(`${section} .crossroads-layout`)
+    .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+  expect(columns, 'the fallback grid still has an empty column').toBe(1);
 });
 
 test('the stage never paints outside its own section', async ({ page }) => {

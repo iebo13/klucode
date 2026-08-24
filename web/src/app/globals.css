@@ -424,17 +424,32 @@
   display: none;
 }
 
+/* One column. The view is display:none in the fallback, so the copy would
+   otherwise auto-place into the 1fr track and leave the 26rem one standing
+   empty beside it: the price board set to 750px of a 1440px page, with 416px
+   of dead ink next to it. */
+[data-enhanced='false'] .crossroads-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* The line naming the object only means anything next to the object. */
 [data-enhanced='false'] .crossroads-reads {
   display: none;
 }
 
-.crossroads-ways li[data-focus='false'] {
+/* Scoped to the enhanced state, and that scope is load-bearing. In the
+   fallback every row carries data-focus="false", because nothing is ever in
+   focus, so an unscoped rule served this section's headings and prices at
+   0.55 alpha over ink to exactly the visitors the fallback exists for: the
+   phone, the reduced-motion request, the browser without WebGL, the page with
+   no JavaScript. check_contrast.py cannot catch that, because the dimming is
+   a CSS opacity rather than a token pair it can audit. */
+[data-enhanced='true'] .crossroads-ways li[data-focus='false'] {
   opacity: 0.55;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .crossroads-ways li {
+  [data-enhanced='true'] .crossroads-ways li {
     transition: opacity 240ms ease;
   }
 }

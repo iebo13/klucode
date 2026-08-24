@@ -29,6 +29,26 @@ const inOrder = (ways: readonly Way[]): Way[] =>
   ORDER.map((key) => ways.find((w) => w.key === key)).filter((w): w is Way => w !== undefined);
 
 /**
+ * The room the scene needs, as one query.
+ *
+ * 64rem is not a taste call, it is Tailwind's `lg`, which is where the layout
+ * below actually becomes two columns. The first draft mounted at 46rem, and
+ * between the two the scene booted into a single-column stack inside a stage
+ * fixed at 100svh with overflow hidden: the canvas took half of it and the
+ * copy was cut off with nothing to scroll. Two thresholds that must agree are
+ * the same drift shape the LANES array exists to avoid, so there is one.
+ *
+ * The height half is why the query is not just a width. A 1366x768 laptop is
+ * wide enough and has roughly 640px of viewport, and the price board is taller
+ * than that: the grid centres it, so the stage clipped it at both ends. 46rem
+ * of height is the room the copy column needs before that starts.
+ *
+ * One constant, so the mount decision and the listener that re-decides it
+ * cannot be handed different strings.
+ */
+const ROOM = '(min-width: 64rem) and (min-height: 46rem)';
+
+/**
  * Whether this visitor gets the scene at all.
  *
  * Three ways to say no, and each is an answer rather than a degradation. A
@@ -38,7 +58,7 @@ const inOrder = (ways: readonly Way[]): Way[] =>
  */
 function canMount(): boolean {
   if (typeof window === 'undefined') return false;
-  if (!window.matchMedia('(min-width: 46rem)').matches) return false;
+  if (!window.matchMedia(ROOM).matches) return false;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
   try {
     const probe = document.createElement('canvas');
@@ -76,14 +96,16 @@ export function Crossroads({
   // and the numbering. The prop's own order is never used.
   const ordered = useMemo(() => inOrder(ways), [ways]);
 
-  // Decided on the client and re-decided when the width query flips, because
-  // rotating a tablet crosses the 46rem line in both directions.
+  // Decided on the client and re-decided when ROOM flips, because rotating a
+  // tablet or dragging a window crosses that line in both directions. Watching
+  // ROOM itself rather than a second copy of the query is the point: the two
+  // cannot be given different numbers.
   useEffect(() => {
-    const wide = window.matchMedia('(min-width: 46rem)');
+    const room = window.matchMedia(ROOM);
     const decide = () => setEnhanced(canMount());
     decide();
-    wide.addEventListener('change', decide);
-    return () => wide.removeEventListener('change', decide);
+    room.addEventListener('change', decide);
+    return () => room.removeEventListener('change', decide);
   }, []);
 
   useEffect(() => {
@@ -119,6 +141,7 @@ export function Crossroads({
         window.addEventListener('resize', onScroll, { passive: true });
       })
       .catch((error) => {
+        if (cancelled) return;
         // A scene that will not start is not worth telling a visitor about.
         // The price board is standing and says everything the scene would.
         console.warn('crossroads: the scene did not start', error);
@@ -160,7 +183,7 @@ export function Crossroads({
           for. */}
       <div className="crossroads-track">
         <div ref={stageRef} className="crossroads-stage">
-          <div className="mx-auto grid h-full max-w-container items-center gap-8 px-6 py-section md:px-8 lg:grid-cols-[1fr_26rem]">
+          <div className="crossroads-layout mx-auto grid h-full max-w-container items-center gap-8 px-6 py-section md:px-8 lg:grid-cols-[1fr_26rem]">
             <div ref={viewRef} className="crossroads-view">
               {enhanced ? <canvas ref={canvasRef} aria-hidden="true" /> : null}
             </div>
