@@ -261,7 +261,7 @@ Mount predicate, evaluated once and re-evaluated on the width query's `change`
 event:
 
 ```
-matchMedia('(min-width: 46rem)').matches
+matchMedia('(min-width: 64rem) and (min-height: 46rem)').matches
   && !matchMedia('(prefers-reduced-motion: reduce)').matches
   && webglAvailable()
 ```
@@ -269,10 +269,25 @@ matchMedia('(min-width: 46rem)').matches
 - **No WebGL**: nothing mounts. The price board is the section.
 - **Reduced motion**: nothing mounts. The scene is motion end to end, so a
   frozen frame would be a picture of nothing.
-- **Under 46rem**: nothing mounts. A 390px phone would pay 135 kB and a warm
-  GPU for a scene it can barely see, on a site whose pitch is that it loads
-  fast. Flagged in section 11 as the decision most worth revisiting after a
-  real device test.
+- **Under 64rem wide, or under 46rem tall**: nothing mounts. A 390px phone
+  would pay 141 kB and a warm GPU for a scene it can barely see, on a site
+  whose pitch is that it loads fast.
+
+  This started as one number, 46rem of width, and that was wrong twice over.
+  The two-column layout does not exist until 64rem, so between the two the
+  scene mounted into a single-column stack inside a stage fixed at 100svh with
+  its overflow clipped: the canvas got half a stage and the copy was cut off
+  with no way to scroll to it. And width alone says nothing about the room the
+  copy column actually needs. On a 1366x768 laptop the viewport is about 640px
+  and the price board overflowed the stage by roughly 250px, clipped at both
+  ends because the grid centres it.
+
+  So the mount threshold and the layout threshold are now the same number, and
+  a height floor sits beside it. The cost is real and worth stating plainly:
+  this excludes phones, most tablets, and laptops with a 768px screen. Those
+  visitors get the price board, which is good, but it is a larger share of
+  traffic than the original 46rem implied. Flagged in section 11 as the
+  decision most worth revisiting after a real device test.
 
 The canvas is `aria-hidden="true"`. The rows are the accessible content in
 both states, which is why they are the same DOM nodes in both states: enhanced
@@ -405,7 +420,7 @@ record.
 
 - **Bundle regression.** A stray three.js import (any loader, any control)
   pulls in far more than the primitives. Gate 2 catches it at build time.
-- **The 46rem floor.** Most traffic to a local business site is mobile, and
+- **The 64rem by 46rem floor.** Most traffic to a local business site is mobile, and
   most of it will therefore never see this. That is defensible only if the
   price board is genuinely good on a phone, which it is today. Revisit with a
   real mid-range Android in hand.
