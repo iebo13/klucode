@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLink, Eyebrow, RHYTHM } from '@/components/ui';
 import type { Lang } from '@/lib/routes';
 
-import { LABELS } from './labels';
 import { progressOf } from './progress';
 import type { Handle, ServiceKey, Way } from './types';
 
@@ -141,8 +140,13 @@ export function Crossroads({
       if (!raf) raf = requestAnimationFrame(drive);
     };
 
-    import('./scene')
-      .then(({ boot }) => {
+    // The labels are fetched WITH the scene rather than imported statically.
+    // index.tsx is a client component, so a static import puts the mock landing
+    // page and the mock dashboard, in both languages, into First Load JS for
+    // every visitor: including every phone, which never mounts the scene at
+    // all. Verified by grepping the built chunks for the mock client's name.
+    Promise.all([import('./scene'), import('./labels')])
+      .then(([{ boot }, { LABELS }]) => {
         if (cancelled) return;
         canvas.dataset.scene = SCENE_MARKER;
         handle = boot(canvas, view, ordered, LABELS[lang]);
