@@ -626,7 +626,7 @@ Create `web/scripts/check-bundle.mjs`:
  * The chunk is found by a marker string the scene writes to the DOM, because
  * comments do not survive minification and file names are hashed.
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
@@ -639,13 +639,29 @@ const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
 const gz = (path) => gzipSync(readFileSync(path)).length;
 
 const html = readFileSync('out/de/index.html', 'utf8');
-const eagerPaths = [...new Set([...html.matchAll(/src="([^"]+\.js)"/g)].map((m) => m[1]))].map(
-  (u) => join('out', u.replace(/^\/+/, '')),
+
+// The href needs decoding before it is a path. This site routes through
+// src/app/[lang], and Next writes that chunk's href URL-encoded as %5Blang%5D
+// while the file on disk keeps the literal brackets.
+const eagerPaths = [...new Set([...html.matchAll(/src="([^"]+\.js)"/g)].map((m) => m[1]))].map((u) =>
+  join('out', decodeURIComponent(u).replace(/^\/+/, '')),
 );
 
 if (eagerPaths.length === 0) {
   console.error('::error::found no scripts in out/de/index.html, so the parser is wrong');
   process.exit(1);
+}
+
+// A script tag pointing at a file that is not there means the mapping above has
+// drifted from what Next emits. Say so, rather than dying on an ENOENT stack
+// trace that names neither the href nor the cause.
+for (const path of eagerPaths) {
+  if (!existsSync(path)) {
+    console.error(
+      `::error::out/de/index.html references ${path}, which does not exist. The href to path mapping in this script is wrong.`,
+    );
+    process.exit(1);
+  }
 }
 
 const eager = eagerPaths.reduce((n, p) => n + gz(p), 0);
