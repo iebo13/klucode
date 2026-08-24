@@ -2076,10 +2076,14 @@ export const LABELS: Record<Lang, SceneLabels> = {
       navActive: 2,
       title: 'Provisionen · Mai 2026',
       action: 'Abrechnen',
+      // Uppercase in the data, not in the draw call. The i18n test asserts
+      // that every word drawn came from this object, and `label.toUpperCase()`
+      // would draw a string that is not in it. `eyebrow` and `chartNote`
+      // already work this way, so this is the file's existing habit.
       kpis: [
-        ['Umsatz', '48.230 €'],
-        ['Provision', '7.912 €'],
-        ['Offen', '3 Vorgänge'],
+        ['UMSATZ', '48.230 €'],
+        ['PROVISION', '7.912 €'],
+        ['OFFEN', '3 Vorgänge'],
       ],
       chartNote: 'LETZTE 12 MONATE',
       rows: [
@@ -2112,9 +2116,9 @@ export const LABELS: Record<Lang, SceneLabels> = {
       title: 'Commission · May 2026',
       action: 'Bill it',
       kpis: [
-        ['Revenue', '48,230 €'],
-        ['Commission', '7,912 €'],
-        ['Open', '3 items'],
+        ['REVENUE', '48,230 €'],
+        ['COMMISSION', '7,912 €'],
+        ['OPEN', '3 items'],
       ],
       chartNote: 'LAST 12 MONTHS',
       rows: [
@@ -2397,7 +2401,9 @@ export function drawDashboard(g: Ctx, l: SceneLabels['dashboard']) {
     g.stroke();
     g.fillStyle = '#79817b';
     g.font = `400 20px ${MONO}`;
-    g.fillText(label.toUpperCase(), x + 24, 130);
+    // Not label.toUpperCase(). The label arrives uppercase, because a string
+    // this function invents is a string the i18n test cannot vouch for.
+    g.fillText(label, x + 24, 130);
     g.fillStyle = '#7fd4a0';
     g.font = `800 42px ${DISPLAY}`;
     g.fillText(value, x + 24, 180);
