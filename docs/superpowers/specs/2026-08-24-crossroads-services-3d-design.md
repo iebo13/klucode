@@ -136,19 +136,41 @@ CSS styles. No text is ever duplicated between DOM and canvas.
 ### 5.4 The sticky stage
 
 ```html
-<section>                         <!-- height comes from the track alone -->
-  <div class="stage">…</div>      <!-- sticky, top:0, height:100svh, margin-bottom:-100svh -->
-  <div class="track" />           <!-- height: 420svh -->
+<section>                       <!-- no height of its own, no overflow clip -->
+  <div class="track">           <!-- height: 420svh. The runway. -->
+    <div class="stage">…</div>  <!-- sticky, top: 0, height: 100svh -->
+  </div>
 </section>
 ```
 
-The stage has a zero-height margin box, so the section's height is the track's
-height and the sticky element releases exactly at the section's end.
+The stage lives inside the track, so its travel is the track's height minus
+its own: 420svh minus 100svh. It releases exactly when the track's bottom
+reaches it, with no negative margin and no arithmetic to keep in step.
 
 PR #17 got this wrong and the stage painted a full viewport past its section,
-over the section below. That is the single most important regression to guard,
-and it gets a test: after scrolling past the section, the canvas bounding rect
-bottom must be less than or equal to the section rect bottom.
+over the section below. So did the first version of this spec, which said to
+zero the stage's layout height with a negative bottom margin equal to its
+height. That does not work, and the reason is worth writing down: a sticky
+element's travel is its containing block's height minus its own MARGIN box,
+so a -100svh margin makes that margin box zero tall and hands the stage one
+extra viewport of travel. Measured, it released 567px late on a 900px
+viewport, which is exactly the 0.15 of section height the test probes past
+the end.
+
+The same mistake had a quieter second symptom. Progress divides by
+(section height - stage height), so the journey finished a full viewport
+before the stage unstuck and the last viewport of scrolling did nothing at
+all.
+
+This is the single most important regression to guard, and it gets a test:
+after scrolling past the section, the stage's bounding rect bottom must be
+less than or equal to the section's.
+
+The section must NOT carry `overflow: hidden`, which every other ink section
+on this page does. A clipped overflow makes an element a scroll container, and
+a sticky child sticks to the nearest one, so the stage would stick to a box
+that never scrolls: it would sit at the top of the section and slide away with
+it, leaving four viewports of empty ink. The stage clips itself instead.
 
 Track length of 420svh gives roughly 0.7 of a viewport of scroll per camera
 stop. It is tunable, under one constraint: this section must not dominate a

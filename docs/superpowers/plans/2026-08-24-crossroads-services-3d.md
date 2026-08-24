@@ -1726,9 +1726,18 @@ export function Crossroads({
       id="services"
       ref={sectionRef}
       data-enhanced={enhanced}
-      className="grain relative isolate overflow-hidden bg-ink text-ink-fg"
+      // No overflow-hidden, which every other ink section on this page carries.
+      // A clipped overflow makes an element a scroll container, and a sticky
+      // child sticks to the nearest one, so the stage would stick to a box that
+      // never scrolls: it would sit at the top of the section and slide away
+      // with it, leaving four viewports of empty ink. The stage clips itself.
+      className="grain relative isolate bg-ink text-ink-fg"
     >
       <div aria-hidden="true" className="ink-aurora -z-10" />
+      {/* The track is the runway and the stage sticks inside it. The stage is
+          NOT a sibling with a negative margin: that gives it one viewport too
+          much travel and it paints over the section below. */}
+      <div className="crossroads-track">
       <div ref={stageRef} className="crossroads-stage">
         <div className="mx-auto grid h-full max-w-container items-center gap-8 px-6 py-section md:px-8 lg:grid-cols-[1fr_26rem]">
           <div className="crossroads-view">
@@ -1774,7 +1783,7 @@ export function Crossroads({
           </div>
         </div>
       </div>
-      <div className="crossroads-track" aria-hidden="true" />
+      </div>
     </section>
   );
 }
@@ -1786,24 +1795,34 @@ Append to `web/src/app/globals.css`:
 
 ```css
 /* --- the crossroads ------------------------------------------------------
-   The stage is sticky and its negative bottom margin is exactly its own
-   height, so its margin box is zero tall and the section's height is the
-   track's alone. Get that pair out of step and the stage paints past the end
-   of its own section, over whatever follows: that was the bug in the first
-   3D attempt, and it is why the two values sit one line apart.
+   The stage is sticky INSIDE the track, and the track is the only thing in
+   the section with a height. No negative margins anywhere, and that is the
+   whole point.
+
+   The first 3D attempt zeroed the stage's layout height with a negative
+   bottom margin equal to its height, and so did the first draft of this plan.
+   It does not work. A sticky element's travel is its containing block's
+   height minus its own MARGIN box, and a -100svh margin makes that margin box
+   zero tall, which hands the stage one extra viewport of travel. It then
+   releases a full viewport late and paints over whatever follows. Nesting it
+   in the track instead gives a travel of 420svh minus 100svh, which is
+   exactly right and needs no arithmetic to stay in step.
+
+   The same bug had a quieter second symptom: progressOf divides by
+   (section height - stage height), so the journey finished a whole viewport
+   before the stage unstuck, and the last viewport of scrolling did nothing.
 
    svh rather than vh, because a mobile browser's vh includes a toolbar that
    is not there, and the stage would be taller than what you can see. */
+.crossroads-track {
+  height: 420svh;
+}
+
 .crossroads-stage {
   position: sticky;
   top: 0;
   height: 100svh;
-  margin-bottom: -100svh;
   overflow: hidden;
-}
-
-.crossroads-track {
-  height: 420svh;
 }
 
 .crossroads-view {
@@ -1817,18 +1836,23 @@ Append to `web/src/app/globals.css`:
   height: 100%;
 }
 
-/* No scene means no journey: the section collapses to the rows, at their own
-   height, and the track disappears. This covers all three refusals at once,
-   which a width media query would not: reduced motion and a missing WebGL
-   context can happen at any width. */
+/* No scene means no journey: the track stops being four viewports of runway,
+   the stage stops sticking, and the section is just the rows at their own
+   height. This covers all three refusals at once, which a width media query
+   would not: reduced motion and a missing WebGL context happen at any width.
+
+   The track is collapsed rather than hidden. It WRAPS the copy now, so
+   display:none here would take the whole section with it. */
+[data-enhanced='false'] .crossroads-track {
+  height: auto;
+}
+
 [data-enhanced='false'] .crossroads-stage {
   position: static;
   height: auto;
-  margin-bottom: 0;
   overflow: visible;
 }
 
-[data-enhanced='false'] .crossroads-track,
 [data-enhanced='false'] .crossroads-view {
   display: none;
 }
