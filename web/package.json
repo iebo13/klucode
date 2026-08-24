@@ -12,6 +12,7 @@
     "check:profile": "node scripts/check-profile.mjs",
     "check:meta": "node scripts/check-meta.mjs",
     "check:copy": "node scripts/check-copy.mjs",
+    "check:palette": "node scripts/check-scene-palette.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
