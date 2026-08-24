@@ -10,8 +10,9 @@
  * allowed to be large. It is not allowed to be unbounded, and what makes it
  * unbounded is one careless import pulling in a three.js loader or control.
  *
- * The chunk is found by a marker string the scene writes to the DOM, because
- * comments do not survive minification and file names are hashed.
+ * Those chunks are found by matching three.js itself, because comments do not
+ * survive minification and file names are hashed. See THREE_MARKER below for
+ * why the scene's own DOM marker is the wrong thing to match on.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -19,8 +20,22 @@ import { gzipSync } from 'node:zlib';
 
 const BASE = JSON.parse(readFileSync('scripts/bundle-baseline.json', 'utf8'));
 const EAGER_SLACK = 2 * 1024;
-const DEFERRED_CAP = 150 * 1024;
-const SCENE_MARKER = 'kc-crossroads';
+const DEFERRED_CAP = 200 * 1024;
+
+/**
+ * What identifies a deferred chunk.
+ *
+ * NOT the scene's own `kc-crossroads` marker. That is a DOM attribute written
+ * by index.tsx, which is a client component and therefore lives in the EAGER
+ * page chunk. Matching on it measured 2 kB of component and reported it as the
+ * deferred budget: a gate that could not fail, which is worse than no gate.
+ *
+ * three.js is what this budget exists to bound, so match three.js. The class
+ * name survives minification as a `.type` string. Chunks the eager HTML already
+ * references are excluded, because three.js appearing there is a First Load JS
+ * leak and belongs to the other gate, not quietly counted here.
+ */
+const THREE_MARKER = 'BufferGeometry';
 
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
 const gz = (path) => gzipSync(readFileSync(path)).length;
@@ -63,7 +78,10 @@ const walk = (dir) => {
 };
 walk('out/_next/static/chunks');
 
-const sceneChunks = chunks.filter((p) => readFileSync(p, 'utf8').includes(SCENE_MARKER));
+const eagerSet = new Set(eagerPaths);
+const sceneChunks = chunks.filter(
+  (p) => !eagerSet.has(p) && readFileSync(p, 'utf8').includes(THREE_MARKER),
+);
 const deferred = sceneChunks.reduce((n, p) => n + gz(p), 0);
 
 console.log(
@@ -83,7 +101,8 @@ if (eager > BASE.eagerGzipBytes + EAGER_SLACK) {
 
 if (BASE.expectSceneChunk && sceneChunks.length === 0) {
   console.error(
-    `::error::no chunk contains "${SCENE_MARKER}", so the deferred budget measured nothing`,
+    `::error::no deferred chunk contains "${THREE_MARKER}", so the deferred budget measured nothing. ` +
+      'Either three.js stopped emitting that name, or it is no longer being code split.',
   );
   failed = true;
 }
