@@ -42,11 +42,27 @@ const gz = (path) => gzipSync(readFileSync(path)).length;
 
 const html = readFileSync('out/de/index.html', 'utf8');
 
-// The href needs decoding before it is a path. This site routes through
-// src/app/[lang], and Next writes that chunk's href URL-encoded as %5Blang%5D
-// while the file on disk keeps the literal brackets.
+/**
+ * Turns a script href into the file it was written from.
+ *
+ * Two things get in the way. The href is URL-encoded, and this site routes
+ * through src/app/[lang], so that chunk arrives as %5Blang%5D while the file on
+ * disk keeps its literal brackets. And a base-path build writes hrefs like
+ * /basepath-check/_next/static/... while the files stay at out/_next/static/...
+ * because a basePath is a serving prefix, not a directory. The deploy workflow
+ * only ever builds with one, so a script that assumed a domain root failed
+ * every deploy rather than catching anything.
+ *
+ * Taking the path from `_next/` onwards handles both shapes.
+ */
+const toPath = (href) => {
+  const decoded = decodeURIComponent(href);
+  const marker = decoded.indexOf('_next/');
+  return join('out', marker === -1 ? decoded.replace(/^\/+/, '') : decoded.slice(marker));
+};
+
 const eagerPaths = [...new Set([...html.matchAll(/src="([^"]+\.js)"/g)].map((m) => m[1]))].map(
-  (u) => join('out', decodeURIComponent(u).replace(/^\/+/, '')),
+  toPath,
 );
 
 if (eagerPaths.length === 0) {
