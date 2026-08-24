@@ -929,10 +929,26 @@ test('focus is the junction at both ends and the way in the middle', () => {
   expect(focusAt(0.75, STOPS, 4)).toBe(3);
 });
 
-test('focus does not name a way while the camera is still between two', () => {
-  // Half way from way 0 to way 1 neither is in focus, so the copy column
-  // highlights nothing rather than flickering between two rows.
-  expect(focusAt((0.18 + 0.37) / 2, STOPS, 4)).toBe(-1);
+test('focus hands over between two ways in one clean crossing', () => {
+  // Weights are monotonic inside a segment, so the highlight moves from one row
+  // to the next around the midpoint and never sits on neither. A dead zone in
+  // the middle of every transit would read as a bug, not as restraint.
+  const mid = (0.18 + 0.37) / 2;
+  expect(focusAt(mid - 0.02, STOPS, 4)).toBe(0);
+  expect(focusAt(mid + 0.02, STOPS, 4)).toBe(1);
+});
+
+test('the junction names nobody until a way is genuinely being approached', () => {
+  expect(focusAt(0.05, STOPS, 4)).toBe(-1);
+  expect(focusAt(0.16, STOPS, 4)).toBe(0);
+});
+
+test('focus never names a way that does not exist', () => {
+  for (let p = 0; p <= 1; p += 0.01) {
+    const f = focusAt(p, STOPS, 4);
+    expect(f, `at ${p.toFixed(2)}`).toBeGreaterThanOrEqual(-1);
+    expect(f, `at ${p.toFixed(2)}`).toBeLessThan(4);
+  }
 });
 ```
 
@@ -970,12 +986,33 @@ export function progressOf(top: number, height: number, stageHeight: number): nu
   return clamp01(-top / travel);
 }
 
-/** The pair of stops either side of p, and how far between them we are. */
+/**
+ * The pair of stops either side of p, and how far between them we are.
+ *
+ * The comparison is `>=`, not `>`, so landing exactly on a stop puts you at the
+ * START of that stop's segment rather than at the end of the previous one. The
+ * camera lands in the same place either way, because lerping to t=1 and lerping
+ * from t=0 both give the stop itself. What differs is which stop is named as
+ * `from`, and focus and the build reveal are both read off that.
+ *
+ * The undefined checks are not defensive padding. This project compiles with
+ * `noUncheckedIndexedAccess`, so an index into a readonly array really is
+ * `Stop | undefined`, and the ban on non-null assertions means saying so.
+ */
 export function segmentAt(p: number, stops: readonly Stop[]): { from: Stop; to: Stop; t: number } {
   let i = 0;
-  while (i < stops.length - 2 && p > stops[i + 1].at) i += 1;
+  while (i < stops.length - 2) {
+    const next = stops[i + 1];
+    if (next === undefined || p < next.at) break;
+    i += 1;
+  }
+
   const from = stops[i];
   const to = stops[i + 1];
+  if (from === undefined || to === undefined) {
+    throw new Error(`crossroads: no camera segment at progress ${p}, given ${stops.length} stops`);
+  }
+
   const span = to.at - from.at;
   return { from, to, t: span === 0 ? 0 : smooth(clamp01((p - from.at) / span)) };
 }
@@ -996,7 +1033,11 @@ export function buildTargets(p: number, stops: readonly Stop[], ways: number): n
   const { from, to, t } = segmentAt(p, stops);
   const out: number[] = [];
   for (let k = 0; k < ways; k += 1) {
-    const blend = (from.focus === k ? 1 : 0) + ((to.focus === k ? 1 : 0) - (from.focus === k ? 1 : 0)) * t;
+    const w0 = from.focus === k ? 1 : 0;
+    const w1 = to.focus === k ? 1 : 0;
+    const blend = w0 + (w1 - w0) * t;
+    // Found by key rather than by index, so this never assumes way k's stop
+    // sits at position k + 1 in the array.
     const own = stops.find((s) => s.focus === k);
     const passed = own !== undefined && p >= own.at ? 1 : 0;
     out.push(Math.max(clamp01(blend * 1.35), passed));
@@ -1012,8 +1053,15 @@ export function ratchet(current: readonly number[], targets: readonly number[]):
 /**
  * Which way the camera is on, or -1 at the junction.
  *
- * The 0.45 floor is what stops the copy column flickering between two rows
- * mid-move: while the camera is genuinely between two ways, neither is named.
+ * Weights are monotonic inside a segment, so exactly one way is ever the
+ * highest and focus hands over from one row to the next at the segment's
+ * midpoint, in one clean crossing. There is deliberately no dead zone: naming
+ * nobody for part of every transit would read as a bug, not as restraint.
+ *
+ * The 0.45 floor is not about that handover, which the tie-break already
+ * settles. It decides the junction. In the opening and closing segments a
+ * way's weight ramps from zero, and the floor is where the column starts, or
+ * stops, naming it.
  */
 export function focusAt(p: number, stops: readonly Stop[], ways: number): number {
   const { from, to, t } = segmentAt(p, stops);
@@ -1037,7 +1085,9 @@ export function focusAt(p: number, stops: readonly Stop[], ways: number): number
 cd web && npm run test:unit
 ```
 
-Expected: all pass. If `focus does not name a way while the camera is still between two` fails, the 0.45 floor is wrong for the stop spacing, not the test: smoothstep at the midpoint is exactly 0.5, so the weight of each neighbouring way there is 0.5, and a floor above 0.5 would name nothing anywhere. Keep 0.45 and check the arithmetic before touching either.
+Expected: all pass.
+
+Two things worth understanding before you debug a failure here. Smoothstep at a segment's exact midpoint is 0.5, so both neighbouring ways weigh 0.5 there and the strict `>` in the tie-break hands that instant to the earlier one. That is why the handover test probes either side of the midpoint rather than sitting on it. And `segmentAt` compares with `>=`, so landing exactly on a stop puts you at the start of that stop's segment: `segmentAt(0.18, STOPS).from.focus` is 0, not -1.
 
 - [ ] **Step 6: Write the failing registry tests**
 
