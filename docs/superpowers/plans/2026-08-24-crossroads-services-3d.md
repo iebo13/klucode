@@ -3070,11 +3070,13 @@ and after its Build step:
 
 Leave the browser suite out of the deploy workflow. It runs on every pull request, and a Chromium download on the deploy path buys nothing.
 
-- [ ] **Step 5: Check it on a real phone**
+- [ ] **Step 5: Hand the real-device check to a human**
 
-Not a device emulation. Open the deployed preview, or the local build over the network, on an actual mid-range Android and an actual iPhone. Confirm the section shows four rows with prices, that no canvas appears, and that the page does not jump as the section enters.
+Do NOT attempt this step and do NOT simulate it. It requires an actual mid-range Android and an actual iPhone in someone's hands, and a device emulation is not the same thing. An agent reporting this as done would be reporting something it cannot have observed.
 
-This is the check for the decision the spec flagged as most worth revisiting. If the price board reads badly on a real phone, that is an argument for lowering the 46rem floor, not for shipping and hoping.
+Write the check into your report as a handover instead, naming what to look for: the section shows four rows with their prices, no canvas appears, and the page does not jump as the section enters.
+
+This is the check for the decision the spec flagged as most worth revisiting, now a 64rem width floor and a 46rem height floor. If the price board reads badly on a real phone, that is an argument for changing those numbers, not for shipping and hoping.
 
 - [ ] **Step 6: Run everything, from clean**
 
@@ -3095,51 +3097,29 @@ NEXT_PUBLIC_BASE_PATH=/basepath-check NEXT_PUBLIC_SITE_URL=https://example.com/b
 
 Every one must pass. The base-path build matters: a scene that mounts fine at a domain root and 404s its chunk on a subpath is exactly the failure this repo already has a whole CI job about.
 
-- [ ] **Step 7: Commit and open the pull request**
+- [ ] **Step 7: Commit, and stop there**
 
 ```bash
-cd /mnt/Extra/Main_Development_Folder/klucode
+cd /mnt/Extra/Main_Development_Folder/klucode/.claude/worktrees/crossroads-3d
 git add web/README.md web/scripts/bundle-baseline.json .github/workflows/deploy-klucode.yml
 git commit -m "Turn on the last budget gate, and make the README true again
 
-The deferred-chunk check now fails when the marker is missing rather than
-reporting zero, which read as a pass. The README's no-dependencies claim
-was about the deployment and stayed true, but it was one careless reading
-away from being false about the browser, so it now says what the browser
-actually downloads and which script enforces it."
+The deferred-chunk check now fails when its marker is missing rather than
+reporting zero, which read as a pass, and the cap is set from the figure
+this build actually ships rather than from a prototype measured with a
+different bundler.
 
-git push -u origin HEAD
-gh pr create --base main --title "The services section as a crossroads" --body-file - <<'BODY'
-Replaces the homepage price board with a scroll-driven 3D crossroads. Four
-lanes off a junction, and at the end of each the thing you would actually get.
-
-Spec: `docs/superpowers/specs/2026-08-24-crossroads-services-3d-design.md`
-Plan: `docs/superpowers/plans/2026-08-24-crossroads-services-3d.md`
-
-What to look at first:
-
-- The rows to the right of the canvas are the section's content AND its
-  fallback. There is one copy of the text, restyled when the scene runs.
-- Nothing mounts below 46rem, under reduced motion, or without WebGL. That
-  means most mobile traffic gets the price board, which is a deliberate call
-  and the one most worth arguing with.
-- Geometry encodes scope, never price. 90 EUR a month and 680 EUR a day are
-  not comparable volumes.
-- `npm run check:bundle` holds two numbers: eager JS must not grow, and the
-  crossroads chunk is capped at 150 kB gzipped.
-
-Closes the old scroll-story attempt (#17), which is superseded and carried a
-sticky-overhang bug this branch has a regression test for.
-BODY
+The README's no-dependencies claim was about the deployment and stayed
+true, but it was one careless reading away from being false about the
+browser, so it now says what the browser actually downloads and which
+script enforces it."
 ```
 
-- [ ] **Step 8: Close the superseded pull request**
+Then stop. Do NOT push, do NOT open a pull request, and do NOT close pull request 17.
 
-```bash
-gh pr close 17 --comment "Superseded by the crossroads. Same ambition, different story, and this one keeps the price board as the content rather than replacing it. The sticky overhang that made the stage paint over the section below has a regression test on the new branch."
-```
+Pushing a branch and opening a pull request are outward-facing acts, and closing someone else's open pull request is not an agent's call to make. The branch is finished when this commit lands. The controller carries the branch, the deferred minors, the parked findings and the real-device handover to the human, and they decide what goes out.
 
-The branch stays. Only the pull request closes.
+Write into your report exactly what a human would need to do it themselves: the branch name, the commit range, and the three things a reviewer should look at first.
 
 ---
 
