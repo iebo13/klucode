@@ -163,6 +163,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           section's content and its fallback at once, which is why there is
           exactly one copy of them. See components/crossroads. */}
       <Crossroads
+        lang={lang}
         eyebrow={h.servicesEyebrow}
         title={h.servicesTitle}
         link={{ href: pathFor('services', lang), label: h.servicesLink }}

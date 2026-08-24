@@ -32,10 +32,11 @@ import {
   WebGLRenderer,
 } from 'three';
 
+import { BUILDERS, LINE_ALPHA } from './objects';
 import { PALETTE } from './palette';
-import { focusAt, segmentAt } from './progress';
+import { buildTargets, focusAt, ratchet, segmentAt } from './progress';
 import { createRegistry } from './registry';
-import type { Handle, Stop, Way } from './types';
+import type { Handle, SceneLabels, Stop, Way } from './types';
 
 /**
  * The four lanes, left to right across the fan.
@@ -74,7 +75,12 @@ function standOff(target: Vector3, back: number): [number, number, number] {
   return [p.x, p.y, p.z];
 }
 
-export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonly Way[]): Handle {
+export function boot(
+  canvas: HTMLCanvasElement,
+  host: HTMLElement,
+  ways: readonly Way[],
+  labels: SceneLabels,
+): Handle {
   // The floor is laid out for exactly four. A fifth service would need its own
   // angle, its own lane length, its own standoff and its own object, so the
   // honest failure is here rather than a lane with nothing at the end of it.
@@ -135,8 +141,8 @@ export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonl
   hub.position.y = 0.012;
   scene.add(hub);
 
-  /** One lane per way: a rotated group and the lit strip running down it. */
-  const lanes = LANES.map((geom) => {
+  /** One lane per way: a rotated group, the lit strip, and the thing at the end. */
+  const lanes = LANES.map((geom, i) => {
     const group = new Group();
     group.rotation.y = geom.angle;
     scene.add(group);
@@ -156,8 +162,20 @@ export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonl
     strip.position.set(0, 0.014, -geom.dist / 2);
     group.add(strip);
 
+    const way = ways[i];
+    if (way === undefined) {
+      // Unreachable: the length guard at the top of boot() has already refused
+      // any ways array that is not exactly LANES.length long. Written out
+      // rather than asserted away, because under noUncheckedIndexedAccess an
+      // index really is not a promise and this project bans the shortcut.
+      throw new Error(`crossroads: lane ${i} was laid out with no way to put on it`);
+    }
+    // Keyed by the way, not by position, so a lane can never be handed the
+    // object belonging to a different service.
+    const units = BUILDERS[way.key]({ lane: group, z: -geom.dist, track: reg.track, labels });
+
     const target = new Vector3(0, geom.aimY, -geom.dist).applyAxisAngle(Y_AXIS, geom.angle);
-    return { group, target, back: geom.back, built: 0 };
+    return { group, target, back: geom.back, units, built: 0 };
   });
 
   const STOPS: Stop[] = [
@@ -214,6 +232,28 @@ export function boot(canvas: HTMLCanvasElement, host: HTMLElement, ways: readonl
     key.target.position.copy(look);
     key.target.updateMatrixWorld();
     fill.position.set(pos.x, 3.4, pos.z - 1);
+
+    // Built stays built. The ratchet lives in progress.ts, where it is tested,
+    // and the only thing that happens here is painting the result.
+    const next = ratchet(
+      lanes.map((l) => l.built),
+      buildTargets(p, STOPS, lanes.length),
+    );
+    lanes.forEach((lane, i) => {
+      // next is mapped from lanes, so it is the same length by construction and
+      // this fallback cannot fire. It is a fallback rather than a throw because
+      // layout() runs on every scroll frame, where throwing would turn one bad
+      // number into a scene that stops rendering altogether.
+      const built = next[i] ?? lane.built;
+      lane.built = built;
+      for (const u of lane.units) {
+        for (const m of u.mats) m.opacity = built;
+        // The drawing fades out as the thing fades in, so the two are never
+        // both at full strength and the object never reads as a wireframe cage
+        // around a solid.
+        u.line.opacity = LINE_ALPHA * (1 - built);
+      }
+    });
   }
 
   function frame() {

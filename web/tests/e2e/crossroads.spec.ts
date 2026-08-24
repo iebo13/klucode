@@ -162,3 +162,63 @@ test('scrolling the section reports no console errors', async ({ page }) => {
   }
   expect(errors).toEqual([]);
 });
+
+/** Puts the section at a given progress, inverting progressOf. */
+async function scrollToProgress(page: Page, p: number) {
+  // Wait for the scene to actually be up before measuring anything. Until
+  // data-enhanced flips, [data-enhanced='false'] collapses the track to auto
+  // height and the section is exactly one stage tall, so the travel is zero
+  // and every progress computes to the junction. Measured too early this
+  // reported 1064 and 1064 and scrolled to p=0 whatever it was asked for.
+  // The marker is set immediately before boot(), so it also means there is a
+  // handle listening for the scroll that follows.
+  await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
+
+  await page.evaluate((prog) => {
+    const el = document.querySelector('#services') as HTMLElement;
+    const stage = document.querySelector('.crossroads-stage') as HTMLElement;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    // 'instant', for the same reason as the two walks above: globals.css sets
+    // scroll-behavior: smooth on html, and the two-argument scrollTo honours
+    // it. Measured, the animated form was 2px down the page after 90ms of a
+    // 4830px jump, so every assertion below was taken at the junction with
+    // nothing built and no way in focus.
+    window.scrollTo({
+      top: top + prog * (el.offsetHeight - stage.clientHeight),
+      behavior: 'instant',
+    });
+  }, p);
+  await page.waitForTimeout(90);
+}
+
+test('jumping straight to the end leaves nothing as a drawing', async ({ page }) => {
+  // The anchor-link case. Before the passed rule this reported two of four and
+  // the skipped ways stayed as line drawings for the rest of the visit.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await scrollToProgress(page, 1);
+  await expect(page.locator('#services')).toHaveAttribute('data-built', '4');
+});
+
+for (const lang of ['de', 'en'] as const) {
+  test(`${lang}: every stop names its own service`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`/${lang}/`);
+    const stops: [number, string][] = [
+      [0.18, 'website'],
+      [0.37, 'app'],
+      [0.56, 'capacity'],
+      [0.75, 'care'],
+    ];
+    // The same four keys in the same order in both languages, because the
+    // component sorts by ORDER before anything reads the ways. en.ts lists
+    // them differently and this is the test that says so on purpose.
+    for (const [p, key] of stops) {
+      await scrollToProgress(page, p);
+      await expect(page.locator('#services li[data-focus="true"]')).toHaveAttribute(
+        'data-key',
+        key,
+      );
+    }
+  });
+}

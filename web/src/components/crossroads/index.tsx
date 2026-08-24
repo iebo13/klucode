@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowLink, Eyebrow, RHYTHM } from '@/components/ui';
+import type { Lang } from '@/lib/routes';
 
+import { LABELS } from './labels';
 import { progressOf } from './progress';
 import type { Handle, ServiceKey, Way } from './types';
 
@@ -69,12 +71,14 @@ function canMount(): boolean {
 }
 
 export function Crossroads({
+  lang,
   eyebrow,
   title,
   link,
   fromLabel,
   ways,
 }: {
+  lang: Lang;
   eyebrow: string;
   title: string;
   link: { href: string; label: string };
@@ -91,6 +95,11 @@ export function Crossroads({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [enhanced, setEnhanced] = useState(false);
   const [focus, setFocus] = useState(-1);
+  // How many of the four have finished building, as an integer. Reflected onto
+  // the section so the browser suite can assert on the reveal without a debug
+  // hook shipping to production: it is honest state, it is not announced to a
+  // screen reader, and it costs one integer.
+  const [built, setBuilt] = useState(0);
 
   // Sorted once, and everything downstream reads this: the scene, the rows,
   // and the numbering. The prop's own order is never used.
@@ -126,6 +135,7 @@ export function Crossroads({
       const rect = section.getBoundingClientRect();
       handle.set(progressOf(rect.top, rect.height, stage.clientHeight));
       setFocus(handle.focus());
+      setBuilt(Math.round(handle.built() * ordered.length));
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(drive);
@@ -135,7 +145,7 @@ export function Crossroads({
       .then(({ boot }) => {
         if (cancelled) return;
         canvas.dataset.scene = SCENE_MARKER;
-        handle = boot(canvas, view, ordered);
+        handle = boot(canvas, view, ordered, LABELS[lang]);
         drive();
         window.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('resize', onScroll, { passive: true });
@@ -155,7 +165,7 @@ export function Crossroads({
       window.removeEventListener('resize', onScroll);
       handle?.stop();
     };
-  }, [enhanced, ordered]);
+  }, [enhanced, ordered, lang]);
 
   return (
     <section
@@ -168,6 +178,7 @@ export function Crossroads({
       // aurora is already bounded by its own contain: paint.
       ref={sectionRef}
       data-enhanced={enhanced}
+      data-built={built}
       className="grain relative isolate bg-ink text-ink-fg"
     >
       <div aria-hidden="true" className="ink-aurora -z-10" />

@@ -17,6 +17,15 @@ export const PALETTE = {
   blueprint: 0x5cc2f0, // scene.blueprint
   metal: 0xa8ada9, // stone.400
   screen: 0xffffff, // stone.0
+  metalMid: 0x757975, // stone.600
+  metalDark: 0x5c605c, // stone.700
+  // Scene furniture, and the reason color.scene exists. A desk, a person, a
+  // cloud and a status lamp are not brand roles, so they are deliberately not
+  // emitted as CSS variables: nothing outside this canvas can reach them.
+  wood: 0x8a6440, // scene.wood
+  people: 0x46708f, // scene.people
+  cloud: 0xcfdcea, // scene.cloud
+  status: 0x76e39b, // scene.status
   // The three lights. They are not decoration: every surface in the section is
   // rendered through them, so a drift here repaints the whole scene. They live
   // as tokens for the same reason the surfaces do, and because
