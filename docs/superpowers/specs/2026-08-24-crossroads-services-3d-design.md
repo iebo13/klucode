@@ -73,8 +73,20 @@ said once.
       index.tsx      client component: stage, scroll, mount predicate, focus sync
       scene.ts       three.js only. No React, no DOM beyond the canvas it is handed
       objects.ts     one builder per key, plus the shared unit/piece primitives
-      textures.ts    the CanvasTexture builders
-      types.ts       Way, SceneLabels, Handle
+      textures.ts    the drawing functions. Imports NO three.js, which is what
+                     lets the i18n rule be asserted against a recording stub
+      surfaces.ts    the only place a CanvasTexture is made, so textures.ts can
+                     stay pure
+      labels.ts      every word drawn inside the scene, per language
+      progress.ts    the scroll maths. No three.js, so it unit-tests with no GPU
+      registry.ts    every disposable the scene allocates, so stop() frees them
+      palette.ts     the scene's colours as numbers, pinned to the tokens
+      types.ts       Way, Stop, SceneLabels, Handle
+
+Four of those were not in the first draft of this spec. `surfaces.ts`,
+`progress.ts` and `registry.ts` exist because the boundaries they draw are what
+make the rest testable, and `labels.ts` because the mock interfaces are scene
+furniture rather than site copy and belong beside the code that draws them.
 
 `scene.ts` knows nothing about React and nothing about German. It is handed
 data and returns a handle. That is the boundary that makes it testable in
@@ -180,10 +192,25 @@ Track length of 420svh gives roughly 0.7 of a viewport of scroll per camera
 stop. It is tunable, under one constraint: this section must not dominate a
 page that has seven others.
 
-Inside the stage, at 62rem and up, a two-column grid. Canvas left, copy column
-right, no overlap. Below 62rem the copy sits under the canvas. The prototype
-floated the copy over the canvas and it covered the leftmost object. Fixed
-here by construction rather than by nudging.
+Inside the stage, a two-column grid: canvas left, copy column right, no
+overlap. The prototype floated the copy over the canvas and it covered the
+leftmost object, so this is fixed by construction rather than by nudging.
+
+That grid exists only at 64rem and up, which is why the mount threshold is the
+same number rather than a smaller one of its own. See section 7.
+
+The copy column scrolls inside the stage. Measured, it wants 1097px and the
+stage never gives it that: it overhung by 459px at 1024x736, 301px at 1440x900
+and 121px even at 1920x1080, clipped at both ends because the grid centres it.
+The grid row was `auto`, which also sized the canvas, handing the renderer a
+640x1097 buffer for a 640x900 box. So the row is `minmax(0, 1fr)`, the stage's
+padding is cut to what the fixed header needs, and the column takes
+`min-height: 0; overflow-y: auto` with the focused row nudged into view.
+
+The cost is honest and worth stating: a visitor whose pointer is over the copy
+column spends 300 to 460px of wheel inside it before the page advances. The
+scroll chains rather than traps, and the nudge is keyed on the focused way so
+it never fires mid-gesture, but the dead zone is real.
 
 ### 5.5 Progress and camera stops
 
@@ -240,7 +267,9 @@ about it and should not be given a role to audit.
 
 ## 6. Textures
 
-Two surfaces carry real interfaces, drawn to a 2D canvas at boot and used as a
+Three surfaces are drawn to a 2D canvas at boot and used as a texture. Two of
+them carry real interfaces, and the third, the office monitors, carries no
+words at all by design, which its own test asserts. Drawn at boot and used as a
 `CanvasTexture`: the landing page on object 01 and the dashboard on object 02.
 No image files, no font loader, no asset pipeline, no third-party request.
 That last one is not a nicety, the site's privacy claim depends on it.
@@ -294,7 +323,9 @@ matchMedia('(min-width: 64rem) and (min-height: 46rem)').matches
   decision most worth revisiting after a real device test.
 
 The canvas is `aria-hidden="true"`. The rows are the accessible content in
-both states, which is why they are the same DOM nodes in both states: enhanced
+both states, which is why they are the same DOM nodes in both states, with one
+deliberate exception: `reads` names the object at the end of a lane, so it is
+hidden when there is no lane to look at. Enhanced
 presentation is CSS and one `data-focus` attribute, never a second copy of the
 text. No focus trap, no keyboard interaction to learn, because there is no
 information in the scene that is not in the list.
@@ -333,10 +364,12 @@ Two gates, in a new `web/scripts/check-bundle.mjs` that joins the five
 1. **Eager cost**: the gzipped sum of every chunk referenced by
    `out/de/index.html` must not exceed the baseline by more than 2 kB. The
    baseline is a number committed in `web/scripts/bundle-baseline.json`,
-   captured from `main` before this work starts and updated only by a
-   deliberate commit that says why it moved. This is what catches three.js
+   captured before this work starts and updated only by a deliberate commit
+   that says why it moved. It moved once, by 2086 bytes, when the client
+   component landed in the eager graph. That was 38 bytes inside the slack,
+   which is a fair sign the gate is calibrated tightly rather than loosely. This is what catches three.js
    leaking into the eager graph.
-2. **Deferred cost**: the crossroads chunk, gzipped, must be 150 kB or less.
+2. **Deferred cost**: the three.js chunks, gzipped, must be 155 kB or less.
    The prototype measured 135 kB with esbuild. The gate measures the real Next
    output, so a tree-shaking regression fires it.
 
@@ -389,12 +422,16 @@ builds with their output assertions.
 
 New:
 
-    web/src/components/crossroads/{index.tsx,scene.ts,objects.ts,textures.ts,types.ts,palette.ts}
+    web/src/components/crossroads/{index.tsx,scene.ts,objects.ts,textures.ts,
+                                  surfaces.ts,labels.ts,progress.ts,registry.ts,
+                                  palette.ts,types.ts}
     web/scripts/check-bundle.mjs
     web/scripts/check-scene-palette.mjs
     web/scripts/bundle-baseline.json
-    web/playwright.config.ts
-    web/tests/crossroads.spec.ts
+    web/playwright.config.ts        the pure suite, no browser, no server
+    web/playwright.e2e.config.ts    the browser suite, against the built export
+    web/tests/unit/*.spec.ts
+    web/tests/e2e/*.spec.ts
 
 Changed:
 
