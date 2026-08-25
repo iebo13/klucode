@@ -381,14 +381,34 @@
 
    svh rather than vh, because a mobile browser's vh includes a toolbar that
    is not there, and the stage would be taller than what you can see. */
-/* 560svh, and it was 420. The section now opens with the argument that used to
-   sit above it as „Die Ausgangslage", and the camera spends that argument
-   closing the distance to the junction. 140svh of approach against the same
-   320svh of crossroads, so the four ways keep exactly the pacing they had.
-   APPROACH_END in progress.ts is 0.3, which is that split, and the two have to
-   agree: 140 / (560 - 100). */
+/* 420svh, and it was 560.
+
+   Measured at 1440x900 before the cut: this one section was 5,040px of a
+   9,762px homepage, 51.6% of it, to deliver one heading, five short blocks of
+   copy and a four-item price list. That is the shape NN/g's scrolljacking work
+   describes: a task-focused reader spending a great deal of input on very
+   little change, and reading the stall as a fault rather than as a device. The
+   buyer this page is written for is a Betrieb owner on a lunch break, which is
+   the definition of task-focused.
+
+   Two numbers move together and they are the whole cut. The track loses 140svh
+   and APPROACH_END goes from 0.3 to 0.38, which takes the reduction out of the
+   four ways rather than out of the argument: the five copy blocks end up with
+   24svh each against 28svh before, and the four camera stops with 38svh each
+   against 61svh. The copy stays readable and the part that was mostly camera
+   move gets a third shorter.
+
+   NOT the halving the audit asked for, and the arithmetic is why. Half of
+   560svh is 280, which leaves 180svh of travel and 13svh per copy block, about
+   120px: less than one flick of a wheel for a heading and four lines. The
+   section cannot be halved while it still carries five blocks of argument and
+   four camera stops. Cutting further means cutting content, which is a
+   different decision and belongs to whoever owns the copy.
+
+   svh throughout, and APPROACH_END has to agree with this number: 120 is
+   0.38 of (420 - 100). */
 .crossroads-track {
-  height: 560svh;
+  height: 420svh;
 }
 
 .crossroads-stage {
@@ -446,6 +466,24 @@
 [data-enhanced='true'] .crossroads-copy {
   min-height: 0;
   overflow-y: auto;
+  /* The column scrolls and its scrollbar is hidden, which is the one place on
+     this site that is done deliberately.
+
+     Normally hiding a scrollbar hides an affordance. Here it hides a SECOND
+     one: the page scrollbar is already on screen and it is the thing driving
+     this section, so a chunky native bar with arrow buttons rendering inside
+     the ink panel beside it reads as two competing scrolls on the flagship
+     section. On Windows and Linux that bar is permanent, not overlay.
+
+     Nothing is made unreachable by it. The camera nudges the focused row into
+     view on every stop, the wheel chains out of the column into the page, and
+     keyboard focus scrolls it like any other box. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+[data-enhanced='true'] .crossroads-copy::-webkit-scrollbar {
+  display: none;
 }
 
 .crossroads-stage canvas {

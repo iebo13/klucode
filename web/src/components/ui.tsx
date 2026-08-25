@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import type { Faq as FaqItem } from '@/content/types';
+import { pathFor, type Lang } from '@/lib/routes';
+
 /**
  * Section label: a node dot and sentence-case text.
  *
@@ -297,10 +300,20 @@ export function ArrowLink({
  * header capsule, which applies the class itself. There is deliberately no
  * glass variant here: if you are reaching for it on a card, you want `panel`.
  */
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = '',
+  id,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Anchor, so a case study can link back to the offer it was delivered under. */
+  id?: string;
+}) {
   return (
     <div
-      className={`panel rounded-lg p-6 transition-shadow duration-slow ease-brand md:p-8 ${className}`}
+      id={id}
+      className={`panel scroll-mt-28 rounded-lg p-6 transition-shadow duration-slow ease-brand md:p-8 ${className}`}
     >
       {children}
     </div>
@@ -329,7 +342,14 @@ export function Tags({ items }: { items: readonly string[] }) {
 }
 
 /** Native disclosure — keyboard accessible for free, and works without JS. */
-export function Faq({ items }: { items: readonly { q: string; a: string }[] }) {
+export function Faq({
+  items,
+  lang,
+}: {
+  items: readonly FaqItem[];
+  /** Needed because a link target is a page key, and slugs are localised. */
+  lang: Lang;
+}) {
   return (
     <div className="divide-y divide-line border-y border-line">
       {items.map((item) => (
@@ -348,6 +368,11 @@ export function Faq({ items }: { items: readonly { q: string; a: string }[] }) {
             </span>
           </summary>
           <p className="mt-4 max-w-measure text-muted">{item.a}</p>
+          {item.link ? (
+            <p className="mt-3">
+              <ArrowLink href={pathFor(item.link.to, lang)}>{item.link.label}</ArrowLink>
+            </p>
+          ) : null}
         </details>
       ))}
     </div>

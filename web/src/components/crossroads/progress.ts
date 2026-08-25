@@ -15,11 +15,19 @@ export const clamp01 = (t: number): number => (t < 0 ? 0 : t > 1 ? 1 : t);
  * Two copies of this number would drift, and the symptom would be the camera
  * reaching the junction while the column is still arguing about agencies.
  *
- * 0.3 of a 560svh section is 140svh of approach against 320svh of crossroads,
- * so the four ways keep exactly the pacing they had when the crossroads was a
- * section of its own.
+ * 0.38 of a 420svh section is 122svh of approach against 198svh of crossroads.
+ *
+ * Both numbers moved together when the section was cut from 560svh, and the
+ * split moved with them on purpose. Holding 0.3 would have taken the reduction
+ * evenly out of the argument and the camera, and only one of those two was the
+ * problem: the copy blocks were already the shortest part of the section and
+ * the four ways were 61svh of scroll each to reveal one row of a price list.
+ * At 0.38 the blocks lose 4svh each and the ways lose 23svh each.
+ *
+ * The CSS carries the other half of this and the two have to agree. See the
+ * comment above .crossroads-track in globals.css.
  */
-export const APPROACH_END = 0.3;
+export const APPROACH_END = 0.38;
 
 /**
  * Which block of the opening argument is showing, 0 to 4, or -1 once the

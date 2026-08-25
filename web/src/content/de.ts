@@ -150,6 +150,7 @@ const de = {
       {
         q: 'Was kostet das?',
         a: 'Eine Website beginnt bei 2.500\u00A0€, eine individuelle Web-Anwendung bei 9.000\u00A0€. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung. Nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
+        link: { label: 'Alle vier Leistungen mit Preis', to: 'services' },
       },
       {
         q: 'Wie lange dauert es?',
@@ -158,6 +159,7 @@ const de = {
       {
         q: 'Was passiert, wenn Sie ausfallen?',
         a: 'Die berechtigte Frage bei einer Person. Deshalb: Der Code liegt in einem Repository, auf das Sie Zugriff haben, die Dokumentation liegt daneben, und es kommt keine Technik zum Einsatz, die nur ich bedienen kann. Jede andere Entwicklerin und jeder andere Entwickler kann übernehmen. Das ist kein Notfallplan, das ist Grundausstattung.',
+        link: { label: 'Wie ich arbeite', to: 'approach' },
       },
       {
         q: 'Gehört mir der Code?',
@@ -170,6 +172,7 @@ const de = {
       {
         q: 'Arbeiten Sie auch außerhalb von Düsseldorf?',
         a: 'Ja. Im Rheinland komme ich gern persönlich vorbei, alles Weitere geht remote. Bei drei ausgelieferten Projekten war die Entfernung nie das Thema.',
+        link: { label: 'Die drei Projekte', to: 'work' },
       },
     ],
 
@@ -197,6 +200,7 @@ const de = {
         ],
         price: '2.500\u00A0€',
         priceNote: '2 bis 3 Wochen · Festpreis',
+        example: { label: 'Beispiel: Landingpage für ein Reinigungsunternehmen', project: 'landing' }, // prettier-ignore
       },
       {
         key: 'app',
@@ -214,6 +218,7 @@ const de = {
         ],
         price: '9.000\u00A0€',
         priceNote: '4 bis 10 Wochen · Festpreis',
+        example: { label: 'Beispiel: CRM und Provisionsverwaltung', project: 'crm' },
       },
       {
         key: 'capacity',
@@ -263,6 +268,12 @@ const de = {
       'Shopsysteme von der Stange: dafür gibt es Bessere und Günstigere',
       'Teams stellen oder Projekte über zwölf Monate leiten',
     ],
+    faqTitle: 'Noch Fragen zum Preis?',
+    faqBody:
+      'Was in einem Festpreis steckt, was passiert wenn sich der Umfang ändert, und was der Betrieb monatlich wirklich kostet: sechs Antworten auf der Startseite.',
+    faqLink: 'Häufige Fragen',
+    triage:
+      'Unsicher, welcher der vier Wege passt? Beschreiben Sie Ihren Ablauf in zwei Sätzen. Die Einordnung ist Teil des Gesprächs und kostet nichts.',
   },
 
   work: {
@@ -284,6 +295,7 @@ const de = {
         result:
           'Die monatliche Abrechnung läuft automatisch. Keine Datei wandert mehr per E-Mail, und es gibt keine zweite Version, von der niemand weiß, ob sie die richtige ist.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
+        offer: { label: 'Passendes Angebot: Individuelle Web-Anwendung', service: 'app' },
       },
       {
         key: 'pos',
@@ -299,6 +311,7 @@ const de = {
         result:
           'Bedienbar ohne Schulung. Die Abrechnung am Ende des Abends ist ein Vorgang statt einer Rekonstruktion.',
         stack: ['JavaScript', 'Datenbankmodellierung', 'Touch-UI'],
+        offer: { label: 'Passendes Angebot: Individuelle Web-Anwendung', service: 'app' },
       },
       {
         key: 'landing',
@@ -314,6 +327,7 @@ const de = {
         result:
           'Sichtbarkeit über den Empfehlungskreis hinaus. Aus einem reinen Web-Auftrag wurde ein vollständiges Paket zur Kundengewinnung.',
         stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-Bild und -Video'],
+        offer: { label: 'Passendes Angebot: Website & Landingpage', service: 'website' },
       },
     ],
     noteTitle: 'Zu Zahlen und Namen',
@@ -404,6 +418,8 @@ const de = {
     eyebrow: 'Kontakt',
     title: 'Erzählen Sie mir, was gerade nicht läuft.',
     lead: `30 Minuten, unverbindlich, ohne Präsentation. Ich melde mich werktags innerhalb von ${profile.responseTime.de}.`,
+    triage:
+      'Sie müssen vorher nicht wissen, welche Leistung die richtige ist. Beschreiben Sie, was gerade nicht läuft, die Einordnung übernehme ich.',
     directTitle: 'Direkt',
     directBody: 'Eine E-Mail geht schneller als jedes Formular.',
     formTitle: 'Oder hier',

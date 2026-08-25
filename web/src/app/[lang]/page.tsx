@@ -17,7 +17,7 @@ import {
   Tags,
 } from '@/components/ui';
 import { getContent } from '@/content';
-import { filled, profile } from '@/content/profile';
+import { availableFrom, filled, profile } from '@/content/profile';
 import { openGraphFor, twitterFor } from '@/lib/og';
 import { LANGS, isLang, pathFor } from '@/lib/routes';
 import { pageSchema } from '@/lib/schema';
@@ -129,38 +129,20 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </div>
       </section>
 
-      {/* --------------------------------------------------- problem + services */}
-      {/* THE CROSSROADS, and „Die Ausgangslage" is now the first act of it.
-          „Vier Wege zur Zusammenarbeit" is already a spatial metaphor, so it is
-          one: four lanes off a junction, and at the end of each the thing you
-          would actually get.
+      {/* PROOF BEFORE PRICE, and this band used to sit after the crossroads.
 
-          The problem used to be a section of its own, immediately above. It was
-          always the same argument split in half by a section boundary: three
-          options that do not fit, then the one that does, then four ways to
-          take it. Joined, „Die dritte Möglichkeit" stops being a static panel
-          and becomes the moment the camera arrives at the junction, which is
-          the only reason the merge was worth making.
+          The order was hero, the problem, the price board, and only then the
+          three delivered systems, so a first-time visitor was asked to take in
+          „ab 9.000 €" before seeing one thing that had been built. Both of the
+          stronger competitors in this market put their credibility devices
+          immediately after the hero and their prices further down. Price
+          transparency is still the right call for this segment, it just lands
+          better on top of capability than under it.
 
-          The rows are the section's content and its fallback at once, which is
-          why there is exactly one copy of them. See components/crossroads. */}
-      <Crossroads
-        lang={lang}
-        problem={{
-          eyebrow: h.problemEyebrow,
-          title: h.problemTitle,
-          lead: h.problemLead,
-          cards: h.problemCards,
-          answerTitle: h.answerTitle,
-          answerBody: h.answerBody,
-        }}
-        eyebrow={h.servicesEyebrow}
-        title={h.servicesTitle}
-        link={{ href: pathFor('services', lang), label: h.servicesLink }}
-        fromLabel={c.ui.from}
-        ways={c.services.items}
-      />
-
+          It also follows the hero properly now: the hero's chips say „Drei
+          Systeme im Produktivbetrieb" and the next thing on the page is those
+          three systems. The crossroads is untouched and still runs problem,
+          answer, prices in one move. */}
       {/* ---------------------------------------------------------------- work */}
       {/* STRUCTURAL EXCEPTION 1 of 2: full-bleed. This is the proof section and
           it is the one place the page is allowed to break the left edge every
@@ -225,6 +207,38 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </div>
       </Section>
 
+      {/* --------------------------------------------------- problem + services */}
+      {/* THE CROSSROADS, and „Die Ausgangslage" is now the first act of it.
+          „Vier Wege zur Zusammenarbeit" is already a spatial metaphor, so it is
+          one: four lanes off a junction, and at the end of each the thing you
+          would actually get.
+
+          The problem used to be a section of its own, immediately above. It was
+          always the same argument split in half by a section boundary: three
+          options that do not fit, then the one that does, then four ways to
+          take it. Joined, „Die dritte Möglichkeit" stops being a static panel
+          and becomes the moment the camera arrives at the junction, which is
+          the only reason the merge was worth making.
+
+          The rows are the section's content and its fallback at once, which is
+          why there is exactly one copy of them. See components/crossroads. */}
+      <Crossroads
+        lang={lang}
+        problem={{
+          eyebrow: h.problemEyebrow,
+          title: h.problemTitle,
+          lead: h.problemLead,
+          cards: h.problemCards,
+          answerTitle: h.answerTitle,
+          answerBody: h.answerBody,
+        }}
+        eyebrow={h.servicesEyebrow}
+        title={h.servicesTitle}
+        link={{ href: pathFor('services', lang), label: h.servicesLink }}
+        fromLabel={c.ui.from}
+        ways={c.services.items}
+      />
+
       {/* ------------------------------------------------------------ approach */}
       {/* STRUCTURAL EXCEPTION 2 of 2: asymmetric and offset. The heading holds
           columns 1-4 and sticks while the steps scroll past in columns 6-12,
@@ -261,10 +275,14 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ----------------------------------------------------------------- faq */}
-      <Section>
+      {/* Addressable, because the Leistungen page is where price objections
+          actually get raised and the answer to the loudest of them lives here.
+          Six answers on the homepage that the page selling the prices does not
+          link to is six answers most price-shoppers never reach. */}
+      <Section id="faq">
         <SectionHead eyebrow={h.faqEyebrow} title={h.faqTitle} />
         <div className="mt-8 max-w-narrow md:mt-12">
-          <Faq items={h.faq} />
+          <Faq items={h.faq} lang={lang} />
         </div>
       </Section>
 
@@ -303,7 +321,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <p className="mt-8 text-small text-ink-muted md:col-span-4 md:col-start-9 md:mt-0 md:text-right">
             <span className="glass-chip inline-flex items-center gap-2 rounded-full px-4 py-2">
               <span aria-hidden="true" className="h-2 w-2 rounded-full bg-warm-300" />
-              {c.ui.availablePrefix} {profile.availableFrom[lang]}
+              {c.ui.availablePrefix} {availableFrom(lang)}
             </span>
           </p>
         </div>

@@ -7,7 +7,28 @@
  */
 
 export type Card = { title: string; body: string };
-export type Faq = { q: string; a: string };
+/**
+ * A question, its answer, and optionally the page that answers it in full.
+ *
+ * The link is the fix for a site whose copy contained no internal links at
+ * all. „Was kostet das?" names two prices and then stops, on a page that is
+ * not the price page, with nothing joining the two. A reader who wants the
+ * detail has to go back to the nav and guess.
+ */
+export type Faq = {
+  q: string;
+  a: string;
+  link?: { label: string; to: LinkTarget };
+};
+
+/**
+ * Where a link inside the copy is allowed to point.
+ *
+ * A closed set rather than a href, so a link in the German content cannot
+ * hard-code a German slug that the English content then inherits. The routing
+ * table owns the slugs and this owns the intent.
+ */
+export type LinkTarget = 'services' | 'work' | 'approach' | 'about' | 'contact';
 export type Step = { title: string; body: string };
 
 /**
@@ -35,6 +56,14 @@ export type Service = {
   includes: string[];
   price: string;
   priceNote: string;
+  /**
+   * The delivered project that proves this offer, if there is one.
+   *
+   * Optional and honestly so: two of the four have a case study and two do
+   * not, and inventing a link for the other two would be exactly the kind of
+   * decoration the rest of this content refuses. `project` is a Project.key.
+   */
+  example?: { label: string; project: string };
   /**
    * The unit `price` is charged in, where it is not a one-off project fee.
    * Omitted for the two fixed-price lines; 'day' and 'month' for the two
@@ -65,6 +94,12 @@ export type Project = {
   metric?: string;
   /** A written, client-released testimonial. Same deal: add when approved. */
   quote?: { text: string; attribution: string };
+  /**
+   * The offer this project was delivered under, so a reader who is convinced
+   * by the case has somewhere to go that is not the back button. The other
+   * half of Service.example.
+   */
+  offer?: { label: string; service: ServiceKey };
 };
 
 export type LegalSection = { heading: string; paragraphs: string[] };
@@ -159,6 +194,24 @@ export type Content = {
     notTitle: string;
     notBody: string;
     notItems: string[];
+    /**
+     * Sends a price-shopper to the answers instead of leaving them on the
+     * board. This page is where the objection is formed and the six answers
+     * that meet it, including „Was kostet das?", are on the homepage with
+     * nothing pointing at them from here.
+     */
+    faqTitle: string;
+    faqBody: string;
+    faqLink: string;
+    /**
+     * For the visitor who cannot tell which of the four they are.
+     *
+     * The site's answer to that has always been the 30 minute call, which is
+     * right for the positioning and invisible on the page where the doubt
+     * actually forms. One sentence converts it into the funnel that already
+     * exists instead of losing it to a closed tab.
+     */
+    triage: string;
   };
 
   work: {
@@ -198,6 +251,8 @@ export type Content = {
     eyebrow: string;
     title: string;
     lead: string;
+    /** The same triage line as on the services page, where the form is. */
+    triage: string;
     directTitle: string;
     directBody: string;
     formTitle: string;

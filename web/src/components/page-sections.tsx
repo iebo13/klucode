@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { ContactForm } from '@/components/contact-form';
 import {
+  ArrowLink,
   ButtonLink,
   Card,
   Eyebrow,
@@ -54,7 +55,11 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
       <Section>
         <div className="space-y-6">
           {s.items.map((item) => (
-            <Card key={item.key} className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-12">
+            <Card
+              key={item.key}
+              id={item.key}
+              className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-12"
+            >
               <div>
                 <h2 className="text-h2">{item.name}</h2>
                 <p className="mt-3 max-w-measure text-small font-medium text-brand-text">
@@ -66,6 +71,17 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
                   <span className="font-display text-h2 text-brand-text">{item.price}</span>
                 </div>
                 <p className="mt-1 text-small text-muted">{item.priceNote}</p>
+                {/* The offer pointing at the thing that proves it. Two of the
+                    four have a delivered case and two do not, and the two that
+                    do not simply have no link: a reader who follows one of
+                    these must land on something real. */}
+                {item.example ? (
+                  <p className="mt-6">
+                    <ArrowLink href={`${pathFor('work', lang)}#${item.example.project}`}>
+                      {item.example.label}
+                    </ArrowLink>
+                  </p>
+                ) : null}
               </div>
               <div>
                 <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
@@ -107,6 +123,26 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
         </div>
       </Section>
 
+      {/* The price objection is formed on this page and answered on the home
+          page, and until now nothing joined the two. Six answers including
+          „Was kostet das?" sat one click away with no click to make. */}
+      {/* The visitor who cannot place themselves. The site's answer has always
+          been the 30 minute call, and until now it was never offered on the
+          page where the doubt forms. */}
+      <Section>
+        <p className="max-w-measure text-lead text-muted">{s.triage}</p>
+      </Section>
+
+      <Section>
+        <div className="max-w-narrow">
+          <h2 className="font-display text-h2">{s.faqTitle}</h2>
+          <p className="mt-4 text-muted">{s.faqBody}</p>
+          <div className="mt-6">
+            <ArrowLink href={`${pathFor('home', lang)}#faq`}>{s.faqLink}</ArrowLink>
+          </div>
+        </div>
+      </Section>
+
       <FinalCta lang={lang} c={c} />
     </>
   );
@@ -121,7 +157,7 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
       <PageHero eyebrow={w.eyebrow} title={w.title} lead={w.lead} />
 
       {w.projects.map((p, i) => (
-        <Section key={p.key} tint={i % 2 === 1}>
+        <Section key={p.key} id={p.key} tint={i % 2 === 1}>
           <div className="grid gap-8 md:grid-cols-[1fr_1.7fr] md:gap-16">
             <div>
               <p className="text-small font-medium text-brand-text">{p.sector}</p>
@@ -169,6 +205,17 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
                     {p.quote.attribution}
                   </figcaption>
                 </figure>
+              ) : null}
+
+              {/* The other half of the evidence chain. A case study that ends
+                  blind sends a reader who has just been convinced back to the
+                  nav to work out what to buy. */}
+              {p.offer ? (
+                <p className="mt-8">
+                  <ArrowLink href={`${pathFor('services', lang)}#${p.offer.service}`}>
+                    {p.offer.label}
+                  </ArrowLink>
+                </p>
               ) : null}
             </div>
           </div>
@@ -330,9 +377,15 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
       <Section>
         <div className="grid gap-12 md:grid-cols-[1fr_1.3fr] md:gap-16">
           <div>
+            {/* Said before the form rather than after it, because the doubt it
+                answers is what stops a visitor filling the form in at all:
+                „I do not know which of these I need, so I will come back when I
+                have worked it out", which is a tab that closes. */}
+            <p className="max-w-measure text-muted">{t.triage}</p>
+
             {direct.length > 0 ? (
               <>
-                <h2 className="font-display text-h3">{t.directTitle}</h2>
+                <h2 className="mt-12 font-display text-h3">{t.directTitle}</h2>
                 <p className="mt-3 text-muted">{t.directBody}</p>
                 <ul className="mt-6 space-y-3">
                   {direct.map((l) => (
@@ -390,10 +443,14 @@ export function ImprintPage({ c }: { lang: Lang; c: Content }) {
         >
           <h2 className="font-display text-h3">{c.imprint.todoWarningTitle}</h2>
           <p className="mt-3 text-small">{c.imprint.todoWarningBody}</p>
-          <ul className="mt-4 space-y-2">
+          {/* A list marker, not a typed dash. This banner exists to enforce a
+              rule the site keeps everywhere else, and it was breaking a
+              different one: the house copy rule bans the em dash in anything a
+              visitor can read, and this component was printing one per row. */}
+          <ul className="mt-4 list-disc space-y-2 pl-6">
             {todos.map((t) => (
               <li key={t} className="font-mono text-small">
-                — {t}
+                {t}
               </li>
             ))}
           </ul>

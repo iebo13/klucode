@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Logo } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 import type { Content } from '@/content';
-import { profile } from '@/content/profile';
+import { availableFrom } from '@/content/profile';
 import { NAV_KEYS, alternatePath, pathFor, type Lang, type PageKey } from '@/lib/routes';
 
 /**
@@ -135,6 +135,26 @@ export function Header({
         </div>
       </div>
 
+      {/* The backdrop, which is what makes the drawer a layer rather than a
+          panel that happens to be on top.
+
+          It was left out on the grounds that the drawer is a flat panel below
+          the capsule and a stray scroll-tap should not dismiss it. Both halves
+          of that turned out to be wrong in use: the page behind stayed fully
+          lit and fully scrollable, so the drawer read as part of the page
+          rather than over it, and a tap outside it did nothing at all, which
+          is the one gesture every visitor already knows.
+
+          aria-hidden and no tab stop, because Escape and the toggle button are
+          the keyboard routes and this must not become a third one. */}
+      {open ? (
+        <div
+          aria-hidden="true"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 -z-10 bg-stone-950/45 backdrop-blur-[2px] lg:hidden"
+        />
+      ) : null}
+
       {/* Always in the DOM and toggled with `hidden`, so the button's
           aria-controls has something to point at while the drawer is closed. */}
       <nav
@@ -163,18 +183,23 @@ export function Header({
             </li>
           ))}
         </ul>
-        <div className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-4">
-          <Link
-            href={alternatePath(current, lang)}
-            lang={lang === 'de' ? 'en' : 'de'}
-            className="text-small text-muted"
-          >
-            {ui.switchLangLabel}
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-small text-muted">
-              {ui.availablePrefix} {profile.availableFrom[lang]}
-            </span>
+        {/* Two rows, not one. Three unrelated things sharing a single flex row
+            put the availability line, the language switch and the theme toggle
+            shoulder to shoulder at 390px, where the availability line is the
+            longest of them and the only one carrying information rather than a
+            control. It gets its own line above the two controls. */}
+        <div className="mt-6 border-t border-line pt-4">
+          <p className="text-small text-muted">
+            {ui.availablePrefix} {availableFrom(lang)}
+          </p>
+          <div className="mt-3 flex items-center justify-between gap-4">
+            <Link
+              href={alternatePath(current, lang)}
+              lang={lang === 'de' ? 'en' : 'de'}
+              className="text-small text-muted"
+            >
+              {ui.switchLangLabel}
+            </Link>
             <ThemeToggle labels={themeLabels} />
           </div>
         </div>

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono, Schibsted_Grotesk } from 'next/font/google';
 import { notFound } from 'next/navigation';
 
@@ -31,12 +31,41 @@ const body = Inter({
   display: 'swap',
 });
 
+/**
+ * 400 only, and it was 400 and 500.
+ *
+ * Every mono element on the site is an eyebrow, a tag, a step number or a
+ * diagram label, and not one of them sets a weight or sits inside anything
+ * that does: `Eyebrow` is font-medium but it is set in the BODY face, and no
+ * rule in globals.css or tokens.css pairs the mono variable with a weight. So
+ * the 500 was downloaded on every visit and drawn never.
+ */
 const mono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['400', '500'],
+  weight: ['400'],
   variable: '--font-mono',
   display: 'swap',
 });
+
+/**
+ * The browser chrome, so a phone does not frame an ink page in white.
+ *
+ * Two entries and not one, because this site has two designed themes rather
+ * than one theme and its inversion, and a single theme-color would be wrong in
+ * whichever half of the audience it did not match. The values are the `surface`
+ * role in each theme, stone.100 and stone.950, which is what `body` paints.
+ *
+ * Literals rather than var(--kc-surface): this is a meta tag, it is read by the
+ * browser before any stylesheet has applied, and a custom property there
+ * resolves to nothing. They are the same two hexes tokens.css generates, and
+ * check_contrast.py already guards the pair they come from.
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#EAEEEB' },
+    { media: '(prefers-color-scheme: dark)', color: '#1C201C' },
+  ],
+};
 
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
