@@ -43,12 +43,22 @@ which is why the licence note above matters.
 ## In the logo files
 
 The wordmark in every file under `logo/` is **outlined paths**, generated from
-Space Grotesk Bold by `logo/_build/build_logos.py`.
+Schibsted Grotesk Bold by `logo/_build/build_logos.py`.
 
-> **Open task since the 2026-08 display-face change:** the logo SVGs (and the
-> OG card built from them) still carry Space Grotesk outlines. Point
-> `build_logos.py` at Schibsted Grotesk Bold and regenerate, so the exported
-> wordmark matches the site's live-text wordmark again.
+> **Closed 2026-08-25.** The logo SVGs carried Space Grotesk outlines for two
+> weeks after the display face changed, so the exported wordmark and the site's
+> live-text wordmark were two different faces. They are the same face again.
+> Nobody ever sees an OG card next to the page header, which is exactly why it
+> survived that long and why it is worth a note here rather than a shrug.
+
+Regenerating is two commands and both are needed. The second one used to be a
+thing somebody did by hand, which is the other half of how the assets drifted:
+
+```
+pip install fonttools uharfbuzz brotli
+python3 brand/logo/_build/build_logos.py     # the SVGs
+node web/tools/raster-brand.mjs              # og.png, the icons, and the copies web/public serves
+```
 
 This is not a stylistic choice. An SVG logo containing a `<text>` element
 silently falls back to Arial on any machine without the font installed — a

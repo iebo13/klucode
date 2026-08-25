@@ -9,14 +9,22 @@ change the constants here and re-run, so all variants stay in lockstep.
     python3 build_logos.py
 
 The wordmark is converted to outlines (real <path> data, no <text>), so the
-files render identically everywhere without Space Grotesk installed. That is a
-hard requirement for a logo: a <text> element silently falls back to Arial on
-any machine that lacks the font, which would ship a broken brand.
+files render identically everywhere without Schibsted Grotesk installed. That
+is a hard requirement for a logo: a <text> element silently falls back to Arial
+on any machine that lacks the font, which would ship a broken brand.
 
-Font: Space Grotesk (SIL Open Font License 1.1), Florian Karsten.
-       https://github.com/floriankarsten/space-grotesk
+Font: Schibsted Grotesk (SIL Open Font License 1.1), Schibsted.
+       https://fonts.google.com/specimen/Schibsted+Grotesk
 The OFL permits embedding outlines in artwork like this. Attribution and the
 licence live in ../FONTS.md.
+
+CHANGED 2026-08-25. It was Space Grotesk, and it had been since the logo was
+first cut. The site's display face moved to Schibsted Grotesk on 12 August
+(FONTS.md records why), and this script did not move with it, so every logo
+file, the favicon, the avatar, the LinkedIn banner and the Open Graph card were
+set in a face the site no longer uses. Nobody sees that side by side, which is
+exactly why it survived two weeks: the wordmark in the page header is live text
+in the site font, and the SVG wordmark only ever appears somewhere else.
 """
 
 from __future__ import annotations
@@ -47,7 +55,7 @@ PAPER = _TOKENS["stone"]["50"]["value"]  # off-white
 
 FONT_URL = (
     "https://raw.githubusercontent.com/google/fonts/main/"
-    "ofl/spacegrotesk/SpaceGrotesk%5Bwght%5D.ttf"
+    "ofl/schibstedgrotesk/SchibstedGrotesk%5Bwght%5D.ttf"
 )
 WEIGHT = 700
 TRACKING = -0.018  # em, tightened for a bold lockup
@@ -92,13 +100,13 @@ MARK_INK_L, MARK_INK_R = 8 - BRACKET_W / 2, 84 + BRACKET_W / 2
 
 
 def load_font() -> tuple[TTFont, bytes]:
-    """Fetch Space Grotesk (cached) and pin the variable axis to Bold."""
+    """Fetch Schibsted Grotesk (cached) and pin the variable axis to Bold."""
     CACHE.mkdir(exist_ok=True)
-    var_path = CACHE / "SpaceGrotesk-var.ttf"
+    var_path = CACHE / "SchibstedGrotesk-var.ttf"
     if not var_path.exists():
         urllib.request.urlretrieve(FONT_URL, var_path)
 
-    static_path = CACHE / f"SpaceGrotesk-{WEIGHT}.ttf"
+    static_path = CACHE / f"SchibstedGrotesk-{WEIGHT}.ttf"
     if not static_path.exists():
         font = TTFont(var_path)
         instancer.instantiateVariableFont(font, {"wght": WEIGHT}, inplace=True)
@@ -481,7 +489,7 @@ def main() -> None:
         tag_glyphs, 0, VIRIDIAN, VIRIDIAN, upem, cap, tag_cap,
         (og_w - tag_w) / 2, og_mid + 132,
     )
-    write("klucode-og.svg", svg_doc(og_w, og_h, og_body, "KluCode — Klug gebaut."))
+    write("klucode-og.svg", svg_doc(og_w, og_h, og_body, "KluCode: Klug gebaut."))
 
     # -- 7. LinkedIn company banner (1128 x 191) ---------------------------
     b_w, b_h = 1128.0, 191.0
