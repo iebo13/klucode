@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import {
-  APPROACH_END,
-  approachBeat,
+  FOCUS_HANDOVER,
   buildTargets,
   focusAt,
   progressOf,
@@ -12,32 +11,22 @@ import {
 import type { Stop } from '../../src/components/crossroads/types';
 
 /**
- * The real shape: an approach, a junction, four ways, a closing shot.
+ * The real shape: a junction, four ways, a closing shot.
  *
- * The four `at` values are not typed out. They are the same expression scene.ts
- * uses, because the point of them is that the crossroads keeps the pacing it
- * had before the section grew an opening argument, and a hand-copied 0.426 is
- * a number that agrees with scene.ts today and drifts from it on the first
- * change to APPROACH_END.
+ * The four `at` values are the same expression scene.ts uses. They spent a day
+ * mapped through an APPROACH_END, because the section opened with „Die
+ * Ausgangslage" pinned in front of them, and they are back where they were:
+ * that section is ordinary paper above this one again.
  *
  * pos, look and the two half-angles are here because Stop carries them, not
  * because anything under test reads them. Every function in progress.ts works
  * from `at` and `focus` alone, which is exactly why it can be tested with no
  * GPU, no canvas and no browser.
  */
-const WAY_AT = (i: number) => APPROACH_END + (0.18 + i * 0.19) * (1 - APPROACH_END);
+const WAY_AT = (i: number) => 0.18 + i * 0.19;
 
 const STOPS: Stop[] = [
-  { at: 0, focus: -1, pos: [0, 9, 28], look: [0, 0, -8], fitH: 35.9, fitV: 15.2 },
-  {
-    at: APPROACH_END * 0.55,
-    focus: -1,
-    pos: [0, 7.5, 20],
-    look: [0, 0, -9],
-    fitH: 35.9,
-    fitV: 15.2,
-  },
-  { at: APPROACH_END, focus: -1, pos: [0, 6, 13], look: [0, 0, -10], fitH: 35.9, fitV: 15.2 },
+  { at: 0, focus: -1, pos: [0, 6, 13], look: [0, 0, -10], fitH: 35.9, fitV: 15.2 },
   { at: WAY_AT(0), focus: 0, pos: [0, 2.4, 0], look: [0, 2.33, -17], fitH: 24, fitV: 18 },
   { at: WAY_AT(1), focus: 1, pos: [0, 2.4, 0], look: [0, 2.6, -17], fitH: 24, fitV: 18 },
   { at: WAY_AT(2), focus: 2, pos: [0, 2.4, 0], look: [0, 0.98, -17], fitH: 24, fitV: 18 },
@@ -72,7 +61,7 @@ test('the last segment is never overrun', () => {
 });
 
 test('nothing is built at the junction', () => {
-  expect(buildTargets(APPROACH_END, STOPS, 4)).toEqual([0, 0, 0, 0]);
+  expect(buildTargets(0, STOPS, 4)).toEqual([0, 0, 0, 0]);
 });
 
 test('arriving at a way builds that way and no other', () => {
@@ -115,21 +104,54 @@ test('focus is the junction at both ends and the way in the middle', () => {
   expect(focusAt(WAY_AT(3), STOPS, 4)).toBe(3);
 });
 
-test('focus hands over between two ways in one clean crossing', () => {
-  // Weights are monotonic inside a segment, so the highlight moves from one row
-  // to the next around the midpoint and never sits on neither. A dead zone in
-  // the middle of every transit would read as a bug, not as restraint.
-  const mid = (WAY_AT(0) + WAY_AT(1)) / 2;
-  expect(focusAt(mid - 0.02, STOPS, 4)).toBe(0);
-  expect(focusAt(mid + 0.02, STOPS, 4)).toBe(1);
+test('focus hands over at arrival, not at the midpoint', () => {
+  // It used to cross wherever the two weights did, which is the middle of every
+  // move. That was fine while the name lived in a list 200px to the side and it
+  // stopped being fine when the name went into the world: a label swapping from
+  // way 01 to way 02 halfway between the two objects names the thing you are
+  // looking at as the thing you are not.
+  //
+  // There is still no dead zone. Exactly one of the two is named at every point
+  // of the move, and the switch is a single crossing at FOCUS_HANDOVER.
+  const from = WAY_AT(0);
+  const to = WAY_AT(1);
+  const at = (t: number) => focusAt(from + (to - from) * t, STOPS, 4);
+  expect(at(0.5), 'still handing over at the midpoint').toBe(0);
+  expect(at(0.9)).toBe(1);
+  for (let t = 0; t <= 1; t += 0.02) {
+    expect(at(t), `nobody is named at t=${t.toFixed(2)}`).toBeGreaterThanOrEqual(0);
+  }
 });
 
-test('the junction names nobody until a way is genuinely being approached', () => {
-  expect(focusAt(0.05, STOPS, 4)).toBe(-1);
-  // A third of the way from the junction to way 01, which is inside its segment
-  // and still short of the 0.45 floor.
-  expect(focusAt(APPROACH_END + (WAY_AT(0) - APPROACH_END) * 0.35, STOPS, 4)).toBe(-1);
-  expect(focusAt(APPROACH_END + (WAY_AT(0) - APPROACH_END) * 0.9, STOPS, 4)).toBe(0);
+test('the handover point is the one exported constant', () => {
+  // Not a tautology: segmentAt eases t, so the raw scroll position that
+  // corresponds to FOCUS_HANDOVER is not FOCUS_HANDOVER. What this pins is that
+  // there is one number and that the crossing is where it says.
+  expect(FOCUS_HANDOVER).toBeGreaterThan(0.5);
+  expect(FOCUS_HANDOVER).toBeLessThan(1);
+
+  const from = WAY_AT(1);
+  const to = WAY_AT(2);
+  let crossings = 0;
+  let last = focusAt(from, STOPS, 4);
+  for (let t = 0; t <= 1; t += 0.005) {
+    const now = focusAt(from + (to - from) * t, STOPS, 4);
+    if (now !== last) crossings += 1;
+    last = now;
+  }
+  expect(crossings, 'the name changed more than once inside one move').toBe(1);
+});
+
+test('the junction names nobody until a way has genuinely been reached', () => {
+  // The opening segment leaves the junction, whose focus is -1, so the same
+  // handover rule gives the junction its silence with no special case for it.
+  // The closing one arrives at the release shot, so way 04 keeps its name
+  // until the camera has nearly finished pulling back off it.
+  expect(focusAt(0, STOPS, 4)).toBe(-1);
+  expect(focusAt(WAY_AT(0) * 0.35, STOPS, 4)).toBe(-1);
+  expect(focusAt(WAY_AT(0) * 0.98, STOPS, 4)).toBe(0);
+  expect(focusAt(WAY_AT(3) + (1 - WAY_AT(3)) * 0.5, STOPS, 4)).toBe(3);
+  expect(focusAt(1, STOPS, 4)).toBe(-1);
 });
 
 test('focus never names a way that does not exist', () => {
@@ -140,56 +162,13 @@ test('focus never names a way that does not exist', () => {
   }
 });
 
-/* --- the approach --------------------------------------------------------
-   The section now opens short of the junction, and the copy column reads the
-   same progress the camera does. Which half of the column is showing, and
-   whether anything has begun to build while the argument is still being made,
-   are the two things that decide whether the merge reads as one story. */
-
-test('the approach ends exactly where the camera says it does', () => {
-  // Not a tautology. The point is that the boundary is one exported constant,
-  // so scene.ts cannot lay its stops out around one number while index.tsx
-  // switches the copy on another.
-  expect(approachBeat(APPROACH_END - 0.001)).toBe(4);
-  expect(approachBeat(APPROACH_END)).toBe(-1);
-  expect(approachBeat(0.99)).toBe(-1);
-});
-
-test('the five opening blocks divide the approach evenly', () => {
-  const fifth = APPROACH_END / 5;
-  for (let i = 0; i < 5; i += 1) {
-    expect(approachBeat(fifth * i + fifth / 2), `block ${i}`).toBe(i);
-  }
-});
-
-test('the opening never names a block that does not exist', () => {
-  for (let p = 0; p <= 1; p += 0.005) {
-    const b = approachBeat(p);
-    expect(b, `at ${p.toFixed(3)}`).toBeGreaterThanOrEqual(-1);
-    expect(b, `at ${p.toFixed(3)}`).toBeLessThan(5);
-  }
-});
-
-test('nothing is built while the camera is still approaching', () => {
-  // Every one of the four sits past APPROACH_END, so every build target through
-  // the whole opening argument has to be zero. A way that began assembling
-  // itself while the column was still explaining why agencies do not fit would
-  // answer the question before it had been asked.
-  for (let p = 0; p < APPROACH_END; p += 0.005) {
-    for (const target of buildTargets(p, STOPS, 4)) {
-      expect(target, `at ${p.toFixed(3)}`).toBe(0);
-    }
-  }
-});
-
 test('the crossroads keeps the pacing it had before the approach existed', () => {
-  // The four ways used to sit at 0.18, 0.37, 0.56 and 0.75 of a section that
-  // was only the crossroads. Remapped into what is left after the approach,
-  // the gaps between them stay in the same proportion to each other and to the
-  // journey they belong to, which is the whole reason scene.ts maps them
-  // rather than writing four new literals.
+  // The four ways sat at 0.18, 0.37, 0.56 and 0.75 when this section was only
+  // the crossroads. „Die Ausgangslage" was pinned in front of them for a day
+  // and they were remapped into what was left; it is paper again and they are
+  // back. Same gaps, same order, both ends still clear.
   const gaps = [WAY_AT(1) - WAY_AT(0), WAY_AT(2) - WAY_AT(1), WAY_AT(3) - WAY_AT(2)];
-  for (const gap of gaps) expect(gap).toBeCloseTo(0.19 * (1 - APPROACH_END), 10);
-  expect(WAY_AT(0)).toBeGreaterThan(APPROACH_END);
+  for (const gap of gaps) expect(gap).toBeCloseTo(0.19, 10);
+  expect(WAY_AT(0)).toBeGreaterThan(0);
   expect(WAY_AT(3)).toBeLessThan(1);
 });

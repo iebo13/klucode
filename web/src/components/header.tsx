@@ -68,7 +68,7 @@ export function Header({
       <div className="glass-nav mx-auto flex max-w-container items-center justify-between gap-3 rounded-full py-2 pl-4 pr-2 md:gap-6 md:pl-6">
         <Link
           href={pathFor('home', lang)}
-          className="shrink-0 text-[1.35rem]"
+          className="inline-flex min-h-[2.75rem] shrink-0 items-center text-[1.35rem]"
           aria-label={siteName}
         >
           <Logo />
@@ -105,7 +105,7 @@ export function Header({
 
           <Link
             href={pathFor('contact', lang)}
-            className="rounded-full bg-brand-action px-4 py-2 text-small font-semibold text-on-brand transition-colors duration-base hover:bg-viridian-700"
+            className="inline-flex min-h-[2.75rem] items-center rounded-full bg-brand-action px-4 py-2 text-small font-semibold text-on-brand transition-colors duration-base hover:bg-viridian-700"
           >
             {nav.contact}
           </Link>
@@ -118,7 +118,7 @@ export function Header({
         <div className="flex items-center gap-1 lg:hidden">
           <Link
             href={pathFor('contact', lang)}
-            className="rounded-full bg-brand-action px-3 py-2 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
+            className="inline-flex min-h-[2.75rem] items-center rounded-full bg-brand-action px-4 py-2 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
           >
             {nav.contact}
           </Link>
@@ -128,7 +128,7 @@ export function Header({
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav"
-            className="rounded-full border border-line px-3 py-2 text-small transition-colors duration-base hover:border-brand-action"
+            className="inline-flex min-h-[2.75rem] items-center rounded-full border border-line px-4 py-2 text-small transition-colors duration-base hover:border-brand-action"
           >
             {open ? ui.close : ui.menu}
           </button>

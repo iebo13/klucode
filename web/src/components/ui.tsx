@@ -272,7 +272,19 @@ export function ArrowLink({
   return (
     <Link
       href={href}
-      className={`group inline-flex items-center gap-2 font-medium underline underline-offset-4 transition-colors duration-base hover:decoration-current ${
+      // min-h-[2.75rem] is 44px, and it is deliberately off the token spacing
+      // scale, which runs 4/8/12/16/24/32/48. 44 is not a rhythm value, it is
+      // WCAG 2.5.5's minimum target size, and rounding it up to the scale's 48
+      // would put an accessibility constant at the mercy of the next change to
+      // tokens.json. check-spacing.mjs allows arbitrary values for exactly
+      // this: an off-scale number that is somebody else's standard.
+      //
+      // It is a HIT AREA rather than a look: the link is
+      // 28px tall at its own font size, which is inside WCAG 2.5.5's minimum
+      // for a standalone control, and there are six of these on the homepage
+      // alone. items-center keeps the type exactly where it was and grows the
+      // box around it, so nothing moves except what a thumb can land on.
+      className={`group inline-flex min-h-[2.75rem] items-center gap-2 font-medium underline underline-offset-4 transition-colors duration-base hover:decoration-current ${
         onInk
           ? 'text-ink-accent decoration-viridian-600'
           : 'text-brand-text decoration-viridian-300'

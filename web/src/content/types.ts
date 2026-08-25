@@ -194,6 +194,21 @@ export type Content = {
     servicesEyebrow: string;
     servicesTitle: string;
     servicesLink: string;
+    /**
+     * What the crossroads looks like, for everyone who never sees it move.
+     *
+     * Most visitors: every phone, every tablet held upright, every
+     * reduced-motion request, every browser without WebGL. The fallback is
+     * honest and complete without it and it never told them the place existed.
+     * A 13 kB still of the closing shot does, and it is rendered FROM the
+     * scene by tools/shoot-poster.mjs rather than drawn, so it cannot describe
+     * a world the site stopped having.
+     *
+     * The alt text is the same information again for a reader who gets neither
+     * the scene nor the image, which is why it names the four objects rather
+     * than calling itself an illustration.
+     */
+    sceneAlt: string;
     workEyebrow: string;
     workTitle: string;
     workLead: string;

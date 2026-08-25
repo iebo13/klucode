@@ -22,11 +22,22 @@ import { buildLanes, type Lane } from './support/scene';
  * added is the part that is not being asserted.
  */
 
-/** The three canvases the copy column leaves, at the three viewports that mount. */
+/**
+ * The three stages, and how much of each one the copy panel is standing on.
+ *
+ * The canvas is the whole stage now, so these are viewports rather than boxes
+ * inside them. `reserve` is the panel's right edge measured from the stage's
+ * left, which is the number scene.ts computes at runtime with reserveOf() and
+ * the number every shot is composed against. Measured in Chromium against the
+ * built site by tools/shoot.mjs, at the three viewports the mount predicate
+ * allows: the container is 72rem capped and centred with 2rem of padding, and
+ * the panel is 26rem of it, so the reserve is a layout consequence rather than
+ * a constant anybody chose.
+ */
 const CANVASES = [
-  { name: '1024x736', w: 470, h: 584 },
-  { name: '1440x900', w: 640, h: 796 },
-  { name: '1920x1080', w: 980, h: 976 },
+  { name: '1024x736', w: 1024, h: 736, reserve: 448 },
+  { name: '1440x900', w: 1440, h: 900, reserve: 592 },
+  { name: '1920x1080', w: 1920, h: 1080, reserve: 832 },
 ] as const;
 
 /* --- the camera, exactly as scene.ts drives it --------------------------- */
@@ -42,6 +53,7 @@ function basis(pos: Vector3, look: Vector3) {
 }
 
 type Shot = { pos: Vector3; look: Vector3; fitH: number; fitV: number };
+type Canvas = { readonly name: string; readonly w: number; readonly h: number; readonly reserve: number }; // prettier-ignore
 
 const shotOf = (s: Stop): Shot => ({
   pos: new Vector3(s.pos[0], s.pos[1], s.pos[2]),
@@ -51,19 +63,37 @@ const shotOf = (s: Stop): Shot => ({
 });
 
 /**
- * How far outside the frame edge a solid reaches, and how much of the frame it
- * fills, at one shot on one canvas.
+ * How far outside the COMPOSED region a solid reaches, and how much of that
+ * region it fills, at one shot on one stage.
  *
- * Reported in units of the half frame, so 1 is exactly the edge: `reach` above
- * 1 is cropped, and it is the number the standoffs are solved against. `area`
- * is the share of the whole frame the solid's projected extent covers after
- * clipping, which is what „no neighbouring object in shot" is measured with.
+ * The composed region is the part of the canvas the copy panel is not standing
+ * on, and it is the only part any of this is about. Under a full-bleed stage
+ * the frustum is much wider than the shot: at 1440x900 a lane close-up spans
+ * 74 degrees of world horizontally while the shot itself is composed inside
+ * 51 of them, and the difference is floor, fog and whatever else happens to be
+ * out there. Measuring against the canvas would fail every stop for objects
+ * nobody is being shown.
+ *
+ * So both numbers are in units of the composed half-frame: 1 is exactly its
+ * edge, `reach` above 1 is a subject clipped by the panel or by the canvas,
+ * and `area` is the share of it a neighbour takes.
+ *
+ * The projection is scene.ts's, including the view offset. The frustum spans
+ * [-(1+r), (1-r)] half-widths in tan space where r is the reserve as a
+ * fraction of the canvas, which is what setViewOffset(-reserve/2) does, and a
+ * point on the camera's axis therefore lands at r rather than at the middle.
  */
-function frame(shot: Shot, solid: Lane, aspect: number) {
+function frame(shot: Shot, solid: Lane, canvas: Canvas) {
   const { x, y, z } = basis(shot.pos, shot.look);
-  const vHalf = (fovFor(shot.fitH, shot.fitV, aspect) / 2) * DEG;
+  const free = Math.max(1, canvas.w - canvas.reserve);
+  const vHalf = (fovFor(shot.fitH, shot.fitV, free / canvas.h) / 2) * DEG;
   const tanV = Math.tan(vHalf);
-  const tanH = Math.tan(Math.atan(tanV * aspect));
+  const tanH = tanV * (canvas.w / canvas.h);
+  const r = canvas.reserve / canvas.w;
+  // The composed region's left edge in NDC, and half its width, so a point can
+  // be reported in composed-frame units where -1 and 1 are its own edges.
+  const leftEdge = 2 * r - 1;
+  const halfSpan = (1 - leftEdge) / 2;
 
   let minX = Infinity;
   let maxX = -Infinity;
@@ -79,7 +109,8 @@ function frame(shot: Shot, solid: Lane, aspect: number) {
     // does and it puts objects on screen that are standing behind you.
     if (depth <= 0.001) continue;
     ahead += 1;
-    const nx = v.dot(x) / depth / tanH;
+    const ndcX = v.dot(x) / depth / tanH + r;
+    const nx = (ndcX - leftEdge) / halfSpan - 1;
     const ny = v.dot(y) / depth / tanV;
     if (nx < minX) minX = nx;
     if (nx > maxX) maxX = nx;
@@ -135,9 +166,8 @@ test('every stop holds its own subject with nothing cropped', () => {
   for (const [i, stop] of STOPS.entries()) {
     const shot = shotOf(stop);
     for (const canvas of CANVASES) {
-      const aspect = canvas.w / canvas.h;
       for (const id of rolesOf(stop).holds) {
-        const f = frame(shot, find(id), aspect);
+        const f = frame(shot, find(id), canvas);
         const line = `${label(stop, i)} ${canvas.name} ${id}: reach ${f.reach.toFixed(3)}${f.behind ? ' BEHIND' : ''}`; // prettier-ignore
         report.push(line);
         if (f.behind || f.reach > 1) cropped.push(line);
@@ -158,10 +188,9 @@ test('no stop has a neighbour standing in its shot', () => {
     const shot = shotOf(stop);
     const banned = new Set(rolesOf(stop).bans);
     for (const canvas of CANVASES) {
-      const aspect = canvas.w / canvas.h;
       for (const solid of SOLIDS) {
         if (!banned.has(solid.key)) continue;
-        const f = frame(shot, solid, aspect);
+        const f = frame(shot, solid, canvas);
         if (f.area <= 0) continue;
         const line = `${label(stop, i)} ${canvas.name}: ${solid.key} ${(f.area * 100).toFixed(2)}%`;
         seen.push(line);

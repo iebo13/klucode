@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowLink, Eyebrow, RHYTHM } from '@/components/ui';
+import { asset } from '@/lib/base-path';
 import type { Lang } from '@/lib/routes';
 
-import { approachBeat, progressOf } from './progress';
-import type { Handle, ServiceKey, Way } from './types';
+import { progressOf } from './progress';
+import type { Handle, Mark, ServiceKey, Way } from './types';
 
 /**
  * The scene's readiness signal, written onto the canvas immediately before
@@ -39,7 +40,8 @@ const SCENE_MARKER = 'kc-crossroads';
  * different order it would frame the wrong objects from the wrong distances.
  *
  * So the crossroads sorts, and the column beside it sorts with it, because
- * the rows and the lanes are the same four things in the same order.
+ * the rows, the lanes and the labels are the same four things in the same
+ * order.
  */
 const ORDER: ServiceKey[] = ['website', 'app', 'capacity', 'care'];
 
@@ -57,9 +59,9 @@ const inOrder = (ways: readonly Way[]): Way[] =>
  * the same drift shape the LANES array exists to avoid, so there is one.
  *
  * The height half is why the query is not just a width. A 1366x768 laptop is
- * wide enough and has roughly 640px of viewport, and the price board is taller
- * than that: the grid centres it, so the stage clipped it at both ends. 46rem
- * of height is the room the copy column needs before that starts.
+ * wide enough and has roughly 640px of viewport, and the panel plus its four
+ * rows is taller than that once the header has taken its 69px: the stage
+ * clips, and a clipped price is worse than no scene.
  *
  * One constant, so the mount decision and the listener that re-decides it
  * cannot be handed different strings.
@@ -67,11 +69,21 @@ const inOrder = (ways: readonly Way[]): Way[] =>
 const ROOM = '(min-width: 64rem) and (min-height: 46rem)';
 
 /**
+ * How much clear space a label needs on every side before it is shown at all.
+ *
+ * A chip touching the panel's edge or the top of the canvas reads as a
+ * rendering fault rather than as a label, and one that is half under the panel
+ * reads as a bug. 12px is a hair more than the chip's own corner radius, which
+ * is what makes it look placed rather than trapped.
+ */
+const MARK_GAP = 12;
+
+/**
  * Whether this visitor gets the scene at all.
  *
  * Three ways to say no, and each is an answer rather than a degradation. A
  * reduced-motion request is honoured by not moving anything. A phone gets the
- * price board instead of 135 kB and a warm GPU, on a site whose pitch is that
+ * price board instead of 148 kB and a warm GPU, on a site whose pitch is that
  * it loads fast. A browser without WebGL was never going to see it.
  */
 function canMount(): boolean {
@@ -86,66 +98,44 @@ function canMount(): boolean {
   }
 }
 
-/**
- * The opening argument, which used to be a section of its own above this one.
- *
- * Three options that do not fit, then the one that does. It was always the same
- * argument as the four ways below it, split in half by a section boundary: the
- * page said "here is why the obvious answers are wrong" and then, separately,
- * "here are four ways to work with me". Joined, the answer stops being a static
- * panel and becomes the moment the camera arrives at the junction.
- */
-export type Problem = {
-  eyebrow: string;
-  title: string;
-  lead: string;
-  cards: readonly { title: string; body: string }[];
-  answerTitle: string;
-  answerBody: string;
-};
-
-/** How many blocks the approach is divided into: the lead, three cards, the answer. */
-const APPROACH_BLOCKS = 5;
-
 export function Crossroads({
   lang,
-  problem,
   eyebrow,
   title,
   link,
   fromLabel,
+  sceneAlt,
   ways,
 }: {
   lang: Lang;
-  problem: Problem;
   eyebrow: string;
   title: string;
   link: { href: string; label: string };
   fromLabel: string;
+  sceneAlt: string;
   ways: readonly Way[];
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  // The canvas fills the view, which is one column of the grid inside the
-  // stage, so the view is what the renderer must be sized against. Measured
-  // against the stage instead, the drawing buffer came out 1440x900 for a box
-  // 640 wide and the whole scene was squashed by a factor of two and a half.
+  // The canvas fills the stage now rather than one column of a grid inside it,
+  // so the two are the same box and the renderer could be sized against
+  // either. It is still sized against the view, because the view is the
+  // element that owns the canvas and a stage that grows a second child one day
+  // should not silently re-aspect the scene.
   const viewRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
+  /**
+   * The four labels standing at the four objects.
+   *
+   * Held as DOM nodes and never as state. marks() answers on every scroll
+   * frame, and routing four pixel positions through React would re-render this
+   * whole section sixty times a second to move a transform.
+   */
+  const markRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const [enhanced, setEnhanced] = useState(false);
   const [focus, setFocus] = useState(-1);
-  /**
-   * Which block of the opening argument is showing, or -1 once the camera has
-   * arrived and the column is about the four ways instead.
-   *
-   * An integer rather than the raw progress, and that is the whole reason it
-   * can be state at all: drive() runs on every scroll frame, and React bails
-   * out of a re-render when the value it is handed is the one it already has.
-   * A float would re-render the whole section sixty times a second to move an
-   * opacity that changes five times in the entire journey.
-   */
-  const [beat, setBeat] = useState(0);
   // How many of the four have finished building, as an integer. Reflected onto
   // the section so the browser suite can assert on the reveal without a debug
   // hook shipping to production: it is honest state, it is not announced to a
@@ -153,7 +143,7 @@ export function Crossroads({
   const [built, setBuilt] = useState(0);
 
   // Sorted once, and everything downstream reads this: the scene, the rows,
-  // and the numbering. The prop's own order is never used.
+  // the labels and the numbering. The prop's own order is never used.
   const ordered = useMemo(() => inOrder(ways), [ways]);
 
   // Decided on the client and re-decided when ROOM flips, because rotating a
@@ -168,6 +158,62 @@ export function Crossroads({
     return () => room.removeEventListener('change', decide);
   }, []);
 
+  /**
+   * Everything about this section that is measured in CSS pixels rather than
+   * computed: the panel's edges, the stage's box, and how big each of the four
+   * labels actually is.
+   *
+   * One measurement rather than three, taken on mount and on resize and never
+   * on a scroll frame. Reading a bounding box mid-frame forces a layout, and
+   * this one would do it four times a frame for the whole time the section is
+   * on screen.
+   *
+   * The label widths are the part that has to be here. A label is a box of
+   * text and its width is a font metric: „01 Individuelle Web-Anwendung" is
+   * 245px in Schibsted Grotesk at 14px and „04 Betrieb & Wartung" is 170, and
+   * the scene has no way to know either. It tried, with the anchor and a
+   * padding constant, and a chip slid a third of itself under the copy panel
+   * while its anchor was still clear of it.
+   */
+  const metrics = useRef({ reserve: 0, stageW: 0, stageH: 0, half: [] as number[], tall: 0 });
+
+  useEffect(() => {
+    if (!enhanced) return;
+    const stage = stageRef.current;
+    const copy = copyRef.current;
+    if (!stage || !copy) return;
+
+    const measure = () => {
+      const box = stage.getBoundingClientRect();
+      const panel = copy.getBoundingClientRect();
+      const boxes = markRefs.current.map((el) => el?.firstElementChild?.getBoundingClientRect());
+      metrics.current = {
+        reserve: panel.right - box.left,
+        stageW: box.width,
+        stageH: box.height,
+        half: boxes.map((b) => (b?.width ?? 0) / 2),
+        tall: boxes[0]?.height ?? 0,
+      };
+      // Published to CSS as well, so the gutter veil can fade out exactly where
+      // the panel begins. The container is 72rem capped and centred, so that
+      // edge is 24px in at 1024 and 416px in at 1920: a percentage gradient
+      // would be right at one viewport and wrong at the other two.
+      stage.style.setProperty('--crossroads-gutter', `${Math.round(panel.left - box.left)}px`);
+      stage.style.setProperty('--crossroads-reserve', `${Math.round(panel.right - box.left)}px`);
+    };
+
+    measure();
+    // Again once the web fonts have landed. Measured before they do, every
+    // label is a fallback-face width and every one of them is wrong.
+    document.fonts?.ready.then(measure).catch(() => undefined);
+    window.addEventListener('resize', measure, { passive: true });
+    return () => {
+      window.removeEventListener('resize', measure);
+      stage.style.removeProperty('--crossroads-gutter');
+      stage.style.removeProperty('--crossroads-reserve');
+    };
+  }, [enhanced, ordered, lang]);
+
   useEffect(() => {
     if (!enhanced) return;
     const canvas = canvasRef.current;
@@ -180,6 +226,55 @@ export function Crossroads({
     let raf = 0;
     let cancelled = false;
 
+    /**
+     * Moves the four labels, and nothing else touches their transforms.
+     *
+     * translate3d rather than left/top, so a label move is a compositor
+     * transform and never a layout pass: four of these run on every scroll
+     * frame the scene is on screen for.
+     */
+    const place = (marks: readonly Mark[]) => {
+      const { reserve, stageW, stageH, half, tall } = metrics.current;
+      for (let i = 0; i < marks.length; i += 1) {
+        const el = markRefs.current[i];
+        const mark = marks[i];
+        if (!el || !mark) continue;
+        /**
+         * The chip is centred on its anchor and rises from it, so it reaches
+         * half its width to either side and its full height up. What has to
+         * clear the panel and the canvas is that box, not the anchor.
+         *
+         * And it is nudged rather than dropped. At the 1024x736 floor the free
+         * region is 576px, the fan fills it, and „01 Website & Landingpage" is
+         * 205px wide: at the establishing shot the outer two labels overhang
+         * the panel and the right edge by 28px and 12px. Hiding them there
+         * would cost exactly the shot the labels exist for, which is the one
+         * where all four objects are on screen and the reader is finding out
+         * what they are. A 28px shift on a 205px chip is 14% and reads as
+         * placement.
+         *
+         * Bounded at half the box, because past that the nudge stops meaning
+         * „this label, slightly moved" and starts meaning „this label, over
+         * somebody else's object". Past it the label is dropped.
+         */
+        const w = half[i] ?? 0;
+        const low = reserve + MARK_GAP + w;
+        const high = stageW - MARK_GAP - w;
+        const x = low > high ? mark.x : Math.min(Math.max(mark.x, low), high);
+        const y = Math.max(mark.y, MARK_GAP + tall);
+        // Rounded, because a label is type and a half pixel of it is a blurred
+        // glyph. The object underneath is free to sit wherever it likes.
+        el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+        el.dataset.on = String(
+          mark.front &&
+            low <= high &&
+            Math.abs(x - mark.x) <= w * 0.5 &&
+            y - mark.y <= tall * 0.5 &&
+            y <= stageH - MARK_GAP,
+        );
+      }
+    };
+
     const drive = () => {
       raf = 0;
       if (!handle) return;
@@ -189,9 +284,9 @@ export function Crossroads({
       setFocus(handle.focus());
       setBuilt(handle.built());
       // Read from the same progress the camera was just given, not from a
-      // second measurement, so the column and the camera can never disagree
+      // second measurement, so the labels and the camera can never disagree
       // about where in the section the reader is.
-      setBeat(approachBeat(p, APPROACH_BLOCKS));
+      place(handle.marks());
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(drive);
@@ -206,7 +301,9 @@ export function Crossroads({
       .then(([{ boot }, { LABELS }]) => {
         if (cancelled) return;
         canvas.dataset.scene = SCENE_MARKER;
-        handle = boot(canvas, view, ordered, LABELS[lang]);
+        // The copy panel goes in as the fifth argument: it is standing on the
+        // left of the canvas, and the camera composes into what is left.
+        handle = boot(canvas, view, ordered, LABELS[lang], copyRef.current);
         drive();
         window.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('resize', onScroll, { passive: true });
@@ -228,107 +325,6 @@ export function Crossroads({
     };
   }, [enhanced, ordered, lang]);
 
-  /**
-   * The opening argument's own moment, for everyone who never sees the scene.
-   *
-   * Most visitors are here: a phone, a tablet held upright, a reduced-motion
-   * request, a browser with no WebGL. They get the whole section as stacked
-   * text, and the three options that do not fit are the best writing on the
-   * site sitting in a list styled exactly like the price board under it.
-   *
-   * So each one fails as you leave it. It is read at full strength, and once
-   * the next one arrives it settles back and a rule draws part way across its
-   * heading. Three failures accumulate above the answer, which is the shape of
-   * the argument. An IntersectionObserver and a CSS transition, about a
-   * kilobyte, and it reaches the readers the camera never will.
-   *
-   * `active` is the furthest block that has reached the reading band, and it
-   * only ever grows: these are read in order, and a block that failed does not
-   * un-fail because you scrolled back up to check.
-   */
-  const [active, setActive] = useState(0);
-
-  useEffect(() => {
-    // The scene is the desktop version of this and does it with a camera.
-    if (enhanced) return;
-    // A reduced-motion request is honoured by not moving anything, which here
-    // means every block stays at full strength and nothing is ever struck
-    // through. That is the same answer canMount() gives, for the same reason.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const col = copyRef.current;
-    if (!col) return;
-
-    const blocks = Array.from(col.querySelectorAll<HTMLElement>('.crossroads-beat'));
-    if (blocks.length === 0) return;
-
-    /**
-     * The furthest block whose top has crossed the reading line.
-     *
-     * Measured across every block rather than read off the observer's entries,
-     * and that is the whole point of the shape. An entry only arrives for a
-     * block that crossed the boundary, so a scroll that JUMPS, which is an
-     * anchor link, a restored offset, the End key, or a browser returning you
-     * to where you were, hands over a callback naming one block and says
-     * nothing about the three it flew past. Measured, they are simply behind
-     * the line, and behind the line is the only thing being asked.
-     *
-     * The line sits 65% down the viewport rather than at its foot, because a
-     * tall phone shows two of these at once and a block is not read the instant
-     * its first pixel appears.
-     */
-    const measure = () => {
-      const line = window.innerHeight * 0.65;
-      let highest = 0;
-      blocks.forEach((el, i) => {
-        if (el.getBoundingClientRect().top < line) highest = i;
-      });
-      // Only ever forwards. These are read in order, and an option that failed
-      // does not un-fail because the reader scrolled back up to check it.
-      setActive((was) => (highest > was ? highest : was));
-    };
-
-    // The observer is the cheap trigger, not the measurement: it fires when any
-    // block crosses the band, which is exactly when the answer can change, and
-    // costs nothing on the frames in between.
-    const io = new IntersectionObserver(measure, {
-      rootMargin: '-35% 0px -30% 0px',
-      threshold: 0,
-    });
-
-    for (const el of blocks) io.observe(el);
-    // Once at mount, for the reader who arrives already scrolled down.
-    measure();
-    return () => io.disconnect();
-  }, [enhanced]);
-
-  /**
-   * Keeps the row the camera is looking at inside the column that scrolls.
-   *
-   * Measured, the copy column is 1097px tall and taller than the stage at
-   * every viewport the scene mounts on, so it scrolls: 301px of it at
-   * 1440x900 and 462px at the 1024x736 floor. Without this the camera arrives
-   * at way 03 with row 03 below the fold of a scroller the visitor has no
-   * reason to have found, and the highlight names something nobody can see.
-   *
-   * scrollTop rather than scrollIntoView, and that is the whole point:
-   * scrollIntoView walks every scrollable ancestor including the document, and
-   * the document scroll is what drives this section. Moving one box's own
-   * offset cannot fight it.
-   */
-  useEffect(() => {
-    if (!enhanced || focus < 0) return;
-    const col = copyRef.current;
-    const row = col?.querySelector('li[data-focus="true"]');
-    if (!col || !row) return;
-    const box = col.getBoundingClientRect();
-    const seat = row.getBoundingClientRect();
-    const below = seat.bottom - box.bottom;
-    const above = seat.top - box.top;
-    // Nearest edge only. A row already in view is left exactly where it is.
-    if (below > 0) col.scrollTop += below;
-    else if (above < 0) col.scrollTop += above;
-  }, [enhanced, focus]);
-
   return (
     <section
       id="services"
@@ -336,19 +332,24 @@ export function Crossroads({
       // with a clipped overflow is a scroll container, and a sticky child
       // sticks to the nearest one, so the stage would have stuck to a box that
       // never scrolls: it sat at the top of the section and slid away with it,
-      // leaving four viewports of empty ink. The stage clips itself, and the
-      // aurora is already bounded by its own contain: paint.
+      // leaving four viewports of empty ink. The stage clips itself.
       ref={sectionRef}
       data-enhanced={enhanced}
       data-built={built}
       className="grain relative isolate bg-ink text-ink-fg"
     >
-      <div aria-hidden="true" className="ink-aurora -z-10" />
+      {/* The wash and the grain belong to the fallback, where this section is
+          ink carrying text. With the scene up they are the thing that made the
+          canvas read as a video embedded in a slide: a flat fogged rectangle
+          with a different dark either side of it. The scene IS the ink now, so
+          it runs to the viewport edges and nothing is layered over it. */}
+      {enhanced ? null : <div aria-hidden="true" className="ink-aurora -z-10" />}
+
       {/* The track is the runway and the stage sticks INSIDE it, not beside it
           with a negative margin. A sticky box travels its containing block's
           height minus its own MARGIN box, so a -100svh margin buys one extra
           viewport of travel and the stage releases a viewport late, painting
-          over the section below. Nested, the travel is 420svh minus 100svh and
+          over the section below. Nested, the travel is 300svh minus 100svh and
           stays right with no arithmetic to keep in step.
 
           Never aria-hidden: the track holds every word of the section, so
@@ -356,110 +357,117 @@ export function Crossroads({
           for. */}
       <div className="crossroads-track">
         <div ref={stageRef} className="crossroads-stage">
-          <div className="crossroads-layout mx-auto grid h-full max-w-container items-center gap-8 px-6 py-section md:px-8 lg:grid-cols-[1fr_26rem]">
-            <div ref={viewRef} className="crossroads-view">
-              {enhanced ? <canvas ref={canvasRef} aria-hidden="true" /> : null}
-            </div>
+          <div ref={viewRef} className="crossroads-view">
+            {enhanced ? <canvas ref={canvasRef} aria-hidden="true" /> : null}
+          </div>
 
-            {/* crossroads-copy, because in the enhanced state this column is
-                bounded by the stage and scrolls what will not fit. It is
-                taller than any viewport the scene mounts on. */}
+          {/* The gutter, faded to the scene's own background. See the note
+              above .crossroads-veil: the strip between the viewport edge and
+              the panel is the one part of a full-bleed frame that no camera
+              position can compose, and the neighbouring lane's object stands
+              in it. */}
+          {enhanced ? <div aria-hidden="true" className="crossroads-veil" /> : null}
+
+          <div className="crossroads-layout mx-auto grid h-full max-w-container items-center px-6 py-section md:px-8 lg:grid-cols-[26rem_1fr]">
+            {/* The price board, which is also this section's fallback, which is
+                also the only copy of these four rows anywhere on the homepage.
+                On ink it is a glass panel over the scene rather than a column
+                beside it, and .glass-chip is the material the hero's proof
+                chips are already made of: ink with real frequency under it,
+                which is the one condition a backdrop blur needs to produce
+                anything at all. */}
             <div ref={copyRef} className="crossroads-copy">
-              {/* Two acts, and in the enhanced state they share one grid cell.
-                  That is not a layout trick, it is what keeps this column the
-                  height it already was: stacked in flow the section's copy is
-                  the problem argument PLUS the price board, and the board alone
-                  already overruns a 1024x736 stage by 500px. Overlaid, the
-                  column is the taller of the two rather than their sum, and the
-                  approach adds nothing to the scroll the column has to do.
+              <Eyebrow onInk>{eyebrow}</Eyebrow>
+              <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
 
-                  Both acts stay in the DOM and neither is ever display:none or
-                  visibility:hidden. A reader on a screen reader at 1440px gets
-                  data-enhanced="true" like everyone else, and hiding act one
-                  after the camera passed it would delete half the section's
-                  argument for exactly the people who cannot see the camera
-                  move. Opacity leaves it in the accessibility tree, in order. */}
-              <div className="crossroads-acts">
-                <div className="crossroads-act" data-live={beat >= 0}>
-                  <Eyebrow onInk>{problem.eyebrow}</Eyebrow>
-                  <h2 className={`${RHYTHM.heading} text-h2`}>{problem.title}</h2>
+              {/* The place, once, for everyone who never sees it move.
 
-                  <div className="crossroads-beats mt-8">
-                    <div className="crossroads-beat" data-live={beat === 0}>
-                      <p className="max-w-measure text-lead text-ink-muted">{problem.lead}</p>
-                    </div>
+                  Rendered from this scene by tools/shoot-poster.mjs rather
+                  than drawn, so it cannot end up describing a world the site
+                  stopped having, and 13 kB of WebP against the 148 kB of
+                  three.js the fallback exists to not download. Rendered only
+                  in the fallback, so a laptop that gets the real thing never
+                  fetches it. */}
+              {enhanced ? null : (
+                <img
+                  src={asset('/crossroads.webp')}
+                  alt={sceneAlt}
+                  width={1600}
+                  height={378}
+                  loading="lazy"
+                  decoding="async"
+                  className="mt-6 w-full rounded-md border border-ink-line"
+                />
+              )}
 
-                    {problem.cards.map((card, i) => (
-                      <div
-                        key={card.title}
-                        className="crossroads-beat crossroads-card"
-                        data-live={beat === i + 1}
-                        // Struck through once the next block has been reached,
-                        // and only in the fallback, where these are stacked and
-                        // read in order. In the enhanced state they are one at
-                        // a time and the camera is doing this job.
-                        data-passed={active > i + 1}
-                      >
-                        <h3 className="text-h3">{card.title}</h3>
-                        <p className="mt-3 max-w-measure text-ink-muted">{card.body}</p>
-                      </div>
-                    ))}
+              <ol className="crossroads-ways mt-6 divide-y divide-ink-line border-y border-ink-line">
+                {ordered.map((way, i) => (
+                  <li key={way.key} data-key={way.key} data-focus={focus === i}>
+                    <p className="crossroads-way-no font-mono text-eyebrow text-ink-accent">
+                      {String(i + 1).padStart(2, '0')}
+                    </p>
+                    <h3 className="crossroads-way-name text-h3">{way.name}</h3>
+                    <p className="crossroads-way-price font-display text-h3 font-medium text-ink-accent">
+                      <span className="font-sans text-small font-normal text-ink-muted">
+                        {fromLabel}{' '}
+                      </span>
+                      {way.price}
+                    </p>
+                    {/* Open on the row the camera is standing at and shut on
+                        the other three, so the board is four names against
+                        four prices at a glance and the one you are looking at
+                        says who it is for and what the price covers.
 
-                    {/* The answer, and it lands on arrival. In the old layout
-                        this was an ink panel sitting still at the bottom of a
-                        section. Here it is the last thing said before the
-                        camera reaches the junction, which is the only reason
-                        the two sections were worth joining. */}
-                    <div
-                      className="crossroads-beat crossroads-answer"
-                      data-live={beat === APPROACH_BLOCKS - 1}
-                    >
-                      <h3 className="text-h3 text-ink-accent">{problem.answerTitle}</h3>
-                      <p className="mt-3 max-w-measure text-ink-muted">{problem.answerBody}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="crossroads-act" data-live={beat < 0}>
-                  <Eyebrow onInk>{eyebrow}</Eyebrow>
-                  <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
-
-                  <ol className="crossroads-ways mt-8 divide-y divide-ink-line border-y border-ink-line">
-                    {ordered.map((way, i) => (
-                      <li
-                        key={way.key}
-                        data-key={way.key}
-                        data-focus={focus === i}
-                        className="grid gap-1 py-4 transition-opacity"
-                      >
-                        <p className="font-mono text-eyebrow text-ink-accent">
-                          {String(i + 1).padStart(2, '0')}
-                        </p>
-                        <h3 className="text-h3">{way.name}</h3>
+                        Collapsed with grid-template-rows and never with
+                        display or visibility: at 0fr the text is still in the
+                        accessibility tree, still in order, and still found by
+                        the browser's own find-in-page. */}
+                    <div className="crossroads-way-detail">
+                      <div>
                         <p className="text-small text-ink-muted">{way.forWhom}</p>
-                        <p className="crossroads-reads text-small text-ink-muted">{way.reads}</p>
-                        <p className="font-display text-h3 font-medium text-ink-accent">
-                          <span className="font-sans text-small font-normal text-ink-muted">
-                            {fromLabel}{' '}
-                          </span>
-                          {way.price}
-                          <span className="mt-1 block font-sans text-small font-normal text-ink-muted">
-                            {way.priceNote}
-                          </span>
+                        <p className="mt-1 text-small text-ink-muted">{way.priceNote}</p>
+                        <p className="crossroads-reads mt-1 text-small text-ink-muted">
+                          {way.reads}
                         </p>
-                      </li>
-                    ))}
-                  </ol>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
 
-                  <div className="mt-8">
-                    <ArrowLink onInk href={link.href}>
-                      {link.label}
-                    </ArrowLink>
-                  </div>
-                </div>
+              <div className="mt-6">
+                <ArrowLink onInk href={link.href}>
+                  {link.label}
+                </ArrowLink>
               </div>
             </div>
           </div>
+
+          {/* The names, standing at the things they name.
+              aria-hidden, and that is the whole i18n and accessibility story
+              in one attribute: every one of these four strings is the same
+              `way.name` the row above already carries, so a screen reader
+              hears it once and a search engine indexes it once. What this
+              layer adds is the bond a list beside a canvas could not make. */}
+          {enhanced ? (
+            <div aria-hidden="true" className="crossroads-marks">
+              {ordered.map((way, i) => (
+                <div
+                  key={way.key}
+                  data-on="false"
+                  ref={(el) => {
+                    markRefs.current[i] = el;
+                  }}
+                  className="crossroads-mark"
+                >
+                  <span className="crossroads-mark-box" data-focus={focus === i}>
+                    <span className="crossroads-mark-no">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="crossroads-mark-name">{way.name}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

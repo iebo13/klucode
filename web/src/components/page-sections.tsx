@@ -468,7 +468,7 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
                     <li key={l.href}>
                       <a
                         href={l.href}
-                        className="font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+                        className="inline-flex min-h-[2.75rem] items-center font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
                       >
                         {l.label}
                       </a>
@@ -584,7 +584,7 @@ function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
           <ButtonLink href={pathFor('contact', lang)}>{c.ui.ctaPrimary}</ButtonLink>
           <Link
             href={pathFor('work', lang)}
-            className="font-display font-medium text-brand-text underline decoration-viridian-300 underline-offset-4"
+            className="inline-flex min-h-[2.75rem] items-center font-display font-medium text-brand-text underline decoration-viridian-300 underline-offset-4"
           >
             {c.ui.ctaSecondary}
           </Link>

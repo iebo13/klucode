@@ -45,12 +45,44 @@ export type Stop = {
   fitV: number;
 };
 
+/**
+ * Where one way's name belongs on screen, in CSS pixels inside the view.
+ *
+ * The bond between a row and the thing it describes. Before this the number,
+ * the name and the price sat 200px to the right of the object in a list that
+ * brightened one line at a time, and in the establishing shot all four objects
+ * were on screen with none of them named.
+ *
+ * Pixels rather than a Vector3, because the consumer is a CSS transform and
+ * the projection is the scene's business.
+ *
+ * `front` is the one thing only the scene can answer: whether the anchor is in
+ * front of the lens at all. Behind it the perspective divide mirrors the point
+ * onto the screen, which is how an object standing behind you ends up with a
+ * label in the middle of the frame.
+ *
+ * Whether the label FITS is deliberately not decided here. That question is
+ * about a box of text whose width is a font metric, and the scene has no idea
+ * how wide „01 Individuelle Web-Anwendung" is in Schibsted Grotesk at 14px in
+ * this reader's browser. The scene said it did for one draft, using the anchor
+ * and a padding constant, and the result was a chip sliding a third of itself
+ * under the copy panel while the anchor was still comfortably clear of it.
+ */
+export type Mark = { x: number; y: number; front: boolean };
+
 /** What boot() hands back. The component talks to the scene only through this. */
 export type Handle = {
   /** Scroll progress, 0 to 1. Applies state synchronously, defers the draw. */
   set(p: number): void;
   /** Index of the way in focus, or -1 at the junction. Never stale. */
   focus(): number;
+  /**
+   * Where each way's label belongs, in the order the ways were handed over.
+   *
+   * The returned array is the scene's own and is rewritten in place on every
+   * call. Read it, do not keep it.
+   */
+  marks(): readonly Mark[];
   /** How many of the four ways are finished, 0 to 4. A count, not a fraction. */
   built(): number;
   /** Cancels the loop, drops listeners, disposes every GPU resource. */

@@ -127,6 +127,8 @@ const en = {
     servicesEyebrow: 'Services',
     servicesTitle: 'Four ways to work together.',
     servicesLink: 'All services and prices',
+    sceneAlt:
+      'The four ways as a place: a website on a monitor, a web application with a database and a server behind it, an office with one free desk, a server rack wired to a cloud.',
 
     workEyebrow: 'Work',
     workTitle: 'Three systems, running daily.',

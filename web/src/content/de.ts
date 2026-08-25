@@ -133,6 +133,8 @@ const de = {
     servicesEyebrow: 'Leistungen',
     servicesTitle: 'Vier Wege zur Zusammenarbeit.',
     servicesLink: 'Alle Leistungen und Preise',
+    sceneAlt:
+      'Die vier Wege als Raum: eine Website auf einem Monitor, eine Web-Anwendung mit Datenbank und Server dahinter, ein Büro mit einem freien Platz, ein Server-Rack an einer Wolke.',
 
     workEyebrow: 'Projekte',
     workTitle: 'Drei Systeme, die täglich laufen.',

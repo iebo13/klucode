@@ -2,8 +2,13 @@
  * „Vier Wege zur Zusammenarbeit" as a place you walk through.
  *
  * Four lanes fan out from a junction. At the end of each stands the thing you
- * would actually get. Nothing in here is labelled: every word the reader sees
- * is DOM text beside the canvas, so nothing is said twice.
+ * would actually get.
+ *
+ * Every word the reader sees is DOM text, including the four names that stand
+ * AT the objects. Nothing is painted into the world except the two mock
+ * interfaces, which are furniture rather than site copy. marks() is the join:
+ * it projects each object's anchor to a pixel and the component moves a small
+ * HTML label there. See section 4 of the spec.
  *
  * Scope, not price, is what the geometry says. Comparing 90 € a month with
  * 680 € a day as volumes would be a lie. Comparing how much machine you get
@@ -15,6 +20,7 @@
 import {
   ACESFilmicToneMapping,
   AmbientLight,
+  Box3,
   Color,
   DoubleSide,
   FogExp2,
@@ -23,7 +29,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   PointLight,
@@ -35,9 +41,9 @@ import {
 
 import { BUILDERS, LINE_ALPHA } from './objects';
 import { PALETTE } from './palette';
-import { APPROACH_END, buildTargets, focusAt, ratchet, segmentAt } from './progress';
+import { buildTargets, focusAt, ratchet, segmentAt } from './progress';
 import { createRegistry } from './registry';
-import type { Handle, SceneLabels, ServiceKey, Stop, Way } from './types';
+import type { Handle, Mark, SceneLabels, ServiceKey, Stop, Way } from './types';
 
 /**
  * The four lanes, left to right across the fan.
@@ -50,6 +56,19 @@ import type { Handle, SceneLabels, ServiceKey, Stop, Way } from './types';
  * `aimY` the height it looks at. Both are per-lane because one distance cannot
  * frame a monitor and an office, and one height cannot hold a rack and the
  * cloud above it.
+ *
+ * `stagger` is how far up the label sits, IN SCREEN PIXELS, and the unit is
+ * the whole reason it is a fourth number rather than a taller MARK_LIFT. At
+ * the establishing shot the four labels stand about 195px apart horizontally
+ * and „01 Website & Landingpage" is 205px wide, so ways 01 and 02 overlapped:
+ * the boxes were 14px apart vertically and 30px tall. Lifting way 02's anchor
+ * in the world fixes that and breaks something else, because a world unit is
+ * 23 screen pixels at the wide shot and 83 at that lane's own close-up: the
+ * 1.5 units that separate the two labels here would push the same label 125px
+ * up at the close-up and off the top of the frame. A screen offset is the same
+ * 34px in both. Ways 01 and 03 sit level and 02 and 04 sit a line higher, so
+ * the four read as a zig-zag rather than as a row of near collisions, and the
+ * browser suite asserts that no two of them ever overlap.
  *
  * One array of objects rather than four parallel arrays: four arrays indexed
  * in lockstep are exactly the shape that drifts, and under this project's
@@ -66,10 +85,10 @@ import type { Handle, SceneLabels, ServiceKey, Stop, Way } from './types';
  * what turns that into a loud failure at the first frame.
  */
 export const LANES = [
-  { key: 'website', angle: 0.8, dist: 17, back: 9.1, aimY: 2.33 },
-  { key: 'app', angle: 0.28, dist: 17, back: 11.4, aimY: 2.6 },
-  { key: 'capacity', angle: -0.28, dist: 17, back: 13.2, aimY: 0.98 },
-  { key: 'care', angle: -0.8, dist: 17, back: 11.2, aimY: 2.78 },
+  { key: 'website', angle: 0.8, dist: 17, back: 9.1, aimY: 2.33, stagger: 0 },
+  { key: 'app', angle: 0.28, dist: 17, back: 11.4, aimY: 2.6, stagger: 34 },
+  { key: 'capacity', angle: -0.28, dist: 17, back: 13.2, aimY: 0.98, stagger: 0 },
+  { key: 'care', angle: -0.8, dist: 17, back: 11.2, aimY: 2.78, stagger: 34 },
   // satisfies rather than a type annotation, so the literal values stay literal
   // for the check in boot() while a mistyped key is still a compile error.
 ] as const satisfies readonly {
@@ -78,6 +97,7 @@ export const LANES = [
   dist: number;
   back: number;
   aimY: number;
+  stagger: number;
 }[];
 
 /**
@@ -182,60 +202,30 @@ const WIDE_FIT_H = 35.9;
 const WIDE_FIT_V = 15.2;
 
 /**
- * The approach: two stops short of the junction, on the same lens.
- *
- * The section now opens with the argument for why the two obvious options do
- * not fit, and the camera spends that argument closing the distance. Holding
- * the wide shot's half-angles fixed and moving only the camera is what makes
- * it read as an approach rather than as a zoom: the four ways cover 64% of
- * the frame from the first stop, 80% from the second and 100% on arrival, so
- * they are visible and out of reach the whole way in.
- *
- * The fog does the rest. At the first stop the far lanes are 45 units off and
- * a third of their contrast is gone, which is the point: you can see that
- * there are four of them and not yet what they are.
- */
-const APPROACH: Stop[] = [
-  { at: 0, focus: -1, pos: [0, 9, 28], look: [0, 0, -8], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
-  {
-    at: APPROACH_END * 0.55,
-    focus: -1,
-    pos: [0, 7.5, 20],
-    look: [0, 0, -9],
-    fitH: WIDE_FIT_H,
-    fitV: WIDE_FIT_V,
-  },
-];
-
-/**
  * Every camera position in the journey, at module level so the framing suite
  * can project against the same list the renderer drives.
  *
- * It used to live inside boot(), built from the lane records, which meant the
- * only way to ask what a stop framed was to start a WebGL context and look at
- * the result. Nothing here needs a Group: a stop is two number triples and two
- * half-angles, and laneTarget() is the arithmetic that used to be done on the
- * Vector3 hanging off a lane.
+ * It used to open with two approach stops a long way short of the junction,
+ * closing the distance while the copy column argued that agencies and website
+ * kits do not fit. That argument is a paper section above this one now, and
+ * the camera starts where it always ended up: at the junction, looking down
+ * the fan, with all four ways named and none of them built. See the note at
+ * the top of progress.ts for why.
+ *
+ * Six stops in 200svh of travel, so 40svh a move, which is the pace the four
+ * ways already had. What went is the 122svh that bought a slow dolly.
  */
 export const STOPS: Stop[] = [
-  ...APPROACH,
-  {
-    at: APPROACH_END,
-    focus: -1,
-    pos: [0, 6, 13],
-    look: [0, 0, -10],
-    fitH: WIDE_FIT_H,
-    fitV: WIDE_FIT_V,
-  },
-  // The four ways keep the spacing they had when the crossroads was a section
-  // of its own, remapped into what is left after the approach rather than
-  // written out again. Restating them as new literals is how a change to the
-  // approach quietly re-paces the part of the journey it was not meant to
-  // touch.
+  // The junction. The establishing shot, and the only place all four are in
+  // frame with nothing yet decided.
+  { at: 0, focus: -1, pos: [0, 6, 13], look: [0, 0, -10], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
+  // 0.18, 0.37, 0.56, 0.75: the spacing the four ways have had since the
+  // section was only the crossroads, back in the whole of the track now that
+  // nothing stands in front of them.
   ...LANES.map((geom, i) => {
     const target = laneTarget(geom.angle, geom.dist, geom.aimY);
     return {
-      at: APPROACH_END + (0.18 + i * 0.19) * (1 - APPROACH_END),
+      at: 0.18 + i * 0.19,
       focus: i,
       pos: standOff(target, geom.back),
       look: [target.x, target.y, target.z] as [number, number, number],
@@ -248,11 +238,54 @@ export const STOPS: Stop[] = [
   { at: 1, focus: -1, pos: [0, 7.2, 15.5], look: [0, 0.2, -10], fitH: 32.8, fitV: 13.5 },
 ];
 
+/**
+ * How far above an object its label floats, in world units.
+ *
+ * Above and not beside, because the fan is symmetric: a label offset to one
+ * side reads as belonging to the neighbour on the two lanes where the next
+ * object stands in that direction.
+ */
+const MARK_LIFT = 0.55;
+
+/**
+ * How much of the canvas the copy panel is standing on, in CSS pixels.
+ *
+ * The scene is full bleed now: the canvas is the whole stage and the copy sits
+ * on a glass panel over the left of it. So the subject cannot be centred in
+ * the canvas, it has to be centred in what is LEFT of the canvas, and the
+ * camera has to be told which part that is.
+ *
+ * Two things come out of this number and they are different. The field of view
+ * is computed against the free region's aspect, so a shot still covers its
+ * half-angles inside the part of the frame nobody is standing on. The
+ * projection is then shifted by half the reserve through setViewOffset, which
+ * moves the frustum left and therefore the image right, by exactly reserved/W
+ * in normalised device coordinates: the middle of the free region.
+ *
+ * Capped at 60% of the canvas, which is not a layout this site produces and is
+ * the difference between a bad frame and a division that hands the camera a
+ * field of view of zero.
+ */
+function reserveOf(host: HTMLElement, panel: HTMLElement | null): number {
+  if (!panel) return 0;
+  const stage = host.getBoundingClientRect();
+  const box = panel.getBoundingClientRect();
+  if (box.width === 0 || stage.width === 0) return 0;
+  return Math.max(0, Math.min(stage.width * 0.6, box.right - stage.left));
+}
+
 export function boot(
   canvas: HTMLCanvasElement,
   host: HTMLElement,
   ways: readonly Way[],
   labels: SceneLabels,
+  /**
+   * The copy panel, so the camera knows which part of the canvas it may not
+   * compose into. Optional and null-tolerant: a scene with nothing standing on
+   * it composes centrally, which is what every shot in this file was solved
+   * for before the stage went full bleed.
+   */
+  panel: HTMLElement | null = null,
 ): Handle {
   // The floor is laid out for exactly four. A fifth service would need its own
   // angle, its own lane length, its own standoff and its own object, so the
@@ -292,7 +325,20 @@ export function boot(
    */
   renderer.toneMappingExposure = 0.72;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  /**
+   * PCFShadowMap, and it was PCFSoftShadowMap.
+   *
+   * Not a change of look. three 0.185 deprecated PCFSoftShadowMap and silently
+   * substitutes PCFShadowMap for it, so this is what the page has been
+   * rendering all along, plus a console warning on every visit that made it
+   * look like the scene was asking for something it was not getting.
+   *
+   * The softness survives, and that is worth saying because the obvious
+   * reading is that it does not. PCFShadowMap in this version is a five-tap
+   * Vogel disk with a per-pixel rotation and `radius` scaling the disk, so the
+   * penumbra below is honoured. What went is the warning.
+   */
+  renderer.shadowMap.type = PCFShadowMap;
 
   const scene = new Scene();
   scene.background = new Color(PALETTE.background);
@@ -437,11 +483,32 @@ export function boot(
         `crossroads: lane ${i} is tuned for ${geom.key} but was given ${way.key}. The ways must arrive in the order LANES lays out.`,
       );
     }
+    /**
+     * A group of its own for the thing at the end of the lane, holding no
+     * transform at all.
+     *
+     * Its whole job is to be a box that contains the object and nothing else.
+     * Measured against `group` the box would swallow the lit strip, which is
+     * 17 units long and 0.014 off the floor, so the label would float over the
+     * middle of the lane at ankle height rather than over the thing it names.
+     */
+    const stand = new Group();
+    group.add(stand);
     // Keyed by the way, not by position, so a lane can never be handed the
     // object belonging to a different service.
-    const units = BUILDERS[way.key]({ lane: group, z: -geom.dist, track: reg.track, labels });
+    const units = BUILDERS[way.key]({ lane: stand, z: -geom.dist, track: reg.track, labels });
 
-    return { group, units, built: 0 };
+    // Before any material has been hidden, so the box is the shape of the
+    // finished thing rather than of whatever happens to be visible at p=0.
+    group.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(stand);
+    const anchor = new Vector3(
+      (box.min.x + box.max.x) / 2,
+      box.max.y + MARK_LIFT,
+      (box.min.z + box.max.z) / 2,
+    );
+
+    return { group, units, anchor, stagger: geom.stagger, built: 0 };
   });
 
   const pos = new Vector3();
@@ -451,6 +518,14 @@ export function boot(
   const scratch = new Vector3();
 
   let progress = 0;
+  /**
+   * The canvas, in CSS pixels, and how much of its left edge the copy panel is
+   * standing on. Read by layout() on every frame and by marks() straight
+   * after, so both work from one measurement rather than two.
+   */
+  let viewW = 0;
+  let viewH = 0;
+  let reserved = 0;
   /**
    * The pending draw, or 0 for none.
    *
@@ -466,6 +541,9 @@ export function boot(
     const w = host.clientWidth;
     const h = host.clientHeight;
     if (w === 0 || h === 0) return;
+    viewW = w;
+    viewH = h;
+    reserved = reserveOf(host, panel);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     // layout() computes the field of view from the new aspect and calls
@@ -493,16 +571,42 @@ export function boot(
     camera.position.copy(pos);
     camera.lookAt(look);
 
-    // The lens, from what this shot has to cover and the aspect the canvas
-    // currently has. Interpolated across the segment like the position is, so a
-    // move between two shots with different half-angles is one continuous
-    // change rather than a cut.
+    /**
+     * The lens, from what this shot has to cover and the aspect of the part of
+     * the canvas nobody is standing on. Interpolated across the segment like
+     * the position is, so a move between two shots with different half-angles
+     * is one continuous change rather than a cut.
+     *
+     * The free region, not the canvas. Composing against the whole canvas and
+     * then covering its left third with a glass panel is how a full-bleed
+     * scene ends up with its subject half behind the copy: the half-angles say
+     * what the shot must CONTAIN, and a contained thing under a panel is not
+     * contained.
+     */
+    const free = Math.max(1, viewW - reserved);
     camera.fov = fovFor(
       from.fitH + (to.fitH - from.fitH) * t,
       from.fitV + (to.fitV - from.fitV) * t,
-      camera.aspect,
+      viewH > 0 ? free / viewH : camera.aspect,
     );
-    camera.updateProjectionMatrix();
+    /**
+     * And the shift, which is the other half of the same idea.
+     *
+     * setViewOffset moves the frustum left by offsetX / fullWidth of its own
+     * width, so the image moves RIGHT by twice that in normalised device
+     * coordinates. Half the reserve therefore lands the frustum's centre line
+     * at exactly reserved / viewW, which is the middle of the free region. A
+     * scene with no panel passes 0 and gets the symmetric frustum it always
+     * had, to the last decimal.
+     *
+     * This also calls updateProjectionMatrix, which is why there is no second
+     * call: two of them would compute the same matrix twice a frame.
+     */
+    camera.setViewOffset(viewW || 1, viewH || 1, -reserved / 2, 0, viewW || 1, viewH || 1);
+    // marks() projects straight after this, and project() reads
+    // matrixWorldInverse. The render loop would update it, but the labels are
+    // read before the frame is drawn and would otherwise trail it by one.
+    camera.updateMatrixWorld();
 
     /**
      * Light whatever is being looked at, not the junction it was lit from, and
@@ -565,6 +669,52 @@ export function boot(
     });
   }
 
+  /**
+   * Where each way's name belongs on screen, in CSS pixels inside the view.
+   *
+   * The whole of „text integrated into the model", and it is four numbers per
+   * frame rather than a second renderer. Every award-tier reference this was
+   * measured against puts its type in the DOM over the scene for the same
+   * reasons this site already had for keeping it there: it is indexable, it is
+   * selectable, it localises through the same content files, it carries its
+   * own contrast, and a screen reader can read it. What it cannot do is be
+   * occluded by geometry, and nothing in this scene ever stands between the
+   * camera and a point half a unit above another object.
+   *
+   * Position and nothing else. Whether a label FITS where it lands is the
+   * component's question, because it is a question about a box of text: see
+   * the note on Mark in types.ts.
+   *
+   * The array is allocated once and rewritten in place. This is called from
+   * the same scroll frame as set(), and four object literals a frame is the
+   * kind of garbage that turns a parked loop into a busy one.
+   */
+  const marked: Mark[] = lanes.map(() => ({ x: 0, y: 0, front: false }));
+  const markScratch = new Vector3();
+
+  function marks(): readonly Mark[] {
+    for (let i = 0; i < lanes.length; i += 1) {
+      const lane = lanes[i];
+      const out = marked[i];
+      if (lane === undefined || out === undefined) continue;
+
+      markScratch.copy(lane.anchor).applyMatrix4(camera.matrixWorldInverse);
+      // Camera space, so -z is how far in front of the lens the anchor is.
+      // Behind it the perspective divide mirrors the point onto the screen,
+      // which is how an object standing behind you ends up with a label.
+      const depth = -markScratch.z;
+      if (depth <= camera.near) {
+        out.front = false;
+        continue;
+      }
+      markScratch.applyMatrix4(camera.projectionMatrix);
+      out.x = (markScratch.x * 0.5 + 0.5) * viewW;
+      out.y = (-markScratch.y * 0.5 + 0.5) * viewH - lane.stagger;
+      out.front = true;
+    }
+    return marked;
+  }
+
   function frame() {
     raf = 0;
     // stop() cancels the pending callback, but a cancellation that lands in the
@@ -602,6 +752,7 @@ export function boot(
       invalidate();
     },
     focus: () => focusAt(progress, STOPS, lanes.length),
+    marks,
     // A count of finished ways, not a mean of four ramps. Averaging read 2
     // with one way finished and another half done, which is a count of nothing
     // and made data-built a name for something the DOM did not hold.

@@ -212,7 +212,7 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
               device has no mail client cannot use another mailto link either. */}
           <a
             href={`mailto:${profile.email}`}
-            className="mt-4 inline-block select-all font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+            className="mt-4 inline-flex min-h-[2.75rem] select-all items-center font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
           >
             {profile.email}
           </a>

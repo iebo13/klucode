@@ -61,9 +61,29 @@ silently repoint an object at the wrong service.
 
 Reading left to right, the four appear in the order they are priced.
 
-Nothing inside the scene is labelled. No signposts, no floating names, no 3D
-text. Every word the reader sees is DOM text beside the canvas. The names are
-said once.
+Nothing inside the scene is labelled. No signposts, no 3D text, no second copy
+of a name baked into a texture. Every word the reader sees is DOM text. The
+names are said once.
+
+**Amended 2026-08-25 (see section 15).** One word of that rule changed: DOM
+text *beside* the canvas became DOM text *at* the object. Each of the four
+carries a small HTML chip, positioned by projecting an anchor half a unit above
+the object and writing a transform, and its content is the same `way.name` the
+row in the price board carries. The layer is `aria-hidden`, so a screen reader
+still hears each name once and a crawler still indexes it once.
+
+What the original rule was protecting is intact. What it cost was the bond
+between a row and the thing it described: in the establishing shot all four
+objects were on screen and none of them was named, and at every close-up the
+number, the name and the price sat 200px to the right of the object in a list
+that brightened one line at a time.
+
+Real 3D text is still refused, and now for a measured reason as well as a
+stated one. The scene is lit by a swinging tungsten key through fog, so
+contrast on a glyph sitting on geometry cannot be guaranteed at every stop.
+A DOM chip carries its own backdrop, the site's own face, and the same content
+files. Occlusion is the one thing it cannot do, and nothing in this scene ever
+stands between the camera and a point above another object.
 
 ## 5. Architecture
 
@@ -153,14 +173,14 @@ CSS styles. No text is ever duplicated between DOM and canvas.
 
 ```html
 <section>                       <!-- no height of its own, no overflow clip -->
-  <div class="track">           <!-- height: 420svh. The runway. -->
+  <div class="track">           <!-- height: 300svh. The runway. -->
     <div class="stage">…</div>  <!-- sticky, top: 0, height: 100svh -->
   </div>
 </section>
 ```
 
 The stage lives inside the track, so its travel is the track's height minus
-its own: 420svh minus 100svh. It releases exactly when the track's bottom
+its own: 300svh minus 100svh. It releases exactly when the track's bottom
 reaches it, with no negative margin and no arithmetic to keep in step.
 
 PR #17 got this wrong and the stage painted a full viewport past its section,
@@ -186,31 +206,60 @@ The section must NOT carry `overflow: hidden`, which every other ink section
 on this page does. A clipped overflow makes an element a scroll container, and
 a sticky child sticks to the nearest one, so the stage would stick to a box
 that never scrolls: it would sit at the top of the section and slide away with
-it, leaving four viewports of empty ink. The stage clips itself instead.
+it, leaving three viewports of empty ink. The stage clips itself instead.
 
-Track length of 420svh gives roughly 0.7 of a viewport of scroll per camera
-stop. It is tunable, under one constraint: this section must not dominate a
-page that has seven others.
+**Track length. Amended 2026-08-25 (see section 15).** 560svh, then 420, now
+300. Six camera stops in 200svh of travel, which is about a third of a viewport
+each and the pace the four ways have always had. What went is the approach:
+„Die Ausgangslage" was pinned in front of the crossroads for a day and is an
+ordinary paper section above it again.
 
-Inside the stage, a two-column grid: canvas left, copy column right, no
-overlap. The prototype floated the copy over the canvas and it covered the
-leftmost object, so this is fixed by construction rather than by nudging.
+**The canvas is the stage. Amended 2026-08-25 (see section 15).** This spec
+originally called for a two-column grid, canvas left and copy right, no
+overlap, on the grounds that the prototype floated the copy over the canvas and
+it covered the leftmost object. Both goals survive full bleed and the grid does
+not: measured at 1440x900, the canvas was 640x796 inside a 1425x900 stage, 40%
+of the section, with a hard edge on all four sides and the section's own aurora
+and grain filling the rest. Two different darks meeting at a rectangle is a
+video embedded in a slide.
+
+So the canvas fills the stage, the floor and the fog run to the viewport edges,
+the aurora and grain are not rendered while the scene is up, and the copy is a
+glass panel standing on the left of the world. The original objection is
+answered by arithmetic rather than by a grid: `scene.ts` is handed the panel,
+computes its field of view against the free region's aspect, and shifts the
+frustum by half the reserve through `setViewOffset`, so a shot is composed in
+the part of the canvas nobody is standing on.
+
+The panel's fill is 0.88 of `inkSurface` and that number is a floor, not a
+taste call: composited over the brightest thing this scene could ever put
+behind it, ink-muted measures 5.77:1 in the dark theme and 6.53:1 in the light.
+
+**No inner scroll. Amended 2026-08-25 (see section 15).** The original said the
+copy column scrolls inside the stage, wanting 1097px against a stage that never
+gives it that, with `overflow-y: auto` and the focused row nudged into view. It
+also said the cost was honest and real: 300 to 460px of wheel spent inside a
+box in the middle of the flagship section.
+
+That cost is gone rather than paid. Once the objects are named at themselves
+the board is a board: number, name, price, and the detail of whichever row the
+camera is standing at, opened with `grid-template-rows` so the other three stay
+in the accessibility tree at zero height. Measured at the 1024x736 floor, that
+is 498px closed and 618px at its tallest against 648px of room, and the browser
+suite walks all six stops and fails if the panel leaves the stage or grows
+anything to scroll.
+
+The one thing full bleed costs is the gutter. A shot composed inside the free
+region comes from a frustum far wider than it: at 1440x900 a lane close-up
+spans 74 degrees of world horizontally against the 51 the shot is composed in,
+and the strip between the viewport edge and the panel is where the neighbouring
+lane's object turns up. Composing it away is not available, because the subject
+needs 24 degrees of horizontal fit inside the free region and that forces a
+frustum wide enough to reach the neighbour. It is faded to the scene's own
+background instead, which is what the fog already does in depth.
 
 That grid exists only at 64rem and up, which is why the mount threshold is the
 same number rather than a smaller one of its own. See section 7.
-
-The copy column scrolls inside the stage. Measured, it wants 1097px and the
-stage never gives it that: it overhung by 459px at 1024x736, 301px at 1440x900
-and 121px even at 1920x1080, clipped at both ends because the grid centres it.
-The grid row was `auto`, which also sized the canvas, handing the renderer a
-640x1097 buffer for a 640x900 box. So the row is `minmax(0, 1fr)`, the stage's
-padding is cut to what the fixed header needs, and the column takes
-`min-height: 0; overflow-y: auto` with the focused row nudged into view.
-
-The cost is honest and worth stating: a visitor whose pointer is over the copy
-column spends 300 to 460px of wheel inside it before the page advances. The
-scroll chains rather than traps, and the nudge is keyed on the focused way so
-it never fires mid-gesture, but the dead zone is real.
 
 ### 5.5 Progress and camera stops
 
@@ -220,6 +269,25 @@ Six stops: the junction at 0, the four ways at 0.18 / 0.37 / 0.56 / 0.75, and
 a final wide shot at 1.00. Each way stop carries its own standoff distance and
 its own look height, because an office is a room and a rack is a box and one
 camera distance cannot frame both.
+
+Those six were briefly eight, with two approach stops in front of the junction
+and everything after them remapped through an `APPROACH_END`. That is undone
+and the numbers above are the ones in the code again. See section 15.
+
+Which way is NAMED hands over at arrival rather than at the midpoint of a move.
+It used to be decided by whichever of the two had the higher weight, which
+crosses in the middle, and that was fine while the name lived in a list beside
+the canvas. With the name standing at the object, a label swapping halfway
+between two objects names the thing you are looking at as the thing you are
+not. `FOCUS_HANDOVER` is 0.78 of eased segment time, and there is deliberately
+no dead zone: exactly one of the two is named at every point of the move.
+
+Framing is a test rather than a measurement somebody took once.
+`crossroads-framing.spec.ts` projects every object at every stop at all three
+stages, with no GPU and no browser, and fails on anything cropped, any
+neighbour taking more than 1% of the composed region, a camera swinging faster
+than this journey already does, or an `aimY` that has stopped pointing at the
+middle of its object.
 
 Read on scroll through `requestAnimationFrame`, never directly in the scroll
 handler.
@@ -465,8 +533,67 @@ record.
   most of it will therefore never see this. That is defensible only if the
   price board is genuinely good on a phone, which it is today. Revisit with a
   real mid-range Android in hand.
-- **Scroll length.** 420svh is a long section on a page that already has
-  seven. If it reads as a hostage situation, cut to 320svh and drop the final
-  wide shot.
+- **Scroll length.** RESOLVED, twice, and the second time by taking content off
+  the pin rather than shortening it. 560svh was 51.6% of the homepage, 420svh
+  was 44.6%, and 300svh is 31.5%. The escape hatch this risk named, dropping
+  the final wide shot, was not needed and would have cost the one stop that
+  ends the section by releasing the place.
+- **Type over a moving picture.** The failure mode overlay scrollytelling is
+  known for, and it now applies: the copy sits on the scene. Bounded rather
+  than watched. The panel's fill is measured against the brightest frame the
+  scene could produce and the labels carry their own backdrop, and both numbers
+  are in section 5.4.
+- **Labels colliding.** Four chips about 195px apart at the wide shots, and the
+  longest is 205px wide. Ways 01 and 03 sit level and 02 and 04 sit a line
+  higher, and the browser suite asserts that no two of them overlap at any stop
+  at any of the three viewports. A copy change that lengthens a name is caught
+  by a test.
 - **Font timing.** `document.fonts.ready` on a browser with fonts blocked.
   Handled by the timeout in section 6, and worth an explicit manual check.
+
+## 15. Amendments
+
+### 2026-08-25: full bleed, names at the objects, and the approach unpinned
+
+Three changes, from the second audit of the same day. They are recorded here
+rather than folded silently into the sections above, because this spec is the
+binding authority for the section and two of them reverse decisions it argued
+for at length.
+
+**The canvas is the stage.** Section 5.4 called for a two-column grid to keep
+the copy off the objects. The result read as a video embedded in a slide: 40%
+of the section, a hard rectangle on four sides, and two different darks meeting
+at its edge. Nobody else frames a scene that way. The copy stays off the
+objects by arithmetic instead, which is what `setViewOffset` and a field of
+view computed against the free region are for.
+
+**The names stand at the objects.** Section 4 forbade floating names. The half
+of that rule that mattered was that a name is DOM text and is said once, and
+both hold: the chips are HTML, `aria-hidden`, and carry the same string as the
+row. What changed is that the picture and the list are now visibly the same
+four things.
+
+**The approach is unpinned.** Yesterday's commit merged „Die Ausgangslage" into
+this section, and it was worth trying: the answer landing as the camera reaches
+the junction is better choreography than an ink panel at the bottom of a list.
+It cost 122svh of pinned scroll during which the picture was a slow dolly
+towards four wireframes while the words were about agencies, website kits and
+Excel, none of which is in this scene.
+
+Issue #18 tried to put them in it, on `claude/crossroads-dead-ends`: three dead
+ends on a second fan the visitor passes on the way in. The mechanic works. The
+cost is a 160 degree about-face measured at 37.7 degrees per 1% of section
+against the 7.9 this journey spends, which is 1.13 times the arithmetic floor
+for that move in that budget, and only a 720svh track brings it down. That is a
+recorded no, with numbers, and it is what unpinning rests on: the argument
+cannot be made to agree with the picture at any scroll length this page can
+afford.
+
+So it is a paper section above this one again, and the striking of the three
+options, which was a fallback-only device, now runs for every visitor.
+
+What did NOT change, and is still the spec: scope rather than price in the
+geometry, keyed objects, the blueprint mechanic, deferred three.js, the render
+loop that parks, every word in the DOM, both languages through the same content
+files, the palette gate, the bundle gate, and the fallback being complete
+rather than a degradation.
