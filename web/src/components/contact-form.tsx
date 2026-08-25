@@ -63,6 +63,10 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
     const company = String(data.get('company') ?? '').trim();
     const message = String(data.get('message') ?? '').trim();
     const consent = data.get('consent') === 'on';
+    // The honeypot, forwarded rather than checked here. Deciding on the client
+    // tells a bot which field gave it away; the handler can just say 200 and
+    // drop the message.
+    const website = String(data.get('website') ?? '').trim();
 
     const next: Errors = {};
     if (!name) next.name = t.errorRequired;
@@ -94,7 +98,7 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
       const res = await fetch(profile.formEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, company, message }),
+        body: JSON.stringify({ name, email, company, message, website }),
       });
       setStatus(res.ok ? 'sent' : 'failed');
       if (res.ok) form.reset();
@@ -144,6 +148,18 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
       <Field id="company" label={t.fields.company}>
         <input id="company" name="company" autoComplete="organization" className={field} />
       </Field>
+
+      {/* The honeypot. A real input, positioned off-screen rather than hidden
+          with display:none, because some bots skip what is not rendered. A
+          person never reaches it: it is out of the tab order, hidden from the
+          accessibility tree, and autofill is switched off so a browser does not
+          helpfully put a URL in it. Anything that arrives with this filled is
+          answered 200 and silently dropped by the handler, because a bot told
+          it failed comes back without the field. */}
+      <div aria-hidden="true" className="pointer-events-none absolute left-[-9999px] h-px w-px">
+        <label htmlFor="website">Website</label>
+        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
 
       <Field id="message" label={t.fields.message} error={errors.message}>
         <textarea
@@ -209,7 +225,15 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
         </p>
       ) : null}
 
-      <p className="max-w-measure text-small text-muted">{t.mailtoNote}</p>
+      {/* Which note is true depends on which path this build takes, so it is
+          read off the same value the submit handler branches on rather than
+          assumed. Production posts to the first-party handler, previews hand
+          off to the visitor's mail client, and telling someone their message
+          went to a server when it opened their mail client instead is a
+          statement about their data, not a wording preference. */}
+      <p className="max-w-measure text-small text-muted">
+        {profile.formEndpoint ? t.postNote : t.mailtoNote}
+      </p>
     </form>
   );
 }

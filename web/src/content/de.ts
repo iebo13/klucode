@@ -405,7 +405,7 @@ const de = {
     title: 'Erzählen Sie mir, was gerade nicht läuft.',
     lead: `30 Minuten, unverbindlich, ohne Präsentation. Ich melde mich werktags innerhalb von ${profile.responseTime.de}.`,
     directTitle: 'Direkt',
-    directBody: 'Anrufen oder schreiben geht schneller als jedes Formular.',
+    directBody: 'Eine E-Mail geht schneller als jedes Formular.',
     formTitle: 'Oder hier',
     fields: {
       name: 'Name',
@@ -428,6 +428,8 @@ const de = {
     errorEmail: 'Diese Adresse stimmt so nicht.',
     mailtoNote:
       'Diese Seite läuft ohne Server und ohne Tracking. Das Formular überträgt deshalb nichts selbst, sondern öffnet Ihr E-Mail-Programm mit der fertigen Nachricht: Sie sehen genau, was gesendet wird, und Sie drücken auf Senden. Wenn Ihr Gerät kein E-Mail-Programm eingerichtet hat, nehmen Sie bitte die Adresse links.',
+    postNote:
+      'Diese Seite läuft ohne Tracking und ohne fremde Dienste. Das Formular sendet Ihre Nachricht an meinen eigenen Server, der sie als E-Mail an mich weiterleitet. Kein Formulardienst, keine Dritten. Was dabei gespeichert wird, steht in der Datenschutzerklärung.',
     expectTitle: 'Was danach passiert',
     expect: [
       'Antwort werktags innerhalb von 24 Stunden.',
@@ -581,8 +583,10 @@ const de = {
       {
         heading: '5. Kontaktformular',
         paragraphs: [
-          'Das Formular auf der Kontaktseite überträgt Ihre Angaben nicht selbstständig. Es öffnet Ihr E-Mail-Programm mit einer vorbereiteten Nachricht. Der Versand erfolgt erst durch Sie und über Ihren eigenen E-Mail-Anbieter. Es werden dabei keine Daten an diese Website oder an Dritte übertragen.',
-          'Sollte künftig ein serverseitiger Versand eingerichtet werden, wird diese Erklärung vorher entsprechend angepasst.',
+          'Das Formular auf der Kontaktseite überträgt Ihre Angaben an den Server dieser Website. Übermittelt werden Ihr Name, Ihre E-Mail-Adresse, auf Wunsch Ihr Unternehmen und Ihre Nachricht. Der Server leitet sie ausschließlich als E-Mail an mich weiter und speichert sie nicht dauerhaft.',
+          'Ein externer Formulardienst wird nicht eingesetzt. Die Verarbeitung findet auf dem Server statt, den ich selbst betreibe. Ihre Angaben werden nicht an Dritte weitergegeben.',
+          'Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, soweit Ihre Anfrage auf einen Vertrag abzielt, im Übrigen Art. 6 Abs. 1 lit. f DSGVO beziehungsweise Ihre Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO. Ihre Angaben werden gelöscht, sobald Ihre Anfrage abschließend bearbeitet ist und keine gesetzlichen Aufbewahrungspflichten entgegenstehen.',
+          'Zum Schutz vor automatisierten Zusendungen enthält das Formular ein verstecktes Feld, das Sie nicht sehen und nicht ausfüllen können, und die Zahl der Zusendungen je IP-Adresse ist begrenzt. Dafür wird Ihre IP-Adresse als SHA-256-Prüfsumme für höchstens eine Stunde gespeichert und danach automatisch verworfen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO, mein berechtigtes Interesse am Schutz vor Missbrauch.',
         ],
       },
       {

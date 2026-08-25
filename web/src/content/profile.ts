@@ -24,6 +24,24 @@
 /** The origin the real site lives on. Everything else is a preview. */
 const PRODUCTION_ORIGIN = 'https://klucode.de';
 
+/**
+ * Resolved once, because two fields need it and one of them is the contact
+ * endpoint, which must not be switched on anywhere the handler does not exist.
+ */
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? PRODUCTION_ORIGIN).replace(/\/$/, '');
+
+/**
+ * True wherever NEXT_PUBLIC_SITE_URL names somewhere other than klucode.de,
+ * which in practice means the GitHub Pages preview, whose workflow feeds the
+ * variable from configure-pages.
+ *
+ * A build with the variable UNSET is production, not a preview: it falls back
+ * to PRODUCTION_ORIGIN above. That is deliberate, because the real site is a
+ * static export built without any of the Pages variables and uploaded to
+ * Plesk, so the plain `npm run build` has to be the one that is live-ready.
+ */
+const IS_PREVIEW = SITE_URL !== PRODUCTION_ORIGIN;
+
 /** Marks a value that still has to be supplied. */
 const todo = (label: string): string => `«${label}»`;
 
@@ -59,20 +77,21 @@ export const profile = {
    * hold the Impressum banner up. Every line that would have printed it is
    * dropped instead, in both languages.
    *
-   * What this costs, stated plainly because it is a legal question and not a
-   * layout one. § 5 Abs. 1 Nr. 2 DDG wants details allowing "schnelle
-   * elektronische Kontaktaufnahme und unmittelbare Kommunikation", the email
-   * address included. A phone number is NOT compulsory: the ECJ settled that
-   * in C-298/07, where an electronic enquiry form answered inside 30 to 60
-   * minutes was held sufficient. But the ruling asks for a second route
-   * alongside email, and this site currently has none, because formEndpoint is
-   * '' and the contact form hands off to mailto. Email and a mailto form are
-   * one channel wearing two hats.
+   * Why that is allowed, since it is a legal question and not a layout one.
+   * § 5 Abs. 1 Nr. 2 DDG wants details allowing "schnelle elektronische
+   * Kontaktaufnahme und unmittelbare Kommunikation", the email address
+   * included. A phone number is NOT compulsory: the ECJ settled that in
+   * C-298/07, where an electronic enquiry form answered inside 30 to 60
+   * minutes was held sufficient. What the ruling does want is a second route
+   * alongside email.
    *
-   * So the second channel is now the contact form's job. deploy/contact.php is
-   * a ready-made first-party handler for the Plesk server: set formEndpoint to
-   * '/contact.php' and update privacy.sections § 5 in de.ts and en.ts in the
-   * same change. Until that happens the Impressum leans on email alone.
+   * That second route is formEndpoint below, which is why the two fields have
+   * to be read together. It only holds while the contact form genuinely
+   * transmits: a mailto hand-off is the email channel wearing a second hat, so
+   * emptying formEndpoint on production would quietly take the Impressum back
+   * to one channel. responseTime says one working day, which is well outside
+   * the 30 to 60 minutes the ECJ had in front of it, so answering promptly is
+   * part of the arrangement rather than a nicety.
    */
   phone: null as string | null,
 
@@ -121,7 +140,7 @@ export const profile = {
    * Pages) does not advertise klucode.de as its canonical home — which would
    * tell search engines the preview is the real site.
    */
-  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL ?? PRODUCTION_ORIGIN).replace(/\/$/, ''),
+  siteUrl: SITE_URL,
 
   /**
    * Public profiles, emitted as schema.org `sameAs`. Optional by design: null
@@ -141,19 +160,28 @@ export const profile = {
    * whenever privacy.sections changes — a policy with a stale date reads as an
    * unmaintained one.
    */
-  policyUpdated: '2026-08-02',
+  policyUpdated: '2026-08-25',
 
   /**
-   * Optional endpoint for the contact form. Left empty — the decided path
-   * (issue #11) is the mailto hand-off, which keeps a static site honest: no
-   * hidden third party, and no processor to name in the privacy policy.
+   * The contact form's endpoint, and it is deliberately not a constant.
    *
-   * If server-side sending is ever wanted, deploy/contact.php is a ready-made
-   * FIRST-party handler for the Plesk server (set this to '/contact.php') —
-   * still no third-party processor. Setting this switches the form to a real
-   * POST. Update privacy.sections § 5 in de.ts and en.ts in the same change.
+   * deploy/contact.php is a first-party handler that runs on the Plesk server
+   * the real site is uploaded to. It is what gives § 5 DDG a second channel
+   * alongside email now that there is no phone number: the ECJ accepted an
+   * electronic enquiry form for exactly this in C-298/07, but only a form that
+   * actually transmits. A mailto hand-off is the email channel again.
+   *
+   * Empty on every preview, because GitHub Pages serves static files and will
+   * not execute PHP. Pointed at the handler unconditionally, the form on the
+   * preview would POST to a 404 and tell the visitor sending failed, on the one
+   * page whose whole job is being reachable. Previews fall back to the mailto
+   * hand-off, which needs no server and works there.
+   *
+   * So the two deploys behave differently on purpose, and the privacy policy
+   * has to describe the production path, which is the one visitors are subject
+   * to. See privacy.sections § 5 in de.ts and en.ts.
    */
-  formEndpoint: '' as string,
+  formEndpoint: (IS_PREVIEW ? '' : '/contact.php') as string,
 } as const;
 
 export const fullName = `${profile.firstName} ${profile.lastName}`;
@@ -191,7 +219,7 @@ export function filled(v: string | null | undefined): string | undefined {
  * must be noindex: they would otherwise be indexed as a full duplicate of the
  * production site.
  */
-export const isPreviewDeploy = profile.siteUrl !== PRODUCTION_ORIGIN;
+export const isPreviewDeploy = IS_PREVIEW;
 
 /** Formats profile.policyUpdated for display, e.g. "2. August 2026". */
 export function policyDate(lang: 'de' | 'en'): string {

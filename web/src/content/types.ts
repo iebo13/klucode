@@ -224,7 +224,17 @@ export type Content = {
     failed: string;
     errorRequired: string;
     errorEmail: string;
+    /**
+     * The note under the form, and there are two because the form behaves in
+     * two ways. mailtoNote describes the hand-off to the visitor's own mail
+     * client, which is what every preview build does, because GitHub Pages
+     * cannot run the PHP handler. postNote describes the real transmission to
+     * this site's own server, which is production. Rendering the wrong one is
+     * not a copy slip, it is telling a visitor their data went somewhere it
+     * did not.
+     */
     mailtoNote: string;
+    postNote: string;
     expectTitle: string;
     expect: string[];
   };

@@ -400,7 +400,7 @@ const en = {
     title: 'Tell me what is not working.',
     lead: `30 minutes, no obligation, no slide deck. You will hear back within ${profile.responseTime.en}.`,
     directTitle: 'Directly',
-    directBody: 'Calling or writing is faster than any form.',
+    directBody: 'An email is faster than any form.',
     formTitle: 'Or here',
     fields: {
       name: 'Name',
@@ -421,6 +421,8 @@ const en = {
     failed: 'That did not work. Please email me directly.',
     errorRequired: 'Required.',
     errorEmail: 'That address does not look right.',
+    postNote:
+      'This site runs without tracking and without outside services. The form sends your message to my own server, which forwards it to me as an email. No form service, no third parties. What gets stored is set out in the privacy policy.',
     mailtoNote:
       'This site runs without a server and without tracking. The form sends nothing itself. It opens your email client with the message ready to go, so you can see exactly what is sent and you press send. If your device has no mail client set up, please use the address on the left.',
     expectTitle: 'What happens next',
@@ -570,8 +572,10 @@ const en = {
       {
         heading: '5. Contact form',
         paragraphs: [
-          'The form on the contact page does not transmit your details on its own. It opens your email client with a prepared message. Sending is done by you, through your own email provider. No data is transmitted to this website or to any third party in the process.',
-          'Should server-side sending be introduced in future, this policy will be amended beforehand.',
+          "The form on the contact page transmits your details to this website's server. It sends your name, your email address, your company if you give one, and your message. The server forwards them to me as an email and does not store them permanently.",
+          'No external form service is involved. The processing happens on the server I run myself. Your details are not passed on to any third party.',
+          'The legal basis is Art. 6(1)(b) GDPR where your enquiry is aimed at a contract, otherwise Art. 6(1)(f) GDPR or your consent under Art. 6(1)(a) GDPR. Your details are deleted once your enquiry has been dealt with and no statutory retention period stands in the way.',
+          'To keep automated submissions out, the form carries a hidden field you cannot see or fill in, and the number of messages from any one IP address is capped. Your IP address is stored as a SHA-256 checksum for at most one hour for that purpose and then discarded automatically. The legal basis is Art. 6(1)(f) GDPR, my legitimate interest in preventing abuse.',
         ],
       },
       {
