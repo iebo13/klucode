@@ -95,6 +95,31 @@ export const profile = {
    */
   phone: null as string | null,
 
+  /**
+   * A WhatsApp Business number, digits only with the country code and no plus
+   * sign, e.g. '4915112345678'. Renders as a wa.me link on the contact page
+   * and under the closing ask on every page. null renders nothing.
+   *
+   * Why the slot exists next to a deliberate "no phone number": for an
+   * owner-run business in the Rheinland WhatsApp is the default channel, and
+   * the whole site offers a 30 minute call with no way to make one. A wa.me
+   * link puts a chat one tap away without printing a number on the page. The
+   * number is still inside the link, so this is a decision for the owner, not
+   * a default, which is why it ships as null.
+   */
+  whatsapp: null as string | null,
+
+  /**
+   * A slot picker (Calendly, cal.com, or the like), as a full URL. Renders as
+   * a link on the contact page. null renders nothing.
+   *
+   * Read the privacy policy before setting it: a hosted booking page is a
+   * third party the policy currently says the site has none of. A link is
+   * not an embed, so nothing loads until the reader clicks, but the page they
+   * land on is somebody else's and the policy should say so.
+   */
+  booking: null as string | null,
+
   // --- ladungsfähige Anschrift -------------------------------------------
   // Must be a real street address. A P.O. box does not satisfy § 5 DDG.
   street: 'Heyestraße 140',
@@ -152,24 +177,27 @@ export const profile = {
 
   // --- commercial --------------------------------------------------------
   /**
-   * When capacity next opens, as an ISO year and month.
+   * When capacity next opens, as an ISO year ('2027') or year and month
+   * ('2027-03'). A bare year renders as „ab 2027" and says no more than the
+   * owner wants to promise; a month renders as „ab März".
    *
    * It was two hand-written month names, and the failure mode is not that the
    * word is wrong, it is that nobody notices when it goes out of date. Written
    * in August, „Freie Kapazität ab September" is a promise. Read in November it
    * is a site nobody maintains, which costs more trust than saying nothing.
    *
-   * A year and a month rather than a name fixes two things at once. The label
-   * is now formatted per language, so „Oktober" and „October" cannot drift
-   * apart. And the month is comparable, so scripts/check-profile.mjs can refuse
-   * a production build whose availability month has already passed.
+   * An ISO value rather than a name fixes two things at once. The label is
+   * formatted per language, so „Oktober" and „October" cannot drift apart. And
+   * the value is comparable, so scripts/check-profile.mjs can refuse a
+   * production build whose availability date has already passed: a month once
+   * the month is over, a year once the year is over.
    *
    * Deliberately NOT derived from the build date. „The month after this build"
    * is a claim about the business that only its owner can make, and a site that
    * quietly re-promises availability every time it is rebuilt is exactly the
    * unmaintained-but-plausible thing this is meant to prevent.
    */
-  availableFrom: '2026-09',
+  availableFrom: '2027',
   responseTime: { de: '24 Stunden', en: 'one working day' },
 
   /**
@@ -239,29 +267,35 @@ export function filled(v: string | null | undefined): string | undefined {
 export const isPreviewDeploy = IS_PREVIEW;
 
 /**
- * The availability month, in the reader's language, e.g. "September".
+ * The availability date, in the reader's language: "2027" for a bare year,
+ * "September" for a month.
  *
- * Month alone and no year, because the badge sits next to „Freie Kapazität ab"
- * and a year on a date two months out reads as a much longer wait than it is.
- * The year is still stored, which is what lets the gate below tell September
- * 2026 from September 2027.
+ * A month is shown without its year, because the badge sits next to „Freie
+ * Kapazität ab" and a year on a date two months out reads as a much longer
+ * wait than it is. The year is still stored, which is what lets the gate
+ * below tell September 2026 from September 2027.
  */
 export function availableFrom(lang: 'de' | 'en'): string {
+  const value: string = profile.availableFrom;
+  if (/^\d{4}$/.test(value)) return value;
   return new Intl.DateTimeFormat(lang === 'de' ? 'de-DE' : 'en-GB', {
     month: 'long',
     timeZone: 'UTC',
-  }).format(new Date(`${profile.availableFrom}-01T00:00:00Z`));
+  }).format(new Date(`${value}-01T00:00:00Z`));
 }
 
 /**
- * True once the availability month is behind us, for the pre-flight gate.
+ * True once the availability date is behind us, for the pre-flight gate.
  *
- * Compared against a month passed in rather than against a clock, so the check
+ * Compared against a date passed in rather than against a clock, so the check
  * script owns the "now" and nothing in the built site depends on when it was
- * built. `today` is an ISO year and month, the same shape as the field.
+ * built. `today` is an ISO year and month; it is cut to the field's own
+ * precision first, so „ab 2027" is current for the whole of 2027 and stale
+ * from January 2028.
  */
 export function availabilityIsStale(today: string): boolean {
-  return profile.availableFrom < today;
+  const value: string = profile.availableFrom;
+  return value < today.slice(0, value.length);
 }
 
 /** Formats profile.policyUpdated for display, e.g. "2. August 2026". */

@@ -597,3 +597,63 @@ geometry, keyed objects, the blueprint mechanic, deferred three.js, the render
 loop that parks, every word in the DOM, both languages through the same content
 files, the palette gate, the bundle gate, and the fallback being complete
 rather than a degradation.
+
+### 2026-08-25, later: unpinned, and the camera follows the pointer
+
+The third audit of the day (`docs/audit-2026-08-25.md`) measured the pinned
+section against a first-time visitor and found against it, with numbers rather
+than taste: the enhanced state showed one row's detail at a time where the
+phone fallback showed all four, so a laptop got strictly less than a phone; the
+four stops were four instants in 1,800px of travel and the rest was transit,
+in which the open row and the framed object disagreed for two thirds of every
+move; the 1024x736 mount floor excluded every phone, every portrait tablet and
+the 1366x768 laptop that is the most common Windows viewport; and it cost
+eighteen wheel notches to read what fits on one screen, on the section that
+carries the prices. NN/g's strongest warning about scroll-jacking is
+scroll-jacking combined with text the reader has to read.
+
+So the track is gone. This reverses sections 3, 5.3, 6 and 7 as written, and
+it is the fourth re-specification of the section in two days, which the audit
+itself named as evidence that the idea was being fitted to the page by trial.
+What survives is the part that was never in question: the place, the objects,
+the blueprint build, the names at the objects, the full-bleed stage, every word
+in the DOM, deferred three.js, the render loop that parks.
+
+**The section is its own height.** The stage is `position: relative`, the
+canvas is absolutely positioned behind the layout, and the height is the copy
+panel plus 4rem of padding: measured at 1440x900 it is about one viewport. No
+`svh`, no sticky, no `progressOf`. `progress.ts` is replaced by `journey.ts`,
+which has two pure functions: where the camera is partway through a glide, and
+how far each object has built since the section came into view.
+
+**The camera follows the row.** It idles at the junction with all four named.
+Hovering or keyboard-focusing a row glides it to that way's close-up in 720ms
+on a smoothstep, from wherever it is, so a pointer sweeping down the rows is
+one continuous path. Leaving the list returns it to the junction. Hover and
+focus are the same input, which is what makes the enhanced state reachable
+without a pointer: the old one disclosed by scroll position and rows were not
+focusable.
+
+**Every row is a link** to its own card on `/leistungen`, and every detail is
+open at every moment. The board is number, name and price on one line, and who
+it is for and what the price covers on the next. `reads` is gone from the
+content: the label at the object does that job.
+
+**The reveal is tied to looking.** The four are drawings until the section is a
+fifth on screen, then they build one after another, 900ms each and 160ms
+apart. Built stays built.
+
+**The mount floor is width only.** `(min-width: 64rem)`. The height half
+existed because the panel had to fit inside a 100svh stage; the section grows
+with the panel now, so the 1366x768 laptop gets the scene. The poster stays for
+the fallback and is not shown on phones, where a 1600x378 strip is 78px tall.
+
+**The release shot is gone.** There is no end of the track to release from;
+the junction is where the camera returns to.
+
+The framing suite projects every object at all five shots against the three
+stage sizes `tools/shoot.mjs` measures, and walks every ordered pair of shots
+for the camera's turning rate, since the pointer can ask for any of them from
+any other. The browser suite asserts the hover and keyboard handover, the
+label overlap at every shot, the reveal, the parked loop, and that the section
+is under a viewport and a half.

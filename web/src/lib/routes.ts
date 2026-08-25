@@ -31,7 +31,11 @@ export const LEGAL_KEYS = ['imprint', 'privacy'] as const;
 export const slugs: Record<PageKey, Record<Lang, string>> = {
   services: { de: 'leistungen', en: 'services' },
   work: { de: 'projekte', en: 'work' },
-  approach: { de: 'ansatz', en: 'approach' },
+  // „ablauf", renamed from „ansatz" on 2026-08-25 before the site went live.
+  // An owner looking for how the work runs looks for „so läuft es ab", and
+  // „Ansatz" is a word developers use about themselves. Nav label, page title
+  // and slug moved together; nothing had been indexed under the old one.
+  approach: { de: 'ablauf', en: 'approach' },
   about: { de: 'ueber-mich', en: 'about' },
   contact: { de: 'kontakt', en: 'contact' },
   imprint: { de: 'impressum', en: 'imprint' },

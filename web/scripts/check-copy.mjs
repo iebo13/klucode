@@ -54,7 +54,6 @@ const SLOTS = [
     words: 4,
     pick: (c) => [
       c.home.heroEyebrow,
-      c.home.problemEyebrow,
       c.home.servicesEyebrow,
       c.home.workEyebrow,
       c.home.approachEyebrow,
@@ -70,14 +69,8 @@ const SLOTS = [
   },
   // One line under a service name on a homepage card at 375px.
   { label: 'services[].forWhom', chars: 78, pick: (c) => c.services.items.map((s) => s.forWhom) },
-  // One line under a heading in a 26rem column beside the canvas. Longer than
-  // this wraps to two lines and the four rows stop lining up.
-  {
-    label: 'service reads',
-    chars: 62,
-    pick: (c) => c.services.items.map((s) => s.reads),
-  },
-  // Sits beside the price; wraps into the number if it grows.
+  // Under the price, right-aligned, in the crossroads panel. Two lines is
+  // fine, three pushes the row taller than the name beside it.
   {
     label: 'services[].priceNote',
     chars: 42,
@@ -85,8 +78,13 @@ const SLOTS = [
   },
   // Small text between the project title and the summary.
   { label: 'work.projects[].scope', chars: 46, pick: (c) => c.work.projects.map((p) => p.scope) },
-  // Pills in a wrapping row; one that is too long owns its own line.
-  { label: 'home.heroProof[]', chars: 46, pick: (c) => c.home.heroProof },
+  // One line beside the step's title on the homepage, in a seven-column
+  // grid. The full account is on /ablauf; this is the summary.
+  {
+    label: 'approach.steps[].brief',
+    chars: 92,
+    pick: (c) => c.approach.steps.map((s) => s.brief),
+  },
   // Sector label above the project title, and the stack tags beside it.
   { label: 'work.projects[].sector', chars: 34, pick: (c) => c.work.projects.map((p) => p.sector) },
   {

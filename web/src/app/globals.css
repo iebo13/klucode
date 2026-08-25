@@ -23,9 +23,29 @@
 
   html {
     scroll-behavior: smooth;
+    /* The header is a fixed capsule 69px tall that occupies no layout space,
+       so an anchor jump (#faq, #website, #crm) would land its target under
+       it. This clears it for every anchor on the site at once. */
+    scroll-padding-top: 5.5rem;
     /* German compounds are long; let the browser break them rather than
        letting a 24-letter word blow out a narrow column. */
     hyphens: auto;
+    /* No visible scrollbar, on every page, in every engine. The page still
+       scrolls by wheel, touch, keyboard and the scroll-padding above; what
+       goes is the bar drawn beside the content. scrollbar-width covers
+       Firefox and current Chromium, the pseudo-element covers WebKit and
+       older Chromium, and -ms-overflow-style the last of old Edge. The
+       trade-off is stated rather than hidden: a reader loses the visual
+       sense of where in the page they are, which the section rhythm and the
+       fixed capsule have to carry instead. Owner's call, 2026-08-25. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   body {
@@ -362,71 +382,37 @@
 }
 
 /* --- the crossroads ------------------------------------------------------
-   The stage is sticky INSIDE the track, and the track is the only thing in
-   the section with a height. No negative margins anywhere, and that is the
-   whole point.
+   An ordinary section with a scene behind it. The canvas is absolutely
+   positioned inside the stage, the stage is the section's own height, and
+   the height comes from the copy panel plus the section rhythm like any
+   other section on the page.
 
-   The first 3D attempt zeroed the stage's layout height with a negative
-   bottom margin equal to its height, and so did the first draft of this plan.
-   It does not work. A sticky element's travel is its containing block's
-   height minus its own MARGIN box, and a -100svh margin makes that margin box
-   zero tall, which hands the stage one extra viewport of travel. It then
-   releases a full viewport late and paints over whatever follows. Nesting it
-   in the track instead gives a travel of 300svh minus 100svh, which is
-   exactly right and needs no arithmetic to stay in step.
-
-   The same bug had a quieter second symptom: progressOf divides by
-   (section height - stage height), so the journey finished a whole viewport
-   before the stage unstuck, and the last viewport of scrolling did nothing.
-
-   svh rather than vh, because a mobile browser's vh includes a toolbar that
-   is not there, and the stage would be taller than what you can see. */
-/* 300svh, and it was 560, then 420.
-
-   Six camera stops in 200svh of travel, so about 33svh a move, which is the
-   pace the four ways already had when the section was only the crossroads.
-   What went is not choreography, it is the 122svh of approach that used to
-   stand in front of them: „Die Ausgangslage" is a paper section above this one
-   again, and the camera starts at the junction. See the note at the top of
-   crossroads/progress.ts for the measurement that decided it.
-
-   The section was 51.6% of the homepage at 560svh and 44.6% at 420. The pin is
-   a third shorter than it was this morning, and the argument it used to carry
-   reads at the reader's own pace now, which is the half of the scrolljacking
-   complaint that pixels alone never answered: NN/g's finding is about a
-   task-focused reader spending input on a page that has taken the scroll rate
-   away from them, so the fix is fewer things on the pin rather than a shorter
-   pin. */
-.crossroads-track {
-  height: 300svh;
-}
-
+   It was a 300svh track with a sticky 100svh stage, and the camera read the
+   scroll. That cost the reader 1,800px of scrolling in which nothing new was
+   learned, showed one row's detail at a time where the phone fallback showed
+   all four, and was invisible on every phone, every portrait tablet and the
+   most common Windows laptop. See the note at the top of crossroads/journey.ts
+   for the measurements that decided it. The camera follows the row under the
+   pointer now, which is what the pin used to spend eighteen wheel notches
+   doing, and a reader who never hovers scrolls past a section of the same
+   height as its neighbours. */
 .crossroads-stage {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  overflow: hidden;
+  position: relative;
 }
 
 /* --- full bleed ----------------------------------------------------------
-   The canvas was 640x796 inside a 1425x900 stage: 40% of the section, with a
-   hard edge on all four sides and the section's own aurora and grain filling
-   the other 60%. Two different darks either side of a rectangle is a video
-   embedded in a slide, and it is what nobody else does: every award-tier 3D
-   site of 2026 runs its scene full bleed with the type over it.
-
-   So the view is the stage. The floor and the fog run to the viewport edges,
+   The view is the stage. The floor and the fog run to the viewport edges,
    the aurora and the grain are gone (the component stops rendering them when
    the scene is up, because the scene IS the ink), and the copy is a panel
    standing on the left of the world rather than a column beside a box.
 
    What that costs the camera is bookkeeping, and it is worth naming because it
    is the part that is easy to get wrong. A shot composed centrally in a canvas
-   whose left 592px is under an opaque panel is a shot half behind the panel.
+   whose left 600px is under an opaque panel is a shot half behind the panel.
    scene.ts is handed the panel and computes its field of view against what is
    LEFT of it, then shifts the frustum by half the reserve so the free region's
    middle is where the subject lands. crossroads-framing.spec.ts projects every
-   object at every stop against exactly those numbers. */
+   object at every shot against exactly those numbers. */
 [data-enhanced='true'] .crossroads-view {
   position: absolute;
   inset: 0;
@@ -460,7 +446,7 @@
    wide enough to reach the neighbour at 31 degrees off axis. That is
    arithmetic, not choreography, and crossroads-framing.spec.ts holds the half
    of it that IS choreography: nothing cropped, and no neighbour taking more
-   than 1% of the composed region. Measured today, the worst is 0.80%.
+   than 1% of the composed region.
 
    So the gutter fades to the scene's own background instead. It is the same
    thing the fog does in depth, done in screen space, and it costs one
@@ -477,26 +463,6 @@
     var(--kc-stone-950) var(--crossroads-gutter, 0px),
     transparent var(--crossroads-reserve, 0px)
   );
-}
-
-[data-enhanced='true'] .crossroads-layout {
-  position: relative;
-  /* Bounded, so the row is the content box rather than the tallest item, and
-     the panel cannot quietly overhang a stage that clips.
-
-     items-center rather than stretch, which is the reverse of what this rule
-     used to say. Stretched was right while the column scrolled: the column had
-     to BE the row for overflow-y to have anything to act on. It does not
-     scroll any more, so it is a panel of its own height floating in the middle
-     of the world, which is what a panel over a scene should be. */
-  grid-template-rows: minmax(0, 1fr);
-  align-items: center;
-  /* The site header is FIXED and occupies the first 69px of every viewport,
-     so a panel centred in a full-height stage still needs the top kept clear
-     at the shortest viewport this mounts on. The bottom keeps 0.5rem rather
-     than the section rhythm's 6.5rem: this is a fixed viewport, not a page,
-     and every pixel of it is height the panel is competing for at 1024x736. */
-  padding-block: 5rem 0.5rem;
 }
 
 /* The panel, and its fill is the number that matters.
@@ -525,123 +491,87 @@
 }
 
 /* --- the board -----------------------------------------------------------
-   Four names against four prices, and the row the camera is standing at opens
-   to say who it is for and what the price covers.
+   Four rows: number, name and price on the first line, who it is for under
+   the name and what the price covers under the price. Every line showing at
+   every moment. Each row is one link to its own card on the services page,
+   and the row under the pointer is the way the camera is on.
 
-   It used to be four full rows of number, name, audience, caption and price,
-   1097px of them, in a stage that is 796px tall at 1440x900 and 632px at the
-   1024x736 floor. It did not fit anywhere, so it scrolled: a box in the middle
-   of the flagship section with its own scrollbar, chaining into the page
-   scroll that drives the section, with the camera nudging rows into view. Four
-   locally reasonable decisions adding up to the one thing on the page that
-   behaved unpredictably under a wheel.
-
-   None of it is needed once the objects are named at themselves. The board is
-   a board: 01 through 04, a name, a price, comparable at a glance, and the
-   detail belongs to whichever one you are looking at. That it fits inside its
-   stage at the smallest viewport the scene mounts on, with the detail open, is
-   asserted in the browser suite rather than trusted. */
-[data-enhanced='true'] .crossroads-ways li {
+   The board used to open one detail at a time, on the row the camera was
+   standing at, so that it would fit inside a 100svh stage at 1024x736. The
+   stage is gone and the section is as tall as the board. What the board still
+   has to fit inside is a laptop viewport, so that a reader can reach all four
+   rows with the pointer while the scene is in front of them: measured at
+   1260px with three detail lines per row and the section rhythm's padding,
+   which is a viewport and a half at 1440x900. Two detail lines, in two
+   columns, and it is under 800. */
+.crossroads-way {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: baseline;
+  /* Two columns, not three. A column for the number cost the name the width
+     it needs: „Individuelle Web-Anwendung" wrapped and every row was a line
+     taller for it. The number sits inside the name now. */
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
   column-gap: 0.75rem;
-  padding-block: 0.625rem;
+  row-gap: 0.125rem;
+  align-items: baseline;
+  /* Bled past the panel's text edge, so the hover fill reads as a row rather
+     than as a box drawn around the text. */
+  margin-inline: -0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--kc-radius-md);
+  color: inherit;
+  text-decoration: none;
 }
 
-[data-enhanced='true'] .crossroads-way-name {
-  grid-column: 2;
+.crossroads-way-no {
+  margin-right: 0.5rem;
+}
+
+.crossroads-way-name {
+  grid-column: 1;
+  grid-row: 1;
   /* html carries hyphens: auto, which is right for German body copy and wrong
-     for four product names in a 26rem panel: „Entwickler-Kapazität" came out
+     for four product names in a 28rem panel: „Entwickler-Kapazität" came out
      as „Entwick-" over „ler-Kapazität", hyphenated one letter from a hyphen it
      already had. Manual leaves the browser the break the name is written with
      and forbids the one it invents. */
   hyphens: manual;
 }
 
-[data-enhanced='true'] .crossroads-way-price {
-  grid-column: 3;
+.crossroads-way-price {
+  grid-column: 2;
+  grid-row: 1;
   text-align: right;
   white-space: nowrap;
 }
 
-/* Collapsed with grid-template-rows and never with display or visibility. At
-   0fr the text is zero pixels tall and still in the accessibility tree, still
-   in document order, and still found by the browser's own find-in-page, which
-   is the rule the two acts used to follow for the same reason. The 0fr to 1fr
-   transition is progressive: a browser that will not animate it still
-   collapses it, because 0fr is an ordinary track size. */
-[data-enhanced='true'] .crossroads-way-detail {
-  display: grid;
-  grid-template-rows: 0fr;
-  grid-column: 1 / -1;
-  opacity: 0;
+.crossroads-way-detail {
+  grid-column: 1;
+  grid-row: 2;
 }
 
-[data-enhanced='true'] .crossroads-way-detail > * {
-  overflow: hidden;
-  min-height: 0;
+.crossroads-way-note {
+  grid-column: 2;
+  grid-row: 2;
+  /* Under the price, no wider than the price column wants to be: „pro Tag ·
+     Rahmenvertrag möglich" is two lines at this size, which is the height
+     the audience line beside it takes anyway. */
+  max-width: 9rem;
+  text-align: right;
 }
 
-[data-enhanced='true'] .crossroads-ways li[data-focus='true'] .crossroads-way-detail {
-  grid-template-rows: 1fr;
-  opacity: 1;
+/* The row the camera is on. A fill and nothing else: the other three stay at
+   full strength, because they carry the prices and are the steady state of
+   the section. The old board dimmed them to 0.7, which was measured against
+   AA and passed, and is not needed once nothing is being disclosed. */
+.crossroads-ways li[data-focus='true'] .crossroads-way {
+  background: color-mix(in oklab, var(--kc-inkText) 7%, transparent);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  [data-enhanced='true'] .crossroads-ways li {
-    transition: opacity 240ms ease;
+  .crossroads-way {
+    transition: background-color 160ms ease;
   }
-
-  [data-enhanced='true'] .crossroads-way-detail {
-    transition:
-      grid-template-rows 320ms ease,
-      opacity 320ms ease;
-  }
-}
-
-/* The shortest viewport the scene mounts on, and the only one where the panel
-   is close to its stage.
-
-   Measured at 1024x736 with the longest of the four details open: 642px of
-   panel against 648px of room before this rule, which is six pixels and not a
-   margin. With it, 618 against 648. The gate is in the browser suite rather
-   than here: it walks all six stops at this exact viewport and fails if the
-   panel leaves the stage, so a copy change that adds a line to `forWhom` is
-   caught by a test rather than by a reader finding a price cut in half.
-
-   52rem is 832px, which is above the 736 floor and below every laptop that is
-   not one. Nothing at 900 or 1080 sees this. */
-@media (max-height: 52rem) {
-  [data-enhanced='true'] .crossroads-copy {
-    padding: 1.25rem;
-  }
-
-  [data-enhanced='true'] .crossroads-ways li {
-    padding-block: 0.5rem;
-  }
-}
-
-/* Scoped to the enhanced state, and that scope is load-bearing. In the
-   fallback every row carries data-focus="false", because nothing is ever in
-   focus, so an unscoped rule served this section's headings and prices at
-   0.55 alpha over ink to exactly the visitors the fallback exists for: the
-   phone, the reduced-motion request, the browser without WebGL, the page with
-   no JavaScript. check_contrast.py cannot catch that, because the dimming is
-   a CSS opacity rather than a token pair it can audit.
-
-   0.7 and not 0.55, and the number is an accessibility floor rather than a
-   taste call. At any scroll position at most one of the four rows is
-   undimmed, so the other three are the steady state of this section, not a
-   transient, and they carry the prices. text-ink-muted is stone.300
-   (#C1C5C2); composited at 0.55 over the ink surface it measures 3.83:1 in
-   the light theme (stone.950) and 3.39:1 in the dark one (stone.900), against
-   the 4.5:1 that 14px body text needs. At 0.7 the same two are 5.33:1 and
-   4.52:1, which clears AA in both, and the de-emphasis is still plainly
-   visible beside a row at full strength. Do not lower it without recomputing
-   both themes: check_contrast.py audits token pairs and will not stop you. */
-[data-enhanced='true'] .crossroads-ways li[data-focus='false'] {
-  opacity: 0.7;
 }
 
 /* --- the names, at the things they name ----------------------------------
@@ -655,7 +585,7 @@
 
    Real 3D text was the alternative and it loses on every one of those. The
    scene is lit by a moving warm spot through fog, so contrast on a glyph
-   sitting on geometry cannot be guaranteed at every stop, and a second copy of
+   sitting on geometry cannot be guaranteed at every shot, and a second copy of
    four names in a texture is a second copy of four names.
 
    Occlusion is the one thing this cannot do, and nothing in this scene ever
@@ -676,7 +606,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  /* transform is written by index.tsx on every scroll frame and is the label's
+  /* transform is written by index.tsx on every drawn frame and is the label's
      position. The offset that hangs the chip above its anchor lives on the
      child, so the two never have to be composed. */
   will-change: transform;
@@ -718,9 +648,9 @@
   visibility: hidden;
 }
 
-/* The one the camera is standing at. Not bigger, because a chip that grows
-   moves the type under the reader's eye, and not brighter, because the other
-   three are already legible. The accent rule is the whole signal. */
+/* The one the camera is on. Not bigger, because a chip that grows moves the
+   type under the reader's eye, and not brighter, because the other three are
+   already legible. The accent rule is the whole signal. */
 .crossroads-mark-box[data-focus='true'] {
   border-color: var(--kc-inkAccent);
   background: color-mix(in oklab, var(--kc-inkSurface) 92%, transparent);
@@ -741,94 +671,28 @@
 }
 
 /* --- no scene ------------------------------------------------------------
-   No scene means no journey: the track stops being two viewports of runway,
-   the stage stops sticking, and the section is just the rows at their own
-   height. This covers all three refusals at once, which a width media query
-   would not: reduced motion and a missing WebGL context happen at any width.
-
-   The track is collapsed rather than hidden. It WRAPS the copy now, so
-   display:none here would take the whole section with it. */
-[data-enhanced='false'] .crossroads-track {
-  height: auto;
-}
-
-[data-enhanced='false'] .crossroads-stage {
-  position: static;
-  height: auto;
-  overflow: visible;
-}
-
+   This covers all three refusals at once, which a width media query would
+   not: reduced motion and a missing WebGL context happen at any width. */
 [data-enhanced='false'] .crossroads-view {
   display: none;
-}
-
-/* One column. The view is display:none in the fallback, so the copy would
-   otherwise auto-place into the 26rem track and leave the 1fr one standing
-   empty beside it. */
-[data-enhanced='false'] .crossroads-layout {
-  grid-template-columns: minmax(0, 1fr);
 }
 
 /* Stacked, spelled out, and every line showing. This is what most visitors
    read: every phone, every tablet held upright, every reduced-motion request,
    every browser without WebGL, and anyone with JavaScript off. */
-[data-enhanced='false'] .crossroads-ways li {
-  display: grid;
-  gap: 0.25rem;
-  padding-block: 1rem;
+[data-enhanced='false'] .crossroads-way {
+  grid-template-columns: minmax(0, 1fr);
+  margin-inline: 0;
+  padding-inline: 0;
 }
 
-/* The line naming the object only means anything next to the object. */
-[data-enhanced='false'] .crossroads-reads {
-  display: none;
-}
-
-/* --- „Die Ausgangslage" --------------------------------------------------
-   Each of the three options fails as you leave it: read at full strength, and
-   once the next block has been reached a rule draws part of the way across its
-   heading. Three struck options stand above the answer, which is the shape the
-   argument already has.
-
-   It ran in the fallback only while this was the crossroads' first act, which
-   is to say it ran for most visitors and not for the ones on a laptop.
-   Unpinned, it runs for everyone, and it is an IntersectionObserver plus a CSS
-   transition.
-
-   NO OPACITY, and that is a change from the ink version rather than an
-   omission. On ink the passed option settled to 0.7, where text-ink-muted
-   measures 5.33:1 light and 4.52:1 dark. On paper the same device is not
-   available: text-muted is stone.700 on stone.100 and measures 5.46:1 at FULL
-   strength, so 0.7 takes it to 2.95:1 and even 0.92 only reaches 4.63:1. A dim
-   you cannot see is not a device, and one you can see fails AA. The rule
-   through the heading carries it alone. */
-.problem-strike {
-  position: relative;
-  display: inline-block;
-}
-
-.problem-strike::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  /* 46%, and it was 56 while this lived on ink inside the crossroads. At 56 of
-     a 1.3 line box the rule lands under the baseline rather than across the
-     letters, which is an underline, and an underline on a heading reads as a
-     link. */
-  top: 46%;
-  height: 1px;
-  width: 0;
-  background: currentColor;
-  opacity: 0.6;
-}
-
-/* Part of the way, not all of it. A full strike reads as deleted text, and
-   none of these three options is wrong, they are just not for you. */
-.problem-option[data-passed='true'] .problem-strike::after {
-  width: 72%;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .problem-strike::after {
-    transition: width 520ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  }
+[data-enhanced='false'] .crossroads-way-no,
+[data-enhanced='false'] .crossroads-way-name,
+[data-enhanced='false'] .crossroads-way-price,
+[data-enhanced='false'] .crossroads-way-detail,
+[data-enhanced='false'] .crossroads-way-note {
+  grid-column: 1;
+  grid-row: auto;
+  max-width: none;
+  text-align: left;
 }

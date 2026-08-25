@@ -19,6 +19,13 @@ export type Faq = {
   q: string;
   a: string;
   link?: { label: string; to: LinkTarget };
+  /**
+   * True for the questions about money, which the services page renders
+   * inline. A price-shopper who has read four cards and the billing terms
+   * used to be sent to another page to read the answers; now the three that
+   * matter there are on the page and the link covers the rest.
+   */
+  price?: boolean;
 };
 
 /**
@@ -29,7 +36,23 @@ export type Faq = {
  * table owns the slugs and this owns the intent.
  */
 export type LinkTarget = 'services' | 'work' | 'approach' | 'about' | 'contact';
-export type Step = { title: string; body: string };
+/**
+ * One step of the process. `body` is the full account on /ablauf; `brief` is
+ * the one line the homepage shows beside the step's title, because the
+ * homepage used to render all four bodies and was a duplicate of the page it
+ * linked to.
+ */
+export type Step = { title: string; brief: string; body: string };
+
+/**
+ * The closing ask of a page: a heading and a lead.
+ *
+ * One per page rather than one for the site. The same H2, lead and buttons
+ * closed six pages and were also the H1 of /kontakt, which a reader meets as
+ * the site repeating itself. Each page now asks in its own terms, and the
+ * button underneath is the same everywhere because the action is.
+ */
+export type Cta = { title: string; lead: string };
 
 /**
  * The four services, as a closed set.
@@ -45,15 +68,17 @@ export type Service = {
   key: ServiceKey;
   name: string;
   forWhom: string;
-  /**
-   * One line naming what the object at the end of this way actually is. Shown
-   * beside the 3D crossroads on the homepage, where the reader can see the
-   * object but has not been told what they are looking at. Required rather
-   * than optional so a half-translated section is a compile error.
-   */
-  reads: string;
   body: string;
   includes: string[];
+  /**
+   * What the price does NOT cover, per offer. „Festpreis heißt Festpreis" is
+   * only believable next to the lines that say where it stops, and until now
+   * that list existed once for the whole site („Was ich nicht mache") rather
+   * than once per card. Two or three lines, and every one of them a thing a
+   * buyer in this segment actually asks about: content, photography, hosting,
+   * a logo.
+   */
+  excludes: string[];
   price: string;
   priceNote: string;
   /**
@@ -106,22 +131,31 @@ export type Project = {
    * shows work, and precision without evidence reads as copywriting.
    *
    * `src` is a path under public/. Anonymised is fine, and preferable to
-   * nothing.
+   * nothing. Once it exists it replaces the diagram below on the project
+   * page; until then the diagram is the figure.
    */
   shot?: { src: string; alt: string };
   /**
-   * True while a real screenshot is still coming, which draws an empty framed
-   * panel where it will go.
+   * The system, drawn as what it is: what feeds it, what it is built around,
+   * where it runs.
    *
-   * A marked absence and NOT a stand-in image. A stock photograph sitting
-   * under „so sieht das System aus" is a fabricated claim on the one section
-   * whose entire value is that it is honest, and a picture taken off the web
-   * is somebody else's copyright on a commercial page. The panel says a
-   * screenshot is coming, which is true, and scripts/check-profile.mjs refuses
-   * a production build while any of them are still up. Same bargain as todo()
-   * in profile.ts: visible in development, impossible to ship by accident.
+   * Required, so all three projects get the same treatment. It replaced a
+   * dashed box on two of them saying a screenshot was coming and no figure at
+   * all on the third: three projects, three visual treatments, two of them
+   * apologies. A diagram drawn from the case study's own words is honest in a
+   * way a stand-in image is not, and it is the same node graph the logo is
+   * made of doing real work. The labels are content, so they localise.
    */
-  shotPending?: boolean;
+  diagram: {
+    /** The three left-hand inputs or parts, top to bottom. */
+    sources: [string, string, string];
+    /** The thing at the centre they share. */
+    hub: string;
+    /** Where it ends up: the server, the till, the enquiries. */
+    out: string;
+    /** Accessible description of the whole drawing. */
+    label: string;
+  };
 };
 
 export type LegalSection = { heading: string; paragraphs: string[] };
@@ -155,8 +189,6 @@ export type Content = {
     availablePrefix: string;
     /** Marks an offer that is proposed rather than settled. */
     draft: string;
-    /** Caption inside the empty frame where a screenshot will go. */
-    shotPending: string;
     skipToContent: string;
     menu: string;
     close: string;
@@ -176,6 +208,8 @@ export type Content = {
     after: string;
     result: string;
     includes: string;
+    /** Heading over the per-offer list of what the price does not cover. */
+    excludes: string;
     from: string;
   };
 
@@ -184,15 +218,15 @@ export type Content = {
     heroTitle: string;
     heroTitleAccent: string;
     heroLead: string;
-    heroProof: string[];
-    problemEyebrow: string;
-    problemTitle: string;
-    problemLead: string;
-    problemCards: Card[];
-    answerTitle: string;
-    answerBody: string;
     servicesEyebrow: string;
     servicesTitle: string;
+    /**
+     * The one sentence „Die Ausgangslage" was worth keeping. The rest of that
+     * section argued against agencies and website kits between the proof and
+     * the prices, which is the wrong place and the wrong register for it; the
+     * argument lives in the FAQ now, as a question a reader actually asks.
+     */
+    servicesLead: string;
     servicesLink: string;
     /**
      * What the crossroads looks like, for everyone who never sees it move.
@@ -236,23 +270,19 @@ export type Content = {
     notBody: string;
     notItems: string[];
     /**
-     * Sends a price-shopper to the answers instead of leaving them on the
-     * board. This page is where the objection is formed and the six answers
-     * that meet it, including „Was kostet das?", are on the homepage with
-     * nothing pointing at them from here.
+     * The heading over the price questions rendered inline on this page (the
+     * home.faq entries flagged `price`), and the link to the rest. This page
+     * is where the objection is formed; the answers used to be one click away
+     * with only a link to make it.
      */
     faqTitle: string;
-    faqBody: string;
     faqLink: string;
     /**
-     * For the visitor who cannot tell which of the four they are.
-     *
-     * The site's answer to that has always been the 30 minute call, which is
-     * right for the positioning and invisible on the page where the doubt
-     * actually forms. One sentence converts it into the funnel that already
-     * exists instead of losing it to a closed tab.
+     * The closing ask. Its lead is the triage sentence: for the visitor who
+     * cannot tell which of the four they are, the site's answer has always
+     * been the 30 minute call, and this is the page where the doubt forms.
      */
-    triage: string;
+    cta: Cta;
     /**
      * A PROPOSED fifth rung, shown on this page only, and null where there
      * isn't one.
@@ -291,14 +321,18 @@ export type Content = {
     title: string;
     lead: string;
     projects: Project[];
-    noteTitle: string;
-    noteBody: string;
+    cta: Cta;
   };
 
   approach: {
     eyebrow: string;
     title: string;
     lead: string;
+    /**
+     * How long the whole thing takes, end to end, in one line above the
+     * steps. The numbers were only on the offer cards.
+     */
+    duration: string;
     steps: Step[];
     aiEyebrow: string;
     aiTitle: string;
@@ -306,6 +340,15 @@ export type Content = {
     objection: Faq;
     principlesTitle: string;
     principles: Card[];
+    /**
+     * The questions about continuity and ownership, which belong on the page
+     * about how the work is done. They were on the homepage, where they
+     * duplicated two of the principles above, and the homepage FAQ is about
+     * money and time now.
+     */
+    faqTitle: string;
+    faq: Faq[];
+    cta: Cta;
   };
 
   about: {
@@ -313,10 +356,13 @@ export type Content = {
     title: string;
     lead: string;
     paragraphs: string[];
+    /** Heading over the links to the three projects the bio mentions. */
+    projectsTitle: string;
     nameNote: string;
     factsTitle: string;
     facts: { label: string; value: string }[];
     portraitAlt: string;
+    cta: Cta;
   };
 
   contact: {
@@ -327,11 +373,21 @@ export type Content = {
     triage: string;
     directTitle: string;
     directBody: string;
+    /** Label on the WhatsApp link. Rendered only once profile.whatsapp is set. */
+    whatsapp: string;
+    /** Label on the slot-picker link. Rendered only once profile.booking is set. */
+    booking: string;
     formTitle: string;
     fields: {
       name: string;
       email: string;
       company: string;
+      /**
+       * An optional number, for a call back. The site publishes no phone
+       * number, so this is how the 30 minute call the whole site offers can
+       * actually be arranged by a reader who would rather talk than write.
+       */
+      phone: string;
       message: string;
       messagePlaceholder: string;
     };

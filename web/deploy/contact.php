@@ -23,9 +23,11 @@
  *   3. Test end to end from the live site before relying on it.
  *
  * The client (contact-form.tsx) POSTs JSON:
- *   { name, email, company, message, website }
+ *   { name, email, company, phone, message, website }
  * and only checks response.ok — the response body is for debugging.
- * `website` is the honeypot and must arrive empty. See SPAM below.
+ * `phone` is optional: the site prints no number, so a visitor who would
+ * rather talk leaves theirs for a call back. `website` is the honeypot and
+ * must arrive empty. See SPAM below.
  */
 
 declare(strict_types=1);
@@ -76,6 +78,7 @@ function field(array $data, string $key, bool $singleLine): string {
 $name = field($data, 'name', true);
 $email = field($data, 'email', true);
 $company = field($data, 'company', true);
+$phone = field($data, 'phone', true);
 $message = field($data, 'message', false);
 
 // --- SPAM ------------------------------------------------------------------
@@ -156,7 +159,9 @@ $fromAddress = 'website@' . MAIL_DOMAIN;
 $subject = mb_encode_mimeheader(SUBJECT_PREFIX . ' — ' . $name, 'UTF-8');
 $body = $name . "\n"
   . ($company !== '' ? $company . "\n" : '')
-  . $email . "\n\n"
+  . $email . "\n"
+  . ($phone !== '' ? 'Rückruf: ' . $phone . "\n" : '')
+  . "\n"
   . $message . "\n";
 
 $headers = [

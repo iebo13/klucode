@@ -67,3 +67,41 @@ for (const path of ['/de/', '/de/leistungen/', '/de/projekte/', '/de/kontakt/', 
     expect(small, 'controls under 44px').toEqual([]);
   });
 }
+
+/**
+ * The page scrollbar is hidden and the page still scrolls, on every page.
+ *
+ * Two halves, because either one alone is the bug: a scrollbar rule that
+ * also kills overflow leaves the page stuck at the top, and a rule that
+ * hides the bar in one engine leaves it drawn in another. The gutter check
+ * is what a screenshot would show: with the bar gone the viewport's inner
+ * width and the document's client width are the same number.
+ */
+for (const path of [
+  '/de/',
+  '/de/leistungen/',
+  '/de/projekte/',
+  '/de/ablauf/',
+  '/de/ueber-mich/',
+  '/de/kontakt/',
+  '/en/',
+]) {
+  test(`${path} hides its scrollbar and still scrolls`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(path);
+    const seen = await page.evaluate(() => {
+      const root = document.documentElement;
+      window.scrollTo({ top: 400, behavior: 'instant' });
+      return {
+        scrollbarWidth: getComputedStyle(root).scrollbarWidth,
+        gutter: window.innerWidth - root.clientWidth,
+        scrolled: window.scrollY,
+        overflow: root.scrollHeight > window.innerHeight,
+      };
+    });
+    expect(seen.scrollbarWidth, 'the scrollbar is still drawn').toBe('none');
+    expect(seen.gutter, 'the scrollbar still takes a gutter').toBe(0);
+    expect(seen.overflow, 'the page has nothing to scroll').toBe(true);
+    expect(seen.scrolled, 'the page no longer scrolls').toBe(400);
+  });
+}

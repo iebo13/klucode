@@ -1,8 +1,9 @@
 /**
- * „Vier Wege zur Zusammenarbeit" as a place you walk through.
+ * „Vier Wege zur Zusammenarbeit" as a place you look into.
  *
  * Four lanes fan out from a junction. At the end of each stands the thing you
- * would actually get.
+ * would actually get. The camera idles at the junction with all four in frame
+ * and glides to a way's close-up when its row is hovered or focused.
  *
  * Every word the reader sees is DOM text, including the four names that stand
  * AT the objects. Nothing is painted into the world except the two mock
@@ -15,7 +16,7 @@
  * is the truth.
  *
  * This file owns three.js and nothing else. The choreography it runs lives in
- * progress.ts, with no three.js import, which is why it can be unit-tested.
+ * journey.ts, with no three.js import, which is why it can be unit-tested.
  */
 import {
   ACESFilmicToneMapping,
@@ -39,11 +40,11 @@ import {
   WebGLRenderer,
 } from 'three';
 
+import { buildAt, glideAt, shotFor } from './journey';
 import { BUILDERS, LINE_ALPHA } from './objects';
 import { PALETTE } from './palette';
-import { buildTargets, focusAt, ratchet, segmentAt } from './progress';
 import { createRegistry } from './registry';
-import type { Handle, Mark, SceneLabels, ServiceKey, Stop, Way } from './types';
+import type { BootOptions, Handle, Mark, SceneLabels, ServiceKey, Shot, Way } from './types';
 
 /**
  * The four lanes, left to right across the fan.
@@ -103,18 +104,18 @@ export const LANES = [
 /**
  * The lane lens, as the half-angles every close-up has to cover.
  *
- * One lens for all four stops, and the standoff above does the framing. Giving
- * each stop the field of view that suits its own object frames all four
+ * One lens for all four shots, and the standoff above does the framing. Giving
+ * each shot the field of view that suits its own object frames all four
  * perfectly and makes the world breathe: measured, the journey ran 40°, 64°,
- * 67°, 37° across four adjacent stops, a two-to-one change of focal length
+ * 67°, 37° across four adjacent shots, a two-to-one change of focal length
  * while the camera is already moving. A prime lens and a different standoff is
  * what a camera operator does instead, and it leaves exactly one deliberate
- * change of lens in the sequence, at either end, for the wide shot.
+ * change of lens, to and from the wide shot.
  *
  * Every object sits inside 85% of this on its binding axis, which is where the
  * standoffs come from: measured at 1024x736, 1440x900 and 1920x1080, nothing is
  * cropped and the only neighbouring object that appears anywhere is 0.6% of the
- * frame at one corner of the care stop.
+ * frame at one corner of the care shot.
  */
 const LANE_FIT_H = 24;
 const LANE_FIT_V = 18;
@@ -172,7 +173,7 @@ function standOff(target: Vector3, back: number): [number, number, number] {
  * it, swung round by whatever the lane is rotated by.
  *
  * Written as a function rather than inlined, because the two places that need
- * it are now in different scopes. The stop list is module level, so the
+ * it are now in different scopes. The shot list is module level, so the
  * framing suite can read it with no GPU and no canvas, and the lane records
  * are inside boot() because they own a Group.
  */
@@ -180,11 +181,12 @@ const laneTarget = (turn: number, dist: number, aimY: number): Vector3 =>
   new Vector3(0, aimY, -dist).applyAxisAngle(Y_AXIS, turn);
 
 /**
- * The two wide shots, which stand off the fan far enough to hold all four
- * lanes at once. Their half-angles are wider than a close-up's by design:
- * this is the establishing shot and the only change of lens in the sequence.
+ * The wide shot, which stands off the fan far enough to hold all four lanes
+ * at once. Its half-angles are wider than a close-up's by design: this is the
+ * establishing shot, the one the section idles on, and the only change of
+ * lens in the scene.
  *
- * They are also tilted well down, and that is the part that took measuring.
+ * It is also tilted well down, and that is the part that took measuring.
  * Four objects on a flat floor occupy a band 36° across and 15° tall, and the
  * canvas is a portrait column, so a lens wide enough for the band always
  * leaves the height over-supplied. No camera position fixes that: raising the
@@ -202,30 +204,22 @@ const WIDE_FIT_H = 35.9;
 const WIDE_FIT_V = 15.2;
 
 /**
- * Every camera position in the journey, at module level so the framing suite
+ * Every camera position in the scene, at module level so the framing suite
  * can project against the same list the renderer drives.
  *
- * It used to open with two approach stops a long way short of the junction,
- * closing the distance while the copy column argued that agencies and website
- * kits do not fit. That argument is a paper section above this one now, and
- * the camera starts where it always ended up: at the junction, looking down
- * the fan, with all four ways named and none of them built. See the note at
- * the top of progress.ts for why.
- *
- * Six stops in 200svh of travel, so 40svh a move, which is the pace the four
- * ways already had. What went is the 122svh that bought a slow dolly.
+ * Five, not six. There was a release shot at the end of the track, the same
+ * view as the junction from further back, so the section could end by
+ * releasing the place. There is no end of the track any more: the camera
+ * returns to the junction when the pointer leaves the rows, and the junction
+ * is the shot it left.
  */
-export const STOPS: Stop[] = [
+export const SHOTS: Shot[] = [
   // The junction. The establishing shot, and the only place all four are in
   // frame with nothing yet decided.
-  { at: 0, focus: -1, pos: [0, 6, 13], look: [0, 0, -10], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
-  // 0.18, 0.37, 0.56, 0.75: the spacing the four ways have had since the
-  // section was only the crossroads, back in the whole of the track now that
-  // nothing stands in front of them.
+  { focus: -1, pos: [0, 6, 13], look: [0, 0, -10], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
   ...LANES.map((geom, i) => {
     const target = laneTarget(geom.angle, geom.dist, geom.aimY);
     return {
-      at: 0.18 + i * 0.19,
       focus: i,
       pos: standOff(target, geom.back),
       look: [target.x, target.y, target.z] as [number, number, number],
@@ -233,9 +227,6 @@ export const STOPS: Stop[] = [
       fitV: LANE_FIT_V,
     };
   }),
-  // The same shot from further back and a touch higher, so the section ends
-  // by releasing the place rather than by cutting away from it.
-  { at: 1, focus: -1, pos: [0, 7.2, 15.5], look: [0, 0.2, -10], fitH: 32.8, fitV: 13.5 },
 ];
 
 /**
@@ -250,10 +241,10 @@ const MARK_LIFT = 0.55;
 /**
  * How much of the canvas the copy panel is standing on, in CSS pixels.
  *
- * The scene is full bleed now: the canvas is the whole stage and the copy sits
- * on a glass panel over the left of it. So the subject cannot be centred in
- * the canvas, it has to be centred in what is LEFT of the canvas, and the
- * camera has to be told which part that is.
+ * The scene is full bleed: the canvas is the whole stage and the copy sits on
+ * a glass panel over the left of it. So the subject cannot be centred in the
+ * canvas, it has to be centred in what is LEFT of the canvas, and the camera
+ * has to be told which part that is.
  *
  * Two things come out of this number and they are different. The field of view
  * is computed against the free region's aspect, so a shot still covers its
@@ -279,14 +270,10 @@ export function boot(
   host: HTMLElement,
   ways: readonly Way[],
   labels: SceneLabels,
-  /**
-   * The copy panel, so the camera knows which part of the canvas it may not
-   * compose into. Optional and null-tolerant: a scene with nothing standing on
-   * it composes centrally, which is what every shot in this file was solved
-   * for before the stage went full bleed.
-   */
-  panel: HTMLElement | null = null,
+  options: BootOptions = {},
 ): Handle {
+  const { panel = null, onFrame } = options;
+
   // The floor is laid out for exactly four. A fifth service would need its own
   // angle, its own lane length, its own standoff and its own object, so the
   // honest failure is here rather than a lane with nothing at the end of it.
@@ -309,13 +296,13 @@ export function boot(
    *
    * The old exposure sat far enough into the ACES shoulder that the palette
    * stopped meaning anything. Sampled off the rendered canvas at each lane
-   * stop: the metalDark rack, token #5C605C, came out #ADA183, three times the
-   * token's luminance and plainly cream. The metalMid database, token #757975,
-   * came out #C0B294, and the metal monitor frame, token #A8ADA9, came out
-   * #E3DDCD, close enough to white that the shoulder had eaten most of its hue.
-   * Three materials that separate the rack from the database from the bezel
-   * were reading as one warm cream at three brightnesses, so the token
-   * guarantee in section 5.7 of the spec was decorative here.
+   * close-up: the metalDark rack, token #5C605C, came out #ADA183, three times
+   * the token's luminance and plainly cream. The metalMid database, token
+   * #757975, came out #C0B294, and the metal monitor frame, token #A8ADA9,
+   * came out #E3DDCD, close enough to white that the shoulder had eaten most
+   * of its hue. Three materials that separate the rack from the database from
+   * the bezel were reading as one warm cream at three brightnesses, so the
+   * token guarantee in section 5.7 of the spec was decorative here.
    *
    * At 0.72 the same three sample #616462, #6D6B63 and #AEA38A. The rack is
    * within six points a channel of its token, and the three are 39 and 65
@@ -342,15 +329,15 @@ export function boot(
 
   const scene = new Scene();
   scene.background = new Color(PALETTE.background);
-  // 0.014, and it was 0.022. The wide shot at either end now stands 34 units
-  // off the far lanes so it can hold all four without a lens wide enough to
-  // bend them, and at 0.022 that distance washed 47% of the contrast out of the
-  // two outer objects. At 0.014 it costs 20%, which still reads as depth, and
-  // the floor's far edge is still 51% gone by the time it arrives.
+  // 0.014, and it was 0.022. The wide shot stands 34 units off the far lanes
+  // so it can hold all four without a lens wide enough to bend them, and at
+  // 0.022 that distance washed 47% of the contrast out of the two outer
+  // objects. At 0.014 it costs 20%, which still reads as depth, and the
+  // floor's far edge is still 51% gone by the time it arrives.
   scene.fog = new FogExp2(PALETTE.background, 0.014);
 
   // The 50 is a placeholder. Every field of view in this scene is computed in
-  // layout() from the stop's half-angles and the canvas aspect, and layout()
+  // apply() from the shot's half-angles and the canvas aspect, and apply()
   // runs before the first frame.
   const camera = new PerspectiveCamera(50, 2, 0.1, 200);
 
@@ -402,7 +389,7 @@ export function boot(
    * 4 against a 2048 map is roughly the softness 2 would have given at 1024,
    * plus the extra resolution, so the edge is soft without the blur turning
    * into visible steps. The map costs 16 MB of depth texture once, and it is
-   * redrawn only on the frames the scroll actually changes something.
+   * redrawn only on the frames something actually changes.
    */
   key.shadow.radius = 4;
   scene.add(key, key.target);
@@ -499,7 +486,7 @@ export function boot(
     const units = BUILDERS[way.key]({ lane: stand, z: -geom.dist, track: reg.track, labels });
 
     // Before any material has been hidden, so the box is the shape of the
-    // finished thing rather than of whatever happens to be visible at p=0.
+    // finished thing rather than of whatever happens to be visible at the start.
     group.updateMatrixWorld(true);
     const box = new Box3().setFromObject(stand);
     const anchor = new Vector3(
@@ -508,19 +495,15 @@ export function boot(
       (box.min.z + box.max.z) / 2,
     );
 
-    return { group, units, anchor, stagger: geom.stagger, built: 0 };
+    return { group, units, anchor, stagger: geom.stagger, built: -1 };
   });
 
   const pos = new Vector3();
   const look = new Vector3();
-  // Named scratch and not `to`, because layout() also has a stop called `to`
-  // and one of the two would have to be renamed at the point of use.
-  const scratch = new Vector3();
 
-  let progress = 0;
   /**
    * The canvas, in CSS pixels, and how much of its left edge the copy panel is
-   * standing on. Read by layout() on every frame and by marks() straight
+   * standing on. Read by apply() on every frame and by marks() straight
    * after, so both work from one measurement rather than two.
    */
   let viewW = 0;
@@ -537,45 +520,35 @@ export function boot(
   let raf = 0;
   let alive = true;
 
-  function resize() {
-    const w = host.clientWidth;
-    const h = host.clientHeight;
-    if (w === 0 || h === 0) return;
-    viewW = w;
-    viewH = h;
-    reserved = reserveOf(host, panel);
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    // layout() computes the field of view from the new aspect and calls
-    // updateProjectionMatrix itself, so there is deliberately no second call
-    // here: a resize that only set the aspect would leave the camera holding
-    // the field of view worked out for the previous shape of the canvas.
-    layout(progress);
-    invalidate();
-  }
+  /**
+   * The camera's journey, as three shots and a clock.
+   *
+   * `current` is where the camera is this frame. `from` and `to` are the ends
+   * of the glide it is on, and `startedAt` is when it left. Re-aiming mid-glide
+   * copies `current` into `from` and restarts the clock, so a pointer sweeping
+   * down the rows produces one continuous path rather than four cuts.
+   */
+  let aimed = -1;
+  let from: Shot = shotFor(-1, SHOTS);
+  let to: Shot = from;
+  let current: Shot = from;
+  let startedAt = -Infinity;
+  /** When the reveal began, or null while the four are still drawings. */
+  let revealedAt: number | null = null;
 
   /**
-   * Everything except the draw call, run synchronously from set(), so anything
-   * asking which way is in focus gets the answer for the scroll position it
-   * just handed us rather than the one from the previous frame. The prototype
-   * read this from the render loop and named the wrong service for a frame.
+   * Puts the camera and the lights where a shot says. Everything except the
+   * draw call and the build, run once per frame from advance().
    */
-  function layout(p: number) {
-    const { from, to, t } = segmentAt(p, STOPS);
-    pos
-      .set(from.pos[0], from.pos[1], from.pos[2])
-      .lerp(scratch.set(to.pos[0], to.pos[1], to.pos[2]), t);
-    look
-      .set(from.look[0], from.look[1], from.look[2])
-      .lerp(scratch.set(to.look[0], to.look[1], to.look[2]), t);
+  function apply(shot: Shot) {
+    pos.set(shot.pos[0], shot.pos[1], shot.pos[2]);
+    look.set(shot.look[0], shot.look[1], shot.look[2]);
     camera.position.copy(pos);
     camera.lookAt(look);
 
     /**
      * The lens, from what this shot has to cover and the aspect of the part of
-     * the canvas nobody is standing on. Interpolated across the segment like
-     * the position is, so a move between two shots with different half-angles
-     * is one continuous change rather than a cut.
+     * the canvas nobody is standing on.
      *
      * The free region, not the canvas. Composing against the whole canvas and
      * then covering its left third with a glass panel is how a full-bleed
@@ -584,11 +557,7 @@ export function boot(
      * contained.
      */
     const free = Math.max(1, viewW - reserved);
-    camera.fov = fovFor(
-      from.fitH + (to.fitH - from.fitH) * t,
-      from.fitV + (to.fitV - from.fitV) * t,
-      viewH > 0 ? free / viewH : camera.aspect,
-    );
+    camera.fov = fovFor(shot.fitH, shot.fitV, viewH > 0 ? free / viewH : camera.aspect);
     /**
      * And the shift, which is the other half of the same idea.
      *
@@ -603,9 +572,9 @@ export function boot(
      * call: two of them would compute the same matrix twice a frame.
      */
     camera.setViewOffset(viewW || 1, viewH || 1, -reserved / 2, 0, viewW || 1, viewH || 1);
-    // marks() projects straight after this, and project() reads
+    // marks() projects straight after the draw, and project() reads
     // matrixWorldInverse. The render loop would update it, but the labels are
-    // read before the frame is drawn and would otherwise trail it by one.
+    // read from onFrame and would otherwise trail the picture by one.
     camera.updateMatrixWorld();
 
     /**
@@ -614,59 +583,88 @@ export function boot(
      *
      * The 4.5 used to be added to z outright, which is „towards the camera"
      * only while the camera stands at greater z than its subject. Every one of
-     * the four ways does, so nothing in the journey as it ships today was lit
-     * wrongly. Anything placed on the near side of the junction is, and the
-     * dead-end experiment on claude/crossroads-dead-ends found it the hard
-     * way: three objects at +Z came out back lit, and the template block,
-     * token #757975, rendered plainly blue.
+     * the four ways does, so nothing in the scene as it ships is lit wrongly.
+     * Anything placed on the near side of the junction is, and the dead-end
+     * experiment on claude/crossroads-dead-ends found it the hard way: three
+     * objects at +Z came out back lit, and the template block, token #757975,
+     * rendered plainly blue.
      *
      * The clamp is what lets that be fixed without relighting the crossroads.
-     * Every existing stop has the camera at least 6.3 units of z behind its
-     * look point and the ramp saturates at 2, so all of them get exactly the
-     * 4.5 they had: the four ways, the junction and the closing shot are
-     * unchanged to the last decimal. Only the sign flips, and it flips through
-     * a ramp rather than a step, so a future shot that crosses the junction
-     * slides the key across the floor instead of jumping it.
+     * Every shot has the camera at least 6.3 units of z behind its look point
+     * and the ramp saturates at 2, so all of them get exactly the 4.5 they
+     * had. Only the sign flips, and it flips through a ramp rather than a
+     * step, so a future shot that crosses the junction slides the key across
+     * the floor instead of jumping it.
      */
     const side = Math.max(-1, Math.min(1, (pos.z - look.z) / 2));
     key.position.set(look.x * 0.75 + pos.x * 0.25, 7, look.z * 0.75 + pos.z * 0.25 + side * 4.5);
     key.target.position.copy(look);
     key.target.updateMatrixWorld();
     fill.position.set(pos.x, 3.4, pos.z - 1);
+  }
 
-    // Built stays built. The ratchet lives in progress.ts, where it is tested,
-    // and the only thing that happens here is painting the result.
-    const next = ratchet(
-      lanes.map((l) => l.built),
-      buildTargets(p, STOPS, lanes.length),
-    );
-    lanes.forEach((lane, i) => {
-      // next is mapped from lanes, so it is the same length by construction and
-      // this fallback cannot fire. It is a fallback rather than a throw because
-      // layout() runs on every scroll frame, where throwing would turn one bad
-      // number into a scene that stops rendering altogether.
-      const built = next[i] ?? lane.built;
-      lane.built = built;
-      for (const u of lane.units) {
-        for (const m of u.mats) {
-          m.opacity = built;
-          // Not decoration. three.js renders shadows from a depth material that
-          // copies `visible` and reads `alphaTest`, and never looks at
-          // `opacity` or `transparent` at all: WebGLShadowMap gates the whole
-          // shadow draw on `material.visible`. Without this an object at
-          // opacity 0 lays its full solid silhouette on the floor, so the
-          // shadow arrives before the thing does, which is precisely backwards
-          // for a scene whose whole argument is that the drawing becomes the
-          // object. It also keeps the main pass from drawing meshes nobody can
-          // see.
-          m.visible = built > BUILD_VISIBLE_AT;
-        }
-        // The drawing fades out as the thing fades in, so the two are never
-        // both at full strength and the object never reads as a wireframe cage
-        // around a solid.
-        u.line.opacity = LINE_ALPHA * (1 - built);
+  /**
+   * Paints one lane's build state. Skipped when nothing changed, because this
+   * touches every material on the object and runs for four objects a frame.
+   */
+  function paint(lane: (typeof lanes)[number], built: number) {
+    if (built === lane.built) return;
+    lane.built = built;
+    for (const u of lane.units) {
+      for (const m of u.mats) {
+        m.opacity = built;
+        // Not decoration. three.js renders shadows from a depth material that
+        // copies `visible` and reads `alphaTest`, and never looks at
+        // `opacity` or `transparent` at all: WebGLShadowMap gates the whole
+        // shadow draw on `material.visible`. Without this an object at
+        // opacity 0 lays its full solid silhouette on the floor, so the
+        // shadow arrives before the thing does, which is precisely backwards
+        // for a scene whose whole argument is that the drawing becomes the
+        // object. It also keeps the main pass from drawing meshes nobody can
+        // see.
+        m.visible = built > BUILD_VISIBLE_AT;
       }
+      // The drawing fades out as the thing fades in, so the two are never
+      // both at full strength and the object never reads as a wireframe cage
+      // around a solid.
+      u.line.opacity = LINE_ALPHA * (1 - built);
+    }
+  }
+
+  /**
+   * Moves everything to where it is at `now`, and says whether anything is
+   * still moving. The glide is read off journey.ts and so is the build, so
+   * this function owns no numbers of its own.
+   */
+  function advance(now: number): boolean {
+    const glide = glideAt(from, to, startedAt, now);
+    current = glide.shot;
+    apply(current);
+
+    let building = false;
+    lanes.forEach((lane, i) => {
+      const built = revealedAt === null ? 0 : buildAt(now, revealedAt, i);
+      if (revealedAt !== null && built < 1) building = true;
+      paint(lane, built);
     });
+    return !glide.done || building;
+  }
+
+  function resize() {
+    const w = host.clientWidth;
+    const h = host.clientHeight;
+    if (w === 0 || h === 0) return;
+    viewW = w;
+    viewH = h;
+    reserved = reserveOf(host, panel);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    // apply() computes the field of view from the new aspect and calls
+    // updateProjectionMatrix itself, so there is deliberately no second call
+    // here: a resize that only set the aspect would leave the camera holding
+    // the field of view worked out for the previous shape of the canvas.
+    apply(current);
+    invalidate();
   }
 
   /**
@@ -686,8 +684,8 @@ export function boot(
    * the note on Mark in types.ts.
    *
    * The array is allocated once and rewritten in place. This is called from
-   * the same scroll frame as set(), and four object literals a frame is the
-   * kind of garbage that turns a parked loop into a busy one.
+   * the same frame as the draw, and four object literals a frame is the kind
+   * of garbage that turns a parked loop into a busy one.
    */
   const marked: Mark[] = lanes.map(() => ({ x: 0, y: 0, front: false }));
   const markScratch = new Vector3();
@@ -715,25 +713,31 @@ export function boot(
     return marked;
   }
 
-  function frame() {
+  function frame(now: number) {
     raf = 0;
     // stop() cancels the pending callback, but a cancellation that lands in the
     // same frame the callback was already dispatched in would still draw into a
     // disposed renderer.
     if (!alive) return;
+    const more = advance(now);
     renderer.render(scene, camera);
+    onFrame?.();
+    // The loop runs exactly as long as something is moving and parks the
+    // moment nothing is, which is most of the visit: after the reveal and
+    // between hovers the page costs no frames at all.
+    if (more) invalidate();
   }
 
   /**
-   * Asks for one frame, and parks afterwards.
+   * Asks for one frame, and parks afterwards unless frame() asks again.
    *
    * The loop used to reschedule unconditionally, so an rAF callback stayed
    * alive for the whole visit even with the section four viewports away and
    * nothing dirty. That is a permanent cost on a page whose pitch is that it
    * costs the visitor nothing, and it bought nothing: every change to the
-   * scene arrives through set() or resize(), and both of them come through
-   * here. So nothing is scheduled unless something changed, and one already
-   * scheduled frame absorbs any number of further changes before it runs.
+   * scene arrives through aim(), reveal() or resize(), and all of them come
+   * through here. One already scheduled frame absorbs any number of further
+   * changes before it runs.
    */
   function invalidate() {
     if (!alive || raf !== 0) return;
@@ -741,17 +745,25 @@ export function boot(
   }
 
   resize();
-  layout(0);
+  advance(performance.now());
   invalidate();
   window.addEventListener('resize', resize, { passive: true });
 
   return {
-    set(p) {
-      progress = p < 0 ? 0 : p > 1 ? 1 : p;
-      layout(progress);
+    aim(way) {
+      if (way === aimed) return;
+      aimed = way;
+      from = current;
+      to = shotFor(way, SHOTS);
+      startedAt = performance.now();
       invalidate();
     },
-    focus: () => focusAt(progress, STOPS, lanes.length),
+    reveal() {
+      if (revealedAt !== null) return;
+      revealedAt = performance.now();
+      invalidate();
+    },
+    focus: () => aimed,
     marks,
     // A count of finished ways, not a mean of four ramps. Averaging read 2
     // with one way finished and another half done, which is a count of nothing
@@ -759,8 +771,8 @@ export function boot(
     built: () => lanes.filter((l) => l.built >= 1).length,
     stop() {
       // Works whether the loop is running or parked: raf is 0 when parked, and
-      // clearing alive keeps invalidate() from restarting it if a late scroll
-      // frame calls set() after teardown.
+      // clearing alive keeps invalidate() from restarting it if a late call
+      // arrives after teardown.
       alive = false;
       if (raf) cancelAnimationFrame(raf);
       raf = 0;

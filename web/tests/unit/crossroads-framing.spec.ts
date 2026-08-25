@@ -1,21 +1,21 @@
 import { expect, test } from '@playwright/test';
 import { Vector3 } from 'three';
 
-import { LANES, STOPS, fovFor } from '../../src/components/crossroads/scene';
-import { segmentAt } from '../../src/components/crossroads/progress';
-import type { Stop } from '../../src/components/crossroads/types';
+import { GLIDE_MS, glideAt } from '../../src/components/crossroads/journey';
+import { LANES, SHOTS, fovFor } from '../../src/components/crossroads/scene';
+import type { Shot } from '../../src/components/crossroads/types';
 import { buildLanes, type Lane } from './support/scene';
 
 /**
- * The framing suite: what is actually inside the frame, at every stop, at every
+ * The framing suite: what is actually inside the frame, at every shot, at every
  * canvas this scene ever mounts on.
  *
  * This exists because the alternative is looking at it. A field of view here is
- * computed per frame from the stop's two half-angles and the aspect the canvas
- * happens to have, and the canvas runs from 470px wide to 980px, so a stop that
- * frames its subject on one laptop can crop it on another and no screenshot of
- * the first one would say so. Every standoff in LANES was solved against these
- * numbers once, by hand, and then nothing held them.
+ * computed per frame from the shot's two half-angles and the aspect the canvas
+ * happens to have, and the canvas runs from 540px wide to 1050px, so a shot
+ * that frames its subject on one laptop can crop it on another and no
+ * screenshot of the first one would say so. Every standoff in LANES was solved
+ * against these numbers once, by hand, and then nothing held them.
  *
  * It runs with no GPU and no browser. three.js geometry, matrices and bounding
  * boxes are all plain maths, and the only thing a WebGL context would have
@@ -25,19 +25,21 @@ import { buildLanes, type Lane } from './support/scene';
 /**
  * The three stages, and how much of each one the copy panel is standing on.
  *
- * The canvas is the whole stage now, so these are viewports rather than boxes
- * inside them. `reserve` is the panel's right edge measured from the stage's
+ * The canvas is the whole stage, and the stage is the section's own height:
+ * the panel plus the section rhythm, which is why the height is not the
+ * viewport's. `reserve` is the panel's right edge measured from the stage's
  * left, which is the number scene.ts computes at runtime with reserveOf() and
  * the number every shot is composed against. Measured in Chromium against the
- * built site by tools/shoot.mjs, at the three viewports the mount predicate
+ * built site by tools/shoot.mjs, at three viewport widths the mount predicate
  * allows: the container is 72rem capped and centred with 2rem of padding, and
- * the panel is 26rem of it, so the reserve is a layout consequence rather than
- * a constant anybody chose.
+ * the panel is 28rem of it, so the reserve is a layout consequence rather than
+ * a constant anybody chose. Re-run the tool after a copy change to the rows,
+ * because the height follows the copy.
  */
 const CANVASES = [
-  { name: '1024x736', w: 1024, h: 736, reserve: 448 },
-  { name: '1440x900', w: 1440, h: 900, reserve: 592 },
-  { name: '1920x1080', w: 1920, h: 1080, reserve: 832 },
+  { name: '1024 wide', w: 1024, h: 925, reserve: 512 },
+  { name: '1440 wide', w: 1440, h: 930, reserve: 656 },
+  { name: '1920 wide', w: 1920, h: 930, reserve: 896 },
 ] as const;
 
 /* --- the camera, exactly as scene.ts drives it --------------------------- */
@@ -52,10 +54,10 @@ function basis(pos: Vector3, look: Vector3) {
   return { x, y, z };
 }
 
-type Shot = { pos: Vector3; look: Vector3; fitH: number; fitV: number };
+type CameraShot = { pos: Vector3; look: Vector3; fitH: number; fitV: number };
 type Canvas = { readonly name: string; readonly w: number; readonly h: number; readonly reserve: number }; // prettier-ignore
 
-const shotOf = (s: Stop): Shot => ({
+const shotOf = (s: Shot): CameraShot => ({
   pos: new Vector3(s.pos[0], s.pos[1], s.pos[2]),
   look: new Vector3(s.look[0], s.look[1], s.look[2]),
   fitH: s.fitH,
@@ -68,11 +70,11 @@ const shotOf = (s: Stop): Shot => ({
  *
  * The composed region is the part of the canvas the copy panel is not standing
  * on, and it is the only part any of this is about. Under a full-bleed stage
- * the frustum is much wider than the shot: at 1440x900 a lane close-up spans
- * 74 degrees of world horizontally while the shot itself is composed inside
- * 51 of them, and the difference is floor, fog and whatever else happens to be
- * out there. Measuring against the canvas would fail every stop for objects
- * nobody is being shown.
+ * the frustum is much wider than the shot: at 1440 wide a lane close-up spans
+ * far more world horizontally than the shot itself is composed inside, and the
+ * difference is floor, fog and whatever else happens to be out there.
+ * Measuring against the canvas would fail every shot for objects nobody is
+ * being shown.
  *
  * So both numbers are in units of the composed half-frame: 1 is exactly its
  * edge, `reach` above 1 is a subject clipped by the panel or by the canvas,
@@ -83,7 +85,7 @@ const shotOf = (s: Stop): Shot => ({
  * fraction of the canvas, which is what setViewOffset(-reserve/2) does, and a
  * point on the camera's axis therefore lands at r rather than at the middle.
  */
-function frame(shot: Shot, solid: Lane, canvas: Canvas) {
+function frame(shot: CameraShot, solid: Lane, canvas: Canvas) {
   const { x, y, z } = basis(shot.pos, shot.look);
   const free = Math.max(1, canvas.w - canvas.reserve);
   const vHalf = (fovFor(shot.fitH, shot.fitV, free / canvas.h) / 2) * DEG;
@@ -128,28 +130,26 @@ function frame(shot: Shot, solid: Lane, canvas: Canvas) {
   };
 }
 
-/* --- which stop is about what -------------------------------------------- */
+/* --- which shot is about what -------------------------------------------- */
 
 const WAY_KEYS = LANES.map((l) => l.key);
 
 /**
- * What a stop must hold whole, and what it must not hold at all.
+ * What a shot must hold whole, and what it must not hold at all.
  *
- * A close-up holds its own way and bans the other three. A wide shot, which is
- * the approach, the junction and the closing release, holds all four and bans
- * nothing: that is the whole job of a wide shot here.
+ * A close-up holds its own way and bans the other three. The junction holds
+ * all four and bans nothing: that is the whole job of a wide shot here.
  */
-function rolesOf(stop: Stop): { holds: string[]; bans: string[] } {
-  if (stop.focus < 0) return { holds: [...WAY_KEYS], bans: [] };
-  const key = WAY_KEYS[stop.focus];
+function rolesOf(shot: Shot): { holds: string[]; bans: string[] } {
+  if (shot.focus < 0) return { holds: [...WAY_KEYS], bans: [] };
+  const key = WAY_KEYS[shot.focus];
   return {
     holds: key === undefined ? [] : [key],
     bans: WAY_KEYS.filter((k) => k !== key),
   };
 }
 
-const label = (stop: Stop, i: number) =>
-  `stop ${i} at p=${stop.at.toFixed(3)} (${rolesOf(stop).holds.join('+')})`;
+const label = (shot: Shot, i: number) => `shot ${i} (${rolesOf(shot).holds.join('+')})`;
 
 /* --- the assertions ------------------------------------------------------- */
 
@@ -160,10 +160,10 @@ const find = (id: string): Lane => {
   return s;
 };
 
-test('every stop holds its own subject with nothing cropped', () => {
+test('every shot holds its own subject with nothing cropped', () => {
   const report: string[] = [];
   const cropped: string[] = [];
-  for (const [i, stop] of STOPS.entries()) {
+  for (const [i, stop] of SHOTS.entries()) {
     const shot = shotOf(stop);
     for (const canvas of CANVASES) {
       for (const id of rolesOf(stop).holds) {
@@ -176,15 +176,15 @@ test('every stop holds its own subject with nothing cropped', () => {
   }
   // Collected and asserted at the end rather than thrown at the first one, so a
   // run that fails still prints every number. A framing failure is never fixed
-  // by looking at the first stop that broke.
+  // by looking at the first shot that broke.
   console.log(report.join('\n'));
   expect(cropped, 'cropped or behind the camera').toEqual([]);
 });
 
-test('no stop has a neighbour standing in its shot', () => {
+test('no close-up has a neighbour standing in its shot', () => {
   const seen: string[] = [];
   const loud: string[] = [];
-  for (const [i, stop] of STOPS.entries()) {
+  for (const [i, stop] of SHOTS.entries()) {
     const shot = shotOf(stop);
     const banned = new Set(rolesOf(stop).bans);
     for (const canvas of CANVASES) {
@@ -206,7 +206,7 @@ test('no stop has a neighbour standing in its shot', () => {
 });
 
 /**
- * How fast the camera turns, per hundredth of the section.
+ * How fast the camera turns, per hundredth of a glide.
  *
  * This scene interpolates the LOOK POINT rather than the angle, which is fine
  * while every look point is in front of the camera and roughly the same
@@ -215,69 +215,57 @@ test('no stop has a neighbour standing in its shot', () => {
  * passes the faster the camera spins. At the limit it passes through the
  * camera and the view flips.
  *
- * Nothing in the journey as it ships does that. The number is recorded here so
- * that a future stop which does gets caught by arithmetic rather than by
- * somebody noticing a whip pan.
+ * Every ordered pair of shots is walked, because the camera can now be asked
+ * to go from any shot to any other: a pointer leaving way 01's row for way
+ * 04's sends it straight across the fan, which the scroll track never did.
  */
-test('the camera never swings faster than this journey already does', () => {
+test('the camera never swings faster than this scene already does', () => {
   const STEP = 0.001;
-  const yawAt = (p: number) => {
-    const { from, to, t } = segmentAt(p, STOPS);
-    const lerp = (a: readonly number[], b: readonly number[], k: number) =>
-      new Vector3(
-        (a[0] ?? 0) + ((b[0] ?? 0) - (a[0] ?? 0)) * k,
-        (a[1] ?? 0) + ((b[1] ?? 0) - (a[1] ?? 0)) * k,
-        (a[2] ?? 0) + ((b[2] ?? 0) - (a[2] ?? 0)) * k,
-      );
-    const pos = lerp(from.pos, to.pos, t);
-    const look = lerp(from.look, to.look, t);
+  const yawAt = (from: Shot, to: Shot, t: number) => {
+    const shot = glideAt(from, to, 0, t * GLIDE_MS).shot;
+    const pos = new Vector3(shot.pos[0], shot.pos[1], shot.pos[2]);
+    const look = new Vector3(shot.look[0], shot.look[1], shot.look[2]);
     const d = new Vector3().subVectors(look, pos);
     return { yaw: Math.atan2(d.x, d.z) / DEG, reach: d.length() };
   };
 
-  const step = (p: number) => {
-    const a = yawAt(p);
-    const b = yawAt(p + STEP);
-    let d = b.yaw - a.yaw;
-    // Shortest way round, so a crossing of the +-180 seam is not read as a
-    // 359 degree spin. The camera has no idea the seam is there.
-    if (d > 180) d -= 360;
-    if (d < -180) d += 360;
-    return { rate: Math.abs(d), reach: Math.min(a.reach, b.reach) };
-  };
-
   let worst = 0;
-  let worstAt = 0;
+  let worstPair = '';
   let nearest = Infinity;
-  for (let p = 0; p < 1 - STEP; p += STEP) {
-    const { rate, reach } = step(p);
-    if (rate > worst) {
-      worst = rate;
-      worstAt = p;
+  for (const [i, from] of SHOTS.entries()) {
+    for (const [j, to] of SHOTS.entries()) {
+      if (i === j) continue;
+      for (let t = 0; t < 1 - STEP; t += STEP) {
+        const a = yawAt(from, to, t);
+        const b = yawAt(from, to, t + STEP);
+        let d = b.yaw - a.yaw;
+        // Shortest way round, so a crossing of the +-180 seam is not read as
+        // a 359 degree spin. The camera has no idea the seam is there.
+        if (d > 180) d -= 360;
+        if (d < -180) d += 360;
+        const rate = Math.abs(d);
+        if (rate > worst) {
+          worst = rate;
+          worstPair = `${label(from, i)} to ${label(to, j)} at t=${t.toFixed(3)}`;
+        }
+        nearest = Math.min(nearest, a.reach, b.reach);
+      }
     }
-    nearest = Math.min(nearest, reach);
   }
 
-  const perCent = ((worst * 0.01) / STEP).toFixed(1);
+  const perCent = (worst * 0.01) / STEP;
   console.log(
-    `worst swing: ${perCent} deg per 1% of section, at p=${worstAt.toFixed(3)}\n` +
+    `worst swing: ${perCent.toFixed(2)} deg per 1% of a glide, ${worstPair}\n` +
       `closest the aim point ever comes to the camera: ${nearest.toFixed(2)} units`,
   );
 
   /**
-   * 10, against a journey that measures 7.9.
-   *
-   * A recorded budget rather than a target anybody aimed at. The four ways
-   * hand over from one to the next across the fan, and that hand-over is the
-   * fastest the camera ever moves; everything else is a dolly straight down
-   * the middle. Half again on top of what it spends today is room for a fifth
-   * object or a re-timed stop and no room at all for a whip pan.
-   *
-   * For scale: the rear-fan experiment on claude/crossroads-dead-ends put a
-   * 160 degree about-face into this section and measured 37.7, which is where
-   * the number stops being a matter of taste.
+   * A recorded budget rather than a target anybody aimed at. The fastest move
+   * is the one straight across the fan, from way 01 to way 04, and its peak
+   * is the middle of a smoothstep. Half again on top of what it spends today
+   * is room for a re-timed glide and no room at all for a whip pan.
    */
-  expect((worst * 0.01) / STEP, 'the camera got faster').toBeLessThanOrEqual(10);
+  expect(perCent, 'the camera got faster').toBeLessThanOrEqual(3);
 
   // The look point passing through the camera is the failure this bounds, and
   // it is a hard geometric one rather than a matter of taste.
