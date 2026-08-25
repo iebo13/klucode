@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { Fragment } from 'react';
 
 import { ContactForm } from '@/components/contact-form';
 import {
+  ArrowLink,
   ButtonLink,
   Card,
   Eyebrow,
@@ -54,34 +56,86 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
       <Section>
         <div className="space-y-6">
           {s.items.map((item) => (
-            <Card key={item.key} className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-12">
-              <div>
-                <h2 className="text-h2">{item.name}</h2>
-                <p className="mt-3 max-w-measure text-small font-medium text-brand-text">
-                  {item.forWhom}
-                </p>
-                <p className="mt-4 max-w-measure text-muted">{item.body}</p>
-                <div className="mt-8 flex items-baseline gap-3 border-t border-line pt-6">
-                  <span className="text-small text-muted">{c.ui.from}</span>
-                  <span className="font-display text-h2 text-brand-text">{item.price}</span>
+            <Fragment key={item.key}>
+              <Card id={item.key} className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-12">
+                <div>
+                  <h2 className="text-h2">{item.name}</h2>
+                  <p className="mt-3 max-w-measure text-small font-medium text-brand-text">
+                    {item.forWhom}
+                  </p>
+                  <p className="mt-4 max-w-measure text-muted">{item.body}</p>
+                  <div className="mt-8 flex items-baseline gap-3 border-t border-line pt-6">
+                    <span className="text-small text-muted">{c.ui.from}</span>
+                    <span className="font-display text-h2 text-brand-text">{item.price}</span>
+                  </div>
+                  <p className="mt-1 text-small text-muted">{item.priceNote}</p>
+                  {/* The offer pointing at the thing that proves it. Two of the
+                    four have a delivered case and two do not, and the two that
+                    do not simply have no link: a reader who follows one of
+                    these must land on something real. */}
+                  {item.example ? (
+                    <p className="mt-6">
+                      <ArrowLink href={`${pathFor('work', lang)}#${item.example.project}`}>
+                        {item.example.label}
+                      </ArrowLink>
+                    </p>
+                  ) : null}
                 </div>
-                <p className="mt-1 text-small text-muted">{item.priceNote}</p>
-              </div>
-              <div>
-                <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
-                <ul className="mt-4 space-y-3">
-                  {item.includes.map((i) => (
-                    <li key={i} className="flex gap-3 text-small">
-                      <span
-                        aria-hidden="true"
-                        className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand"
-                      />
-                      {i}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Card>
+                <div>
+                  <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
+                  <ul className="mt-4 space-y-3">
+                    {item.includes.map((i) => (
+                      <li key={i} className="flex gap-3 text-small">
+                        <span
+                          aria-hidden="true"
+                          className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand"
+                        />
+                        {i}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Card>
+
+              {/* The proposed rung, rendered in price order behind the offer it
+                slots in after. Marked as a proposal on the page as well as in
+                the content, because a price nobody has agreed to must not be
+                indistinguishable from the four that are settled. */}
+              {s.middle && s.middle.after === item.key ? (
+                <Card
+                  id="middle"
+                  className="grid gap-8 border-dashed md:grid-cols-[1.2fr_1fr] md:gap-12"
+                >
+                  <div>
+                    <p className="font-mono text-eyebrow text-muted">{c.ui.draft}</p>
+                    <h2 className="mt-3 text-h2">{s.middle.name}</h2>
+                    <p className="mt-3 max-w-measure text-small font-medium text-brand-text">
+                      {s.middle.forWhom}
+                    </p>
+                    <p className="mt-4 max-w-measure text-muted">{s.middle.body}</p>
+                    <div className="mt-8 flex items-baseline gap-3 border-t border-line pt-6">
+                      <span className="text-small text-muted">{c.ui.from}</span>
+                      <span className="font-display text-h2 text-brand-text">{s.middle.price}</span>
+                    </div>
+                    <p className="mt-1 text-small text-muted">{s.middle.priceNote}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
+                    <ul className="mt-4 space-y-3">
+                      {s.middle.includes.map((i) => (
+                        <li key={i} className="flex gap-3 text-small">
+                          <span
+                            aria-hidden="true"
+                            className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand"
+                          />
+                          {i}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Card>
+              ) : null}
+            </Fragment>
           ))}
         </div>
       </Section>
@@ -107,6 +161,26 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
         </div>
       </Section>
 
+      {/* The price objection is formed on this page and answered on the home
+          page, and until now nothing joined the two. Six answers including
+          „Was kostet das?" sat one click away with no click to make. */}
+      {/* The visitor who cannot place themselves. The site's answer has always
+          been the 30 minute call, and until now it was never offered on the
+          page where the doubt forms. */}
+      <Section>
+        <p className="max-w-measure text-lead text-muted">{s.triage}</p>
+      </Section>
+
+      <Section>
+        <div className="max-w-narrow">
+          <h2 className="font-display text-h2">{s.faqTitle}</h2>
+          <p className="mt-4 text-muted">{s.faqBody}</p>
+          <div className="mt-6">
+            <ArrowLink href={`${pathFor('home', lang)}#faq`}>{s.faqLink}</ArrowLink>
+          </div>
+        </div>
+      </Section>
+
       <FinalCta lang={lang} c={c} />
     </>
   );
@@ -121,7 +195,7 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
       <PageHero eyebrow={w.eyebrow} title={w.title} lead={w.lead} />
 
       {w.projects.map((p, i) => (
-        <Section key={p.key} tint={i % 2 === 1}>
+        <Section key={p.key} id={p.key} tint={i % 2 === 1}>
           <div className="grid gap-8 md:grid-cols-[1fr_1.7fr] md:gap-16">
             <div>
               <p className="text-small font-medium text-brand-text">{p.sector}</p>
@@ -136,6 +210,32 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
             </div>
 
             <div>
+              {/* The picture of the thing, above the words about the thing.
+                  Three shipped systems and no pixels of any of them was the
+                  largest single gap on this site. */}
+              {p.shot ? (
+                <div className="relative mb-8 aspect-[16/10] overflow-hidden rounded-lg border border-line bg-surface-raised">
+                  <img
+                    src={asset(p.shot.src)}
+                    alt={p.shot.alt}
+                    className="absolute inset-0 h-full w-full object-cover object-top"
+                  />
+                </div>
+              ) : p.shotPending ? (
+                /* An empty frame and not a stand-in. A stock image under „so
+                   sieht das System aus" would be a fabricated claim on the one
+                   section whose value is that it is honest. check-profile.mjs
+                   refuses a production build while any of these are still up. */
+                <div
+                  aria-hidden="true"
+                  className="mb-8 flex aspect-[16/10] items-center justify-center rounded-lg border border-dashed border-line bg-surface-alt p-6 text-center"
+                >
+                  <p className="max-w-narrow hyphens-none font-mono text-eyebrow text-muted">
+                    {c.ui.shotPending}
+                  </p>
+                </div>
+              ) : null}
+
               <p className="max-w-measure text-lead">{p.summary}</p>
               <dl className="mt-8 space-y-6">
                 {(
@@ -169,6 +269,17 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
                     {p.quote.attribution}
                   </figcaption>
                 </figure>
+              ) : null}
+
+              {/* The other half of the evidence chain. A case study that ends
+                  blind sends a reader who has just been convinced back to the
+                  nav to work out what to buy. */}
+              {p.offer ? (
+                <p className="mt-8">
+                  <ArrowLink href={`${pathFor('services', lang)}#${p.offer.service}`}>
+                    {p.offer.label}
+                  </ArrowLink>
+                </p>
               ) : null}
             </div>
           </div>
@@ -273,16 +384,28 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
 
           <div>
             {/* The one photograph the site cannot do without: the person
-                behind the "ich". Plain <img> with asset(), matching how the
+                behind the „ich". Plain <img> with asset(), matching how the
                 repo handles every hand-written public/ URL on a subpath
-                deploy. object-cover crops the near-square file to the 4:5
-                slot. */}
+                deploy.
+
+                It was a holiday snap on a beach, on a page arguing engineer
+                responsibility, a B.Sc. and „ich prüfe, teste und verantworte
+                jede Zeile". A face beats no face, but the gap between that
+                voice and that picture was doing real work against a 9.000 €
+                trust decision, and both competitors who show a founder show
+                them at work.
+
+                Cropped to 4:5 at source rather than by CSS, so object-cover
+                has nothing left to crop and the framing cannot drift with the
+                column width. 4.0 MB of PNG became 64 kB of WebP, which matters
+                on a page whose own checklist sells „Ladezeit unter einer
+                Sekunde". */}
             <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-line bg-surface-raised">
               <img
-                src={asset('/me.png')}
+                src={asset('/founder.webp')}
                 alt={a.portraitAlt}
-                width={429}
-                height={421}
+                width={1000}
+                height={1250}
                 className="absolute inset-0 h-full w-full object-cover"
               />
             </div>
@@ -330,16 +453,22 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
       <Section>
         <div className="grid gap-12 md:grid-cols-[1fr_1.3fr] md:gap-16">
           <div>
+            {/* Said before the form rather than after it, because the doubt it
+                answers is what stops a visitor filling the form in at all:
+                „I do not know which of these I need, so I will come back when I
+                have worked it out", which is a tab that closes. */}
+            <p className="max-w-measure text-muted">{t.triage}</p>
+
             {direct.length > 0 ? (
               <>
-                <h2 className="font-display text-h3">{t.directTitle}</h2>
+                <h2 className="mt-12 font-display text-h3">{t.directTitle}</h2>
                 <p className="mt-3 text-muted">{t.directBody}</p>
                 <ul className="mt-6 space-y-3">
                   {direct.map((l) => (
                     <li key={l.href}>
                       <a
                         href={l.href}
-                        className="font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
+                        className="inline-flex min-h-[2.75rem] items-center font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
                       >
                         {l.label}
                       </a>
@@ -390,10 +519,14 @@ export function ImprintPage({ c }: { lang: Lang; c: Content }) {
         >
           <h2 className="font-display text-h3">{c.imprint.todoWarningTitle}</h2>
           <p className="mt-3 text-small">{c.imprint.todoWarningBody}</p>
-          <ul className="mt-4 space-y-2">
+          {/* A list marker, not a typed dash. This banner exists to enforce a
+              rule the site keeps everywhere else, and it was breaking a
+              different one: the house copy rule bans the em dash in anything a
+              visitor can read, and this component was printing one per row. */}
+          <ul className="mt-4 list-disc space-y-2 pl-6">
             {todos.map((t) => (
               <li key={t} className="font-mono text-small">
-                — {t}
+                {t}
               </li>
             ))}
           </ul>
@@ -451,7 +584,7 @@ function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
           <ButtonLink href={pathFor('contact', lang)}>{c.ui.ctaPrimary}</ButtonLink>
           <Link
             href={pathFor('work', lang)}
-            className="font-display font-medium text-brand-text underline decoration-viridian-300 underline-offset-4"
+            className="inline-flex min-h-[2.75rem] items-center font-display font-medium text-brand-text underline decoration-viridian-300 underline-offset-4"
           >
             {c.ui.ctaSecondary}
           </Link>

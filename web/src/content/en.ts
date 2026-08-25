@@ -9,12 +9,12 @@ import type { Content } from './types';
 const en = {
   meta: {
     siteName: 'KluCode',
-    title: 'KluCode · Custom software, built in Düsseldorf',
+    title: 'KluCode · Freelance React and Node developer, Germany',
     description:
       'Senior React and Next.js capacity for product teams and agencies, plus complete web applications at a fixed price. One engineer, front end to server.',
     pages: {
       home: {
-        title: 'KluCode · Custom software, built in Düsseldorf',
+        title: 'KluCode · Freelance React and Node developer, Germany',
         description:
           'Freelance software developer in Düsseldorf. Senior React and Next.js capacity for product teams and agencies, plus web applications at a fixed price.',
       },
@@ -69,6 +69,8 @@ const en = {
     ctaPrimary: 'Discuss a project',
     ctaSecondary: 'See the work',
     availablePrefix: 'Available from',
+    draft: 'PROPOSED · NOT YET BOOKABLE',
+    shotPending: 'Screenshot to follow, once the client has released it.',
     skipToContent: 'Skip to content',
     menu: 'Menu',
     close: 'Close',
@@ -125,6 +127,8 @@ const en = {
     servicesEyebrow: 'Services',
     servicesTitle: 'Four ways to work together.',
     servicesLink: 'All services and prices',
+    sceneAlt:
+      'The four ways as a place: a website on a monitor, a web application with a database and a server behind it, an office with one free desk, a server rack wired to a cloud.',
 
     workEyebrow: 'Work',
     workTitle: 'Three systems, running daily.',
@@ -143,6 +147,7 @@ const en = {
       {
         q: 'What does it cost?',
         a: 'Development capacity is €680 a day, bookable from five days, with a framework agreement for longer runs. Fixed-price work starts at €2,500 for a website and €9,000 for a custom web application. You get the exact number after a 30-minute call and a written scope, not before, because a number without a scope is worthless.',
+        link: { label: 'All four services with prices', to: 'services' },
       },
       {
         q: 'How long does it take?',
@@ -151,6 +156,7 @@ const en = {
       {
         q: 'What happens if you are unavailable?',
         a: 'The fair question to ask one person. So: the code sits in a repository you have access to, documentation sits next to it, and nothing in the stack is exotic enough that only I can operate it. Any other developer can take over. That is not a contingency plan, it is the baseline.',
+        link: { label: 'How I work', to: 'approach' },
       },
       {
         q: 'Do I own the code?',
@@ -163,6 +169,7 @@ const en = {
       {
         q: 'Do you work remotely?',
         a: 'Yes. Around the Rhineland I am happy to come in person. Everything else works remotely. Across three delivered projects, distance was never the issue.',
+        link: { label: 'The three projects', to: 'work' },
       },
     ],
 
@@ -210,6 +217,7 @@ const en = {
         ],
         price: '€2,500',
         priceNote: '2 to 3 weeks · fixed price',
+        example: { label: 'Example: landing page for a cleaning company', project: 'landing' },
       },
       {
         key: 'app',
@@ -227,6 +235,7 @@ const en = {
         ],
         price: '€9,000',
         priceNote: '4 to 10 weeks · fixed price',
+        example: { label: 'Example: CRM and commission handling', project: 'crm' },
       },
       {
         key: 'care',
@@ -258,6 +267,22 @@ const en = {
       'Off-the-shelf shop systems: there are better and cheaper options',
       'Staffing teams or running projects beyond twelve months',
     ],
+    faqTitle: 'Still weighing up the price?',
+    faqBody:
+      'What a fixed price covers, what happens when scope moves, and what the monthly retainer actually buys: six answers on the home page.',
+    faqLink: 'Common questions',
+    triage:
+      'Not sure which of the four fits? Describe the workflow in two sentences. Working out which one you need is part of the call and costs nothing.',
+    /**
+     * null, and it is a decision rather than a gap.
+     *
+     * The rung exists to answer a German local business that has outgrown a
+     * landing page. This side of the site sells capacity to agencies and
+     * product teams, who are not shopping for a 4.500 € site with one workflow
+     * on it, and the day rate already gives them a small first step. Adding it
+     * here would be translating an offer rather than making one.
+     */
+    middle: null,
   },
 
   work: {
@@ -279,6 +304,8 @@ const en = {
         result:
           'Monthly settlement runs automatically. No file travels by email, and there is no second version nobody can vouch for.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
+        offer: { label: 'The matching service: Custom web application', service: 'app' },
+        shotPending: true,
       },
       {
         key: 'pos',
@@ -294,6 +321,7 @@ const en = {
         result:
           'Usable without training. Cashing up at the end of the night is a procedure rather than a reconstruction.',
         stack: ['JavaScript', 'Database modelling', 'Touch UI'],
+        offer: { label: 'The matching service: Custom web application', service: 'app' },
       },
       {
         key: 'landing',
@@ -309,6 +337,8 @@ const en = {
         result:
           'Visibility beyond the referral circle. What began as a web job became a complete customer-acquisition package.',
         stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'AI image & video'],
+        offer: { label: 'The matching service: Website and landing page', service: 'website' },
+        shotPending: true,
       },
     ],
     noteTitle: 'On numbers and names',
@@ -399,6 +429,8 @@ const en = {
     eyebrow: 'Contact',
     title: 'Tell me what is not working.',
     lead: `30 minutes, no obligation, no slide deck. You will hear back within ${profile.responseTime.en}.`,
+    triage:
+      'You do not have to know which service you need before you write. Describe what is not working and I will place it.',
     directTitle: 'Directly',
     directBody: 'An email is faster than any form.',
     formTitle: 'Or here',

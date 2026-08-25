@@ -12,9 +12,17 @@
  *
  *     npm run build && npm run check:profile
  *
- * Two things are asserted, because either alone can pass while the site is
- * still broken: no placeholder text anywhere in the output, and no alert
- * banner on either language's Impressum.
+ * Three things are asserted, because any one of them can pass while the site is
+ * still broken: no placeholder text anywhere in the output, no alert banner on
+ * either language's Impressum, and an availability month that has not already
+ * gone by.
+ *
+ * The availability month is here rather than in CI for the same reason as the
+ * rest of this file. It is not wrong on a branch, it is wrong on a SERVER, and
+ * the only moment that distinction can be checked is the one immediately before
+ * an upload. A build in August advertising September is right. The same
+ * artefact still sitting there in November is a site nobody maintains, which
+ * reads worse than saying nothing about capacity at all.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -63,7 +71,76 @@ for (const file of files) {
   }
 }
 
-if (placeholders.size > 0 || banners.length > 0) {
+/**
+ * The availability month, read out of the built HTML rather than imported.
+ *
+ * profile.ts is TypeScript and this is a plain .mjs run against `out/`, and
+ * more to the point what matters is what the ARTEFACT says: an import would
+ * check the source that a stale build was made from rather than the build.
+ * The month name is rendered, so it is matched by name in both languages.
+ */
+const MONTHS = {
+  de: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'], // prettier-ignore
+  en: ['January','February','March','April','May','June','July','August','September','October','November','December'], // prettier-ignore
+};
+
+const stale = [];
+{
+  const now = new Date();
+  const home = join(OUT, 'de', 'index.html');
+  let html = '';
+  try {
+    html = readFileSync(home, 'utf8');
+  } catch {
+    // No German homepage means something much louder is already wrong, and the
+    // page list above will have said so.
+  }
+  const match = html.match(/Freie Kapazität ab\s*(?:<[^>]*>\s*)*([A-Za-zÄÖÜäöü]+)/);
+  const month = match?.[1];
+  if (month) {
+    const index = MONTHS.de.indexOf(month);
+    if (index === -1) {
+      stale.push(`the availability badge says "${month}", which is not a month name`);
+    } else {
+      // Same month is fine: it reads as "available now". Only a month that has
+      // finished is a claim the site can no longer support.
+      const shown = new Date(Date.UTC(now.getUTCFullYear(), index, 1));
+      const thisMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      // A month earlier in the calendar than today's is next year's, not last
+      // year's, unless the build is genuinely old. Twelve months of slack, so
+      // a site left up for a year is caught and a December-to-January rollover
+      // is not.
+      if (shown < thisMonth) {
+        stale.push(
+          `the availability badge says "${month}", which is already behind us. ` +
+            'Move availableFrom in src/content/profile.ts, or drop the badge.',
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Empty screenshot frames, which are a development state and not a shippable
+ * one.
+ *
+ * Project.shotPending draws a dashed frame saying a screenshot is coming. That
+ * is the honest thing to show while the approvals are outstanding and the
+ * wrong thing to leave on a live commercial page, where a reader counts it as
+ * one more thing the site says it has and cannot show. Matched on the frame's
+ * own class rather than on its caption, so it is found in both languages
+ * without this script having to know either.
+ *
+ * Reported per page and not counted. Next serialises the same markup twice
+ * into every page, once as HTML and once as the flight payload, so a count of
+ * matches is double the number of frames, and a wrong number in an error
+ * message is worse than no number at all.
+ */
+const pendingShots = files.filter((file) =>
+  readFileSync(file, 'utf8').includes('border-dashed border-line bg-surface-alt'),
+);
+
+if (placeholders.size > 0 || banners.length > 0 || stale.length > 0 || pendingShots.length > 0) {
   console.error('check-profile: the site is not ready to go live.\n');
 
   for (const [placeholder, pages] of placeholders) {
@@ -71,6 +148,12 @@ if (placeholders.size > 0 || banners.length > 0) {
   }
   for (const file of banners) {
     console.error(`  ${file}: still renders the incomplete-details banner`);
+  }
+  for (const line of stale) {
+    console.error(`  stale: ${line}`);
+  }
+  for (const file of pendingShots) {
+    console.error(`  pending: ${file} still shows an empty screenshot frame`);
   }
 
   console.error('\nFill in src/content/profile.ts — see its header for the todo() / null split.');

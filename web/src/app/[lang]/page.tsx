@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { Crossroads } from '@/components/crossroads';
 import { JsonLd } from '@/components/json-ld';
+import { ProblemOptions } from '@/components/problem';
 import { Shell } from '@/components/shell';
 import { SystemDiagram } from '@/components/diagram';
 import {
@@ -11,13 +12,14 @@ import {
   Card,
   Eyebrow,
   Faq,
+  InkPanel,
   RHYTHM,
   Section,
   SectionHead,
   Tags,
 } from '@/components/ui';
 import { getContent } from '@/content';
-import { filled, profile } from '@/content/profile';
+import { availableFrom, filled, profile } from '@/content/profile';
 import { openGraphFor, twitterFor } from '@/lib/og';
 import { LANGS, isLang, pathFor } from '@/lib/routes';
 import { pageSchema } from '@/lib/schema';
@@ -103,13 +105,28 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
           <p className={`${RHYTHM.lead} max-w-measure text-lead text-ink-muted`}>{h.heroLead}</p>
 
-          <div className="mt-8 flex flex-wrap gap-4">
+          {/* One button, and one text link.
+
+              Two buttons side by side is two primary actions, which is none:
+              the eye has nothing to follow and the page has not said what it
+              wants. The ask is „Projekt besprechen" and everything else on the
+              first screen is a way of putting it off, so the second one is an
+              arrow link now.
+
+              It still points at the work rather than at the prices, which is
+              what the audit suggested. The prices are one section further down
+              than the proof on purpose: „Bewiesen statt behauptet" is the
+              order every stronger competitor in this segment uses, and it is
+              the change this branch made yesterday. A hero link straight to
+              #services would undo it for exactly the reader who most needs the
+              proof first. */}
+          <div className="mt-8 flex flex-wrap items-center gap-6">
             <ButtonLink href={pathFor('contact', lang)} variant="ink">
               {c.ui.ctaPrimary}
             </ButtonLink>
-            <ButtonLink href={pathFor('work', lang)} variant="inkSecondary">
+            <ArrowLink onInk href={pathFor('work', lang)}>
               {c.ui.ctaSecondary}
-            </ButtonLink>
+            </ArrowLink>
           </div>
 
           {/* Proof as clear-glass chips: on this surface the blur has the node
@@ -129,38 +146,20 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </div>
       </section>
 
-      {/* --------------------------------------------------- problem + services */}
-      {/* THE CROSSROADS, and „Die Ausgangslage" is now the first act of it.
-          „Vier Wege zur Zusammenarbeit" is already a spatial metaphor, so it is
-          one: four lanes off a junction, and at the end of each the thing you
-          would actually get.
+      {/* PROOF BEFORE PRICE, and this band used to sit after the crossroads.
 
-          The problem used to be a section of its own, immediately above. It was
-          always the same argument split in half by a section boundary: three
-          options that do not fit, then the one that does, then four ways to
-          take it. Joined, „Die dritte Möglichkeit" stops being a static panel
-          and becomes the moment the camera arrives at the junction, which is
-          the only reason the merge was worth making.
+          The order was hero, the problem, the price board, and only then the
+          three delivered systems, so a first-time visitor was asked to take in
+          „ab 9.000 €" before seeing one thing that had been built. Both of the
+          stronger competitors in this market put their credibility devices
+          immediately after the hero and their prices further down. Price
+          transparency is still the right call for this segment, it just lands
+          better on top of capability than under it.
 
-          The rows are the section's content and its fallback at once, which is
-          why there is exactly one copy of them. See components/crossroads. */}
-      <Crossroads
-        lang={lang}
-        problem={{
-          eyebrow: h.problemEyebrow,
-          title: h.problemTitle,
-          lead: h.problemLead,
-          cards: h.problemCards,
-          answerTitle: h.answerTitle,
-          answerBody: h.answerBody,
-        }}
-        eyebrow={h.servicesEyebrow}
-        title={h.servicesTitle}
-        link={{ href: pathFor('services', lang), label: h.servicesLink }}
-        fromLabel={c.ui.from}
-        ways={c.services.items}
-      />
-
+          It also follows the hero properly now: the hero's chips say „Drei
+          Systeme im Produktivbetrieb" and the next thing on the page is those
+          three systems. The crossroads is untouched and still runs problem,
+          answer, prices in one move. */}
       {/* ---------------------------------------------------------------- work */}
       {/* STRUCTURAL EXCEPTION 1 of 2: full-bleed. This is the proof section and
           it is the one place the page is allowed to break the left edge every
@@ -225,6 +224,58 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </div>
       </Section>
 
+      {/* ------------------------------------------------------------- problem */}
+      {/* „Die Ausgangslage", back on paper and back at the reader's own pace.
+
+          It spent a day as the first act of the crossroads, pinned, with the
+          camera closing the distance to the junction while the argument was
+          made. The merge was worth trying and it is undone with its reasons
+          written down: see the note at the top of components/problem.tsx and
+          the one at the top of crossroads/progress.ts. The short version is
+          that 122svh of pinned scroll bought a picture that was not about what
+          the words were about, and the experiment that tried to make it about
+          that returned a measured no.
+
+          What survives the reversal is the striking: each option fails as you
+          leave it, and now that runs for every visitor rather than only for
+          the ones without a scene. */}
+      {/* Only the list is a client island. The heading and the answer panel are
+          server-rendered and handed in, so 'use client' does not drag Section,
+          SectionHead and InkPanel into every visitor's First Load JS. */}
+      <Section>
+        <SectionHead eyebrow={h.problemEyebrow} title={h.problemTitle} lead={h.problemLead} />
+        <ProblemOptions cards={h.problemCards}>
+          <InkPanel className="mt-8 md:mt-12">
+            <div className="gap-8 md:grid md:grid-cols-12">
+              <h3 className="text-h3 text-ink-accent md:col-span-4">{h.answerTitle}</h3>
+              <p className="mt-4 max-w-measure text-ink-muted md:col-span-8 md:mt-0">
+                {h.answerBody}
+              </p>
+            </div>
+          </InkPanel>
+        </ProblemOptions>
+      </Section>
+
+      {/* ------------------------------------------------------------ services */}
+      {/* THE CROSSROADS. „Vier Wege zur Zusammenarbeit" is already a spatial
+          metaphor, so it is one: four lanes off a junction, and at the end of
+          each the thing you would actually get. It opens at the junction now,
+          straight off the answer the section above it lands on.
+
+          The rows are the section's content and its fallback at once, which is
+          why there is exactly one copy of them, and the four names standing at
+          the four objects are the same strings again rather than a second copy
+          in a texture. See components/crossroads. */}
+      <Crossroads
+        lang={lang}
+        eyebrow={h.servicesEyebrow}
+        title={h.servicesTitle}
+        link={{ href: pathFor('services', lang), label: h.servicesLink }}
+        fromLabel={c.ui.from}
+        sceneAlt={h.sceneAlt}
+        ways={c.services.items}
+      />
+
       {/* ------------------------------------------------------------ approach */}
       {/* STRUCTURAL EXCEPTION 2 of 2: asymmetric and offset. The heading holds
           columns 1-4 and sticks while the steps scroll past in columns 6-12,
@@ -261,10 +312,14 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ----------------------------------------------------------------- faq */}
-      <Section>
+      {/* Addressable, because the Leistungen page is where price objections
+          actually get raised and the answer to the loudest of them lives here.
+          Six answers on the homepage that the page selling the prices does not
+          link to is six answers most price-shoppers never reach. */}
+      <Section id="faq">
         <SectionHead eyebrow={h.faqEyebrow} title={h.faqTitle} />
         <div className="mt-8 max-w-narrow md:mt-12">
-          <Faq items={h.faq} />
+          <Faq items={h.faq} lang={lang} />
         </div>
       </Section>
 
@@ -303,7 +358,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
           <p className="mt-8 text-small text-ink-muted md:col-span-4 md:col-start-9 md:mt-0 md:text-right">
             <span className="glass-chip inline-flex items-center gap-2 rounded-full px-4 py-2">
               <span aria-hidden="true" className="h-2 w-2 rounded-full bg-warm-300" />
-              {c.ui.availablePrefix} {profile.availableFrom[lang]}
+              {c.ui.availablePrefix} {availableFrom(lang)}
             </span>
           </p>
         </div>

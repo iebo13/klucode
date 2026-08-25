@@ -1,18 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { APPROACH_END } from '../../src/components/crossroads/progress';
-
 /**
  * Scroll progress at which the camera is standing at way `i`.
  *
- * The same expression scene.ts uses, imported from the same constant, because
- * the four ways moved when the section grew an opening argument in front of
- * them. Four literals would have to be found and corrected by hand every time
- * the approach changes length, and the failure they produce in the meantime is
- * a test that scrolls to the middle of the problem copy and reports that no
- * service is in focus, which says nothing about what actually broke.
+ * The same expression scene.ts uses. It spent a day mapped through an
+ * APPROACH_END, because „Die Ausgangslage" was pinned in front of the four
+ * ways; that section is back on paper above this one and the crossroads has
+ * the whole track again, so the four are where they were before any of it.
  */
-const wayAt = (i: number) => APPROACH_END + (0.18 + i * 0.19) * (1 - APPROACH_END);
+const wayAt = (i: number) => 0.18 + i * 0.19;
 
 /** Makes every WebGL context request fail, the way a locked-down browser does. */
 async function withoutWebGL(page: Page) {
@@ -205,67 +201,155 @@ async function scrollToProgress(page: Page, p: number) {
   await page.waitForTimeout(90);
 }
 
-test('the copy column fits its stage at the smallest viewport that mounts', async ({ page }) => {
-  // Measured before this was fixed: the grid row was auto, so it sized to the
-  // 1097px copy column and overhung the one-viewport stage, which clips. The
-  // column ran 459px past the bottom at 1024x736, 301px at 1440x900 and 121px
-  // even at 1920x1080, with the fourth price inside the cut. The canvas went
-  // with it: a 640x1097 drawing buffer for a box 640x900.
+/** Every camera stop, so a fit assertion covers the open detail as well as the closed board. */
+const STOPS = [0, wayAt(0), wayAt(1), wayAt(2), wayAt(3), 1];
+
+test('the copy panel fits its stage at the smallest viewport that mounts', async ({ page }) => {
+  // It did not, and for a long time the answer was that it scrolled. Measured
+  // before the board was cut down: four rows of number, name, audience,
+  // caption and price came to 1097px against a stage that is 632px tall here,
+  // so the column carried its own overflow-y with its scrollbar hidden, the
+  // wheel drove the page for most of the section and the column for part of
+  // it, and the camera nudged the focused row into view on arrival. Four
+  // locally reasonable decisions, and together the one thing on the page that
+  // behaved unpredictably under a wheel.
   //
   // 1024x736 is the floor the mount predicate allows, so it is where this is
-  // tightest.
+  // tightest, and the detail that opens on the focused row is why every stop
+  // is walked rather than just the junction: the panel is 498px with nothing
+  // open and 618px at way 02, against 648px of room.
   await page.setViewportSize({ width: 1024, height: 736 });
   await page.goto('/de/');
   await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
 
-  const fit = await page.evaluate(() => {
-    const stage = document.querySelector('.crossroads-stage') as HTMLElement;
-    const col = document.querySelector('.crossroads-copy') as HTMLElement;
-    const view = document.querySelector('.crossroads-view') as HTMLElement;
-    const canvas = document.querySelector('.crossroads-stage canvas') as HTMLCanvasElement;
-    const s = stage.getBoundingClientRect();
-    const c = col.getBoundingClientRect();
-    return {
-      below: Math.round(c.bottom - s.bottom),
-      above: Math.round(s.top - c.top),
-      canvasOverflow: Math.round(canvas.height - view.getBoundingClientRect().height),
-      scrollable: col.scrollHeight > col.clientHeight,
-    };
-  });
-  expect(fit.below, 'the copy column overhangs the stage').toBeLessThanOrEqual(0);
-  expect(fit.above, 'the copy column overhangs the stage').toBeLessThanOrEqual(0);
-  expect(fit.canvasOverflow, 'the canvas is sized by the copy beside it').toBeLessThanOrEqual(1);
-  // It does not fit at any viewport this mounts on, so it must be reachable
-  // rather than merely uncut.
-  expect(fit.scrollable, 'nothing left to scroll, so the rows were cut instead').toBe(true);
-});
-
-test('the row the camera is looking at is inside the column that scrolls', async ({ page }) => {
-  // The other half of the fit. At the 1024x736 floor the column shows about
-  // two and a bit of its four rows, so ways 03 and 04 come into focus below
-  // the fold of a scroller the visitor has no reason to have found.
-  await page.setViewportSize({ width: 1024, height: 736 });
-  await page.goto('/de/');
-  for (const p of [wayAt(0), wayAt(1), wayAt(2), wayAt(3)]) {
+  for (const p of STOPS) {
     await scrollToProgress(page, p);
-    const seen = await page.evaluate(() => {
-      const col = document.querySelector('.crossroads-copy') as HTMLElement;
-      const row = col.querySelector('li[data-focus="true"]');
-      if (!row) return null;
-      const b = col.getBoundingClientRect();
-      const r = row.getBoundingClientRect();
+    // The detail's own 320ms open, which is what makes the panel its tallest.
+    await page.waitForTimeout(360);
+    const fit = await page.evaluate(() => {
+      const stage = document.querySelector('.crossroads-stage') as HTMLElement;
+      const panel = document.querySelector('.crossroads-copy') as HTMLElement;
+      const view = document.querySelector('.crossroads-view') as HTMLElement;
+      const canvas = document.querySelector('.crossroads-stage canvas') as HTMLCanvasElement;
+      const s = stage.getBoundingClientRect();
+      const c = panel.getBoundingClientRect();
       return {
-        key: row.getAttribute('data-key'),
-        above: r.top - b.top,
-        below: r.bottom - b.bottom,
+        below: Math.round(c.bottom - s.bottom),
+        above: Math.round(s.top - c.top),
+        canvasOverflow: Math.round(canvas.height - view.getBoundingClientRect().height),
+        scrolls: panel.scrollHeight > panel.clientHeight,
       };
     });
-    expect(seen, `no row in focus at ${p}`).not.toBeNull();
-    expect(seen?.above ?? -1, `the focused row is above the column at ${p}`).toBeGreaterThanOrEqual(
-      -1,
-    );
-    expect(seen?.below ?? 1, `the focused row is below the column at ${p}`).toBeLessThanOrEqual(1);
+    expect(fit.below, `the panel overhangs the stage at ${p}`).toBeLessThanOrEqual(0);
+    expect(fit.above, `the panel overhangs the stage at ${p}`).toBeLessThanOrEqual(0);
+    expect(fit.canvasOverflow, 'the canvas is sized by something other than its box').toBeLessThanOrEqual(1); // prettier-ignore
+    // The other half of the same fix. A panel that fits has nothing to scroll,
+    // and a panel that scrolls is the thing this section was criticised for.
+    expect(fit.scrolls, `the panel scrolls at ${p}`).toBe(false);
   }
+});
+
+test('the canvas is the whole stage and swallows no input', async ({ page }) => {
+  // Full bleed, which is the answer to „3D in a box". The canvas was 640x796
+  // inside a 1425x900 stage, 40% of the section, with the section's own aurora
+  // and grain either side of a hard rectangle: a video embedded in a slide.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
+
+  const seen = await page.evaluate(() => {
+    const stage = document.querySelector('.crossroads-stage') as HTMLElement;
+    const canvas = document.querySelector('.crossroads-stage canvas') as HTMLCanvasElement;
+    const s = stage.getBoundingClientRect();
+    const c = canvas.getBoundingClientRect();
+    return {
+      gapW: Math.round(s.width - c.width),
+      gapH: Math.round(s.height - c.height),
+      pointer: getComputedStyle(canvas).pointerEvents,
+      aurora: document.querySelectorAll('#services .ink-aurora').length,
+    };
+  });
+  expect(seen.gapW, 'the canvas does not fill the stage').toBe(0);
+  expect(seen.gapH, 'the canvas does not fill the stage').toBe(0);
+  // aria-hidden and nothing listening, so it should not be taking events either.
+  expect(seen.pointer, 'the canvas is still swallowing pointer events').toBe('none');
+  // The wash belongs to the fallback. Over a full-bleed scene it is the thing
+  // that made two different darks meet at a rectangle edge.
+  expect(seen.aurora, 'the aurora is still painted over the scene').toBe(0);
+});
+
+test('every object is named at itself, and no two names collide', async ({ page }) => {
+  // The bond a list beside a canvas could not make: in the establishing shot
+  // all four objects were on screen and none of them was named.
+  //
+  // Overlap is the failure this device actually has. The four labels stand
+  // about 195px apart at the wide shots and „01 Website & Landingpage" is
+  // 205px wide, so ways 01 and 02 sat on top of each other until LANES grew a
+  // per-lane screen offset. Asserted here rather than in the framing suite
+  // because a label's width is a font metric, which needs a browser.
+  for (const size of [
+    { width: 1024, height: 736 },
+    { width: 1440, height: 900 },
+    { width: 1920, height: 1080 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.goto('/de/');
+    await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
+
+    for (const p of STOPS) {
+      await scrollToProgress(page, p);
+      await page.waitForTimeout(240);
+      const seen = await page.evaluate(() => {
+        const stage = document.querySelector('.crossroads-stage')!.getBoundingClientRect();
+        const panel = document.querySelector('.crossroads-copy')!.getBoundingClientRect();
+        const shown = [...document.querySelectorAll<HTMLElement>('.crossroads-mark')]
+          .map((el, i) => ({ n: i, el }))
+          .filter(({ el }) => el.dataset.on === 'true')
+          .map(({ n, el }) => ({ n, r: el.firstElementChild!.getBoundingClientRect() }));
+        const clashes: string[] = [];
+        for (let a = 0; a < shown.length; a += 1) {
+          for (let b = a + 1; b < shown.length; b += 1) {
+            const one = shown[a]!.r;
+            const two = shown[b]!.r;
+            const over =
+              Math.max(0, Math.min(one.right, two.right) - Math.max(one.left, two.left)) *
+              Math.max(0, Math.min(one.bottom, two.bottom) - Math.max(one.top, two.top));
+            if (over > 0) clashes.push(`${shown[a]!.n} and ${shown[b]!.n}`);
+          }
+        }
+        return {
+          count: shown.length,
+          clashes,
+          // A label under the panel is a label nobody can read, and the scene
+          // is supposed to have already refused to show it.
+          hidden: shown.filter((m) => m.r.left < panel.right).length,
+          outside: shown.filter((m) => m.r.right > stage.right || m.r.top < stage.top).length,
+        };
+      });
+      expect(seen.clashes, `labels overlap at ${p} on ${size.width}x${size.height}`).toEqual([]);
+      expect(seen.hidden, `a label is behind the panel at ${p}`).toBe(0);
+      expect(seen.outside, `a label is off the stage at ${p}`).toBe(0);
+      // The wide shots name all four, which is the whole point of them. A
+      // close-up names the one it is standing at and hides the rest.
+      const expected = p === 0 || p === 1 ? 4 : 1;
+      expect(seen.count, `wrong number of labels at ${p}`).toBe(expected);
+    }
+  }
+});
+
+test('the name at the object is read once, not twice', async ({ page }) => {
+  // The label layer is aria-hidden, so a screen reader hears each of the four
+  // names from its row and nowhere else, and a crawler indexes it once. That
+  // is the whole of what „no floating names" was protecting.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
+
+  await expect(page.locator(`${section} .crossroads-marks`)).toHaveAttribute('aria-hidden', 'true');
+  // Once in the accessible tree, whatever the labels are drawing.
+  await expect(
+    page.getByRole('heading', { name: 'Website & Landingpage', exact: true }),
+  ).toHaveCount(1);
 });
 
 test('the enhanced state dims the unfocused rows no further than AA allows', async ({ page }) => {
@@ -384,171 +468,3 @@ for (const lang of ['de', 'en'] as const) {
     }
   });
 }
-
-/* --- the opening argument ------------------------------------------------
-   „Die Ausgangslage" used to be a section of its own above this one. Merged,
-   it is the first act of the same journey, and the two things worth pinning
-   are that it is complete for everyone and that it hands over cleanly. */
-
-test('the opening argument reaches every visitor, scene or no scene', async ({ page }) => {
-  // The fallback is where most people read this: every phone, every tablet
-  // held upright, every reduced-motion request. Losing a card here would lose
-  // it for the majority, and the copy column is the only copy of it now.
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/de/');
-  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
-  await expect(page.locator(`${section} canvas`)).toHaveCount(0);
-
-  for (const text of ['Die Agentur', 'Der Baukasten', 'Also weiter wie bisher']) {
-    await expect(page.locator(section).getByText(text, { exact: true })).toBeVisible();
-  }
-  await expect(page.locator(`${section} .crossroads-answer`)).toBeVisible();
-  // And the four ways are still under it, so the merged section carries both
-  // halves of the argument rather than trading one for the other.
-  await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
-});
-
-test('the approach shows the argument, and the junction hands over to the ways', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/de/');
-  await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
-
-  const acts = page.locator(`${section} .crossroads-act`);
-  await expect(acts).toHaveCount(2);
-
-  // Through the whole approach the problem is showing and the price board is
-  // not, and nothing has begun to build: the section must not answer the
-  // question while it is still asking it.
-  for (const p of [0, 0.1, 0.2, APPROACH_END - 0.01]) {
-    await scrollToProgress(page, p);
-    await expect(acts.nth(0), `act one is hidden at ${p}`).toHaveAttribute('data-live', 'true');
-    await expect(acts.nth(1), `act two is showing at ${p}`).toHaveAttribute('data-live', 'false');
-    await expect(page.locator(section)).toHaveAttribute('data-built', '0');
-  }
-
-  // Past the junction the column is the four ways.
-  await scrollToProgress(page, APPROACH_END + 0.02);
-  await expect(acts.nth(0)).toHaveAttribute('data-live', 'false');
-  await expect(acts.nth(1)).toHaveAttribute('data-live', 'true');
-
-  // Five blocks, and exactly one of them is ever the live one.
-  const beats = page.locator(`${section} .crossroads-beat`);
-  await expect(beats).toHaveCount(5);
-  for (const p of [0.02, 0.09, 0.15, 0.21, 0.27]) {
-    await scrollToProgress(page, p);
-    await expect(
-      page.locator(`${section} .crossroads-beat[data-live="true"]`),
-      `not exactly one block at ${p}`,
-    ).toHaveCount(1);
-  }
-});
-
-test('both acts stay readable to a screen reader, whichever one is showing', async ({ page }) => {
-  // Opacity, never display or visibility. A reader using a screen reader at
-  // 1440px gets the enhanced state like everybody else, and removing act one
-  // from the tree once the camera has passed it would delete half this
-  // section's argument for precisely the people who cannot watch it move.
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/de/');
-  await expect(page.locator(`${section} canvas[data-scene="kc-crossroads"]`)).toBeAttached();
-  await scrollToProgress(page, wayAt(1));
-
-  const actOne = page.locator(`${section} .crossroads-act`).first();
-  // Polled, because the acts carry a 380ms fade whenever motion is allowed and
-  // the one that just lost the floor is still travelling when the scroll
-  // helper returns.
-  await expect
-    .poll(() => actOne.evaluate((el) => Number(getComputedStyle(el).opacity)), {
-      message: 'act one should be faded out here',
-    })
-    .toBe(0);
-
-  const still = await actOne.evaluate((el) => {
-    const s = getComputedStyle(el);
-    return { display: s.display, visibility: s.visibility };
-  });
-  expect(still.display, 'act one was removed from the layout').not.toBe('none');
-  expect(still.visibility, 'act one was removed from the accessibility tree').toBe('visible');
-});
-
-test('the fallback strikes each option through once you have passed it', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/de/');
-  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
-
-  const cards = page.locator(`${section} .crossroads-card`);
-  await expect(cards).toHaveCount(3);
-  // Nothing has failed before it has been read.
-  for (let i = 0; i < 3; i += 1) {
-    await expect(cards.nth(i)).toHaveAttribute('data-passed', 'false');
-  }
-
-  // Scroll past all three and the first two are struck. The third is the one
-  // still being read at the answer, and a card is only marked once the NEXT
-  // block has been reached.
-  await page.locator(`${section} .crossroads-answer`).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(600);
-  await expect(cards.nth(0)).toHaveAttribute('data-passed', 'true');
-  await expect(cards.nth(1)).toHaveAttribute('data-passed', 'true');
-
-  // 0.7 and not lower. Same accessibility floor as the price rows: composited
-  // over ink, text-ink-muted at 0.7 measures 5.33:1 in the light theme and
-  // 4.52:1 in the dark, against the 4.5:1 body text needs. check_contrast.py
-  // audits token pairs and cannot see a CSS opacity, so this is the only gate
-  // that would catch it drifting.
-  await expect
-    .poll(() => cards.nth(0).evaluate((el) => Number(getComputedStyle(el).opacity)))
-    .toBeCloseTo(0.7, 2);
-});
-
-test('a reduced-motion visitor is never handed a struck-through option', async ({ page }) => {
-  // The fallback covers reduced motion as well as phones, and honouring the
-  // request means nothing moves and nothing is dimmed: every option stays at
-  // full strength, which is exactly the static page this section had before.
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/de/');
-  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
-
-  await page.locator(`${section} .crossroads-answer`).scrollIntoViewIfNeeded();
-  await page.waitForTimeout(600);
-
-  const cards = page.locator(`${section} .crossroads-card`);
-  for (let i = 0; i < 3; i += 1) {
-    await expect(cards.nth(i), `option ${i} was struck through`).toHaveAttribute(
-      'data-passed',
-      'false',
-    );
-    expect(
-      await cards.nth(i).evaluate((el) => Number(getComputedStyle(el).opacity)),
-      `option ${i} was dimmed`,
-    ).toBe(1);
-  }
-});
-
-test('a jumped scroll does not leave the options behind it unstruck', async ({ page }) => {
-  // The anchor-link case, and the same one the build ratchet exists for. An
-  // IntersectionObserver only reports the blocks that crossed its boundary, so
-  // a scroll that flies past three of them names one and says nothing about
-  // the rest. Measuring every block against the reading line instead is what
-  // makes this work.
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/de/');
-  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
-
-  await page.evaluate(() => {
-    const answer = document.querySelector('#services .crossroads-answer');
-    answer?.scrollIntoView({ block: 'center', behavior: 'instant' });
-  });
-  await page.waitForTimeout(700);
-
-  const cards = page.locator(`${section} .crossroads-card`);
-  for (let i = 0; i < 3; i += 1) {
-    await expect(cards.nth(i), `option ${i} was skipped rather than passed`).toHaveAttribute(
-      'data-passed',
-      'true',
-    );
-  }
-});

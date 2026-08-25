@@ -6,3 +6,9 @@ next-env.d.ts
 .DS_Store
 .env
 .env.local
+
+# Screenshots from tools/shoot.mjs. Working output, not artefacts: they are
+# regenerated from the built site whenever the frame changes, and a hundred
+# 300 kB PNGs is not something a repo should carry. The poster in public/ is
+# different and IS committed, because it ships.
+shots/

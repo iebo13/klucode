@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import type { Faq as FaqItem } from '@/content/types';
+import { pathFor, type Lang } from '@/lib/routes';
+
 /**
  * Section label: a node dot and sentence-case text.
  *
@@ -269,7 +272,19 @@ export function ArrowLink({
   return (
     <Link
       href={href}
-      className={`group inline-flex items-center gap-2 font-medium underline underline-offset-4 transition-colors duration-base hover:decoration-current ${
+      // min-h-[2.75rem] is 44px, and it is deliberately off the token spacing
+      // scale, which runs 4/8/12/16/24/32/48. 44 is not a rhythm value, it is
+      // WCAG 2.5.5's minimum target size, and rounding it up to the scale's 48
+      // would put an accessibility constant at the mercy of the next change to
+      // tokens.json. check-spacing.mjs allows arbitrary values for exactly
+      // this: an off-scale number that is somebody else's standard.
+      //
+      // It is a HIT AREA rather than a look: the link is
+      // 28px tall at its own font size, which is inside WCAG 2.5.5's minimum
+      // for a standalone control, and there are six of these on the homepage
+      // alone. items-center keeps the type exactly where it was and grows the
+      // box around it, so nothing moves except what a thumb can land on.
+      className={`group inline-flex min-h-[2.75rem] items-center gap-2 font-medium underline underline-offset-4 transition-colors duration-base hover:decoration-current ${
         onInk
           ? 'text-ink-accent decoration-viridian-600'
           : 'text-brand-text decoration-viridian-300'
@@ -297,10 +312,20 @@ export function ArrowLink({
  * header capsule, which applies the class itself. There is deliberately no
  * glass variant here: if you are reaching for it on a card, you want `panel`.
  */
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = '',
+  id,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Anchor, so a case study can link back to the offer it was delivered under. */
+  id?: string;
+}) {
   return (
     <div
-      className={`panel rounded-lg p-6 transition-shadow duration-slow ease-brand md:p-8 ${className}`}
+      id={id}
+      className={`panel scroll-mt-28 rounded-lg p-6 transition-shadow duration-slow ease-brand md:p-8 ${className}`}
     >
       {children}
     </div>
@@ -329,7 +354,14 @@ export function Tags({ items }: { items: readonly string[] }) {
 }
 
 /** Native disclosure — keyboard accessible for free, and works without JS. */
-export function Faq({ items }: { items: readonly { q: string; a: string }[] }) {
+export function Faq({
+  items,
+  lang,
+}: {
+  items: readonly FaqItem[];
+  /** Needed because a link target is a page key, and slugs are localised. */
+  lang: Lang;
+}) {
   return (
     <div className="divide-y divide-line border-y border-line">
       {items.map((item) => (
@@ -348,6 +380,11 @@ export function Faq({ items }: { items: readonly { q: string; a: string }[] }) {
             </span>
           </summary>
           <p className="mt-4 max-w-measure text-muted">{item.a}</p>
+          {item.link ? (
+            <p className="mt-3">
+              <ArrowLink href={pathFor(item.link.to, lang)}>{item.link.label}</ArrowLink>
+            </p>
+          ) : null}
         </details>
       ))}
     </div>

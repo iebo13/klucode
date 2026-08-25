@@ -23,7 +23,10 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
       <div className="mx-auto max-w-container px-6 py-16 md:px-8">
         <div className="flex flex-col gap-12 md:flex-row md:justify-between">
           <div className="max-w-sm">
-            <Link href={pathFor('home', lang)} className="text-[1.35rem] text-ink-fg">
+            <Link
+              href={pathFor('home', lang)}
+              className="inline-flex min-h-[2.75rem] items-center text-[1.35rem] text-ink-fg"
+            >
               <Logo />
             </Link>
             <p className="mt-4 font-display text-lead text-ink-accent">{c.footer.tagline}</p>
@@ -35,12 +38,12 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
           <div className="flex flex-wrap gap-x-16 gap-y-8">
             <nav aria-label={c.ui.footerNavLabel}>
               <h2 className="text-small font-medium text-ink-faint">{c.meta.siteName}</h2>
-              <ul className="mt-4 space-y-3">
+              <ul className="mt-4">
                 {[...NAV_KEYS, 'contact' as const].map((k) => (
                   <li key={k}>
                     <Link
                       href={pathFor(k, lang)}
-                      className="text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
+                      className="flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
                     >
                       {c.nav[k]}
                     </Link>
@@ -51,12 +54,12 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
 
             <nav aria-label={c.ui.footerLegalLabel}>
               <h2 className="text-small font-medium text-ink-faint">{c.ui.footerLegalLabel}</h2>
-              <ul className="mt-4 space-y-3">
+              <ul className="mt-4">
                 {LEGAL_KEYS.map((k) => (
                   <li key={k}>
                     <Link
                       href={pathFor(k, lang)}
-                      className="text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
+                      className="flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
                     >
                       {c.nav[k]}
                     </Link>
@@ -70,13 +73,13 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
             {profile.linkedin || profile.github ? (
               <div>
                 <h2 className="text-small font-medium text-ink-faint">{c.ui.footerSocialLabel}</h2>
-                <ul className="mt-4 space-y-3">
+                <ul className="mt-4">
                   {profile.linkedin ? (
                     <li>
                       <a
                         href={profile.linkedin}
                         rel="me noopener"
-                        className="text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
+                        className="flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
                       >
                         LinkedIn
                       </a>
@@ -87,7 +90,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
                       <a
                         href={profile.github}
                         rel="me noopener"
-                        className="text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
+                        className="flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
                       >
                         GitHub
                       </a>

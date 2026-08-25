@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Logo } from '@/components/logo';
 import { ThemeToggle } from '@/components/theme-toggle';
 import type { Content } from '@/content';
-import { profile } from '@/content/profile';
+import { availableFrom } from '@/content/profile';
 import { NAV_KEYS, alternatePath, pathFor, type Lang, type PageKey } from '@/lib/routes';
 
 /**
@@ -68,7 +68,7 @@ export function Header({
       <div className="glass-nav mx-auto flex max-w-container items-center justify-between gap-3 rounded-full py-2 pl-4 pr-2 md:gap-6 md:pl-6">
         <Link
           href={pathFor('home', lang)}
-          className="shrink-0 text-[1.35rem]"
+          className="inline-flex min-h-[2.75rem] shrink-0 items-center text-[1.35rem]"
           aria-label={siteName}
         >
           <Logo />
@@ -105,7 +105,7 @@ export function Header({
 
           <Link
             href={pathFor('contact', lang)}
-            className="rounded-full bg-brand-action px-4 py-2 text-small font-semibold text-on-brand transition-colors duration-base hover:bg-viridian-700"
+            className="inline-flex min-h-[2.75rem] items-center rounded-full bg-brand-action px-4 py-2 text-small font-semibold text-on-brand transition-colors duration-base hover:bg-viridian-700"
           >
             {nav.contact}
           </Link>
@@ -118,7 +118,7 @@ export function Header({
         <div className="flex items-center gap-1 lg:hidden">
           <Link
             href={pathFor('contact', lang)}
-            className="rounded-full bg-brand-action px-3 py-2 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
+            className="inline-flex min-h-[2.75rem] items-center rounded-full bg-brand-action px-4 py-2 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
           >
             {nav.contact}
           </Link>
@@ -128,12 +128,32 @@ export function Header({
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav"
-            className="rounded-full border border-line px-3 py-2 text-small transition-colors duration-base hover:border-brand-action"
+            className="inline-flex min-h-[2.75rem] items-center rounded-full border border-line px-4 py-2 text-small transition-colors duration-base hover:border-brand-action"
           >
             {open ? ui.close : ui.menu}
           </button>
         </div>
       </div>
+
+      {/* The backdrop, which is what makes the drawer a layer rather than a
+          panel that happens to be on top.
+
+          It was left out on the grounds that the drawer is a flat panel below
+          the capsule and a stray scroll-tap should not dismiss it. Both halves
+          of that turned out to be wrong in use: the page behind stayed fully
+          lit and fully scrollable, so the drawer read as part of the page
+          rather than over it, and a tap outside it did nothing at all, which
+          is the one gesture every visitor already knows.
+
+          aria-hidden and no tab stop, because Escape and the toggle button are
+          the keyboard routes and this must not become a third one. */}
+      {open ? (
+        <div
+          aria-hidden="true"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 -z-10 bg-stone-950/45 backdrop-blur-[2px] lg:hidden"
+        />
+      ) : null}
 
       {/* Always in the DOM and toggled with `hidden`, so the button's
           aria-controls has something to point at while the drawer is closed. */}
@@ -163,18 +183,23 @@ export function Header({
             </li>
           ))}
         </ul>
-        <div className="mt-6 flex items-center justify-between gap-4 border-t border-line pt-4">
-          <Link
-            href={alternatePath(current, lang)}
-            lang={lang === 'de' ? 'en' : 'de'}
-            className="text-small text-muted"
-          >
-            {ui.switchLangLabel}
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-small text-muted">
-              {ui.availablePrefix} {profile.availableFrom[lang]}
-            </span>
+        {/* Two rows, not one. Three unrelated things sharing a single flex row
+            put the availability line, the language switch and the theme toggle
+            shoulder to shoulder at 390px, where the availability line is the
+            longest of them and the only one carrying information rather than a
+            control. It gets its own line above the two controls. */}
+        <div className="mt-6 border-t border-line pt-4">
+          <p className="text-small text-muted">
+            {ui.availablePrefix} {availableFrom(lang)}
+          </p>
+          <div className="mt-3 flex items-center justify-between gap-4">
+            <Link
+              href={alternatePath(current, lang)}
+              lang={lang === 'de' ? 'en' : 'de'}
+              className="text-small text-muted"
+            >
+              {ui.switchLangLabel}
+            </Link>
             <ThemeToggle labels={themeLabels} />
           </div>
         </div>

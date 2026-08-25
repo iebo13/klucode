@@ -7,7 +7,28 @@
  */
 
 export type Card = { title: string; body: string };
-export type Faq = { q: string; a: string };
+/**
+ * A question, its answer, and optionally the page that answers it in full.
+ *
+ * The link is the fix for a site whose copy contained no internal links at
+ * all. „Was kostet das?" names two prices and then stops, on a page that is
+ * not the price page, with nothing joining the two. A reader who wants the
+ * detail has to go back to the nav and guess.
+ */
+export type Faq = {
+  q: string;
+  a: string;
+  link?: { label: string; to: LinkTarget };
+};
+
+/**
+ * Where a link inside the copy is allowed to point.
+ *
+ * A closed set rather than a href, so a link in the German content cannot
+ * hard-code a German slug that the English content then inherits. The routing
+ * table owns the slugs and this owns the intent.
+ */
+export type LinkTarget = 'services' | 'work' | 'approach' | 'about' | 'contact';
 export type Step = { title: string; body: string };
 
 /**
@@ -35,6 +56,14 @@ export type Service = {
   includes: string[];
   price: string;
   priceNote: string;
+  /**
+   * The delivered project that proves this offer, if there is one.
+   *
+   * Optional and honestly so: two of the four have a case study and two do
+   * not, and inventing a link for the other two would be exactly the kind of
+   * decoration the rest of this content refuses. `project` is a Project.key.
+   */
+  example?: { label: string; project: string };
   /**
    * The unit `price` is charged in, where it is not a one-off project fee.
    * Omitted for the two fixed-price lines; 'day' and 'month' for the two
@@ -65,6 +94,34 @@ export type Project = {
   metric?: string;
   /** A written, client-released testimonial. Same deal: add when approved. */
   quote?: { text: string; attribution: string };
+  /**
+   * The offer this project was delivered under, so a reader who is convinced
+   * by the case has somewhere to go that is not the back button. The other
+   * half of Service.example.
+   */
+  offer?: { label: string; service: ServiceKey };
+  /**
+   * A picture of the delivered system. Three shipped systems and zero pixels
+   * of any of them is the single largest gap on this site: every competitor
+   * shows work, and precision without evidence reads as copywriting.
+   *
+   * `src` is a path under public/. Anonymised is fine, and preferable to
+   * nothing.
+   */
+  shot?: { src: string; alt: string };
+  /**
+   * True while a real screenshot is still coming, which draws an empty framed
+   * panel where it will go.
+   *
+   * A marked absence and NOT a stand-in image. A stock photograph sitting
+   * under „so sieht das System aus" is a fabricated claim on the one section
+   * whose entire value is that it is honest, and a picture taken off the web
+   * is somebody else's copyright on a commercial page. The panel says a
+   * screenshot is coming, which is true, and scripts/check-profile.mjs refuses
+   * a production build while any of them are still up. Same bargain as todo()
+   * in profile.ts: visible in development, impossible to ship by accident.
+   */
+  shotPending?: boolean;
 };
 
 export type LegalSection = { heading: string; paragraphs: string[] };
@@ -96,6 +153,10 @@ export type Content = {
     ctaPrimary: string;
     ctaSecondary: string;
     availablePrefix: string;
+    /** Marks an offer that is proposed rather than settled. */
+    draft: string;
+    /** Caption inside the empty frame where a screenshot will go. */
+    shotPending: string;
     skipToContent: string;
     menu: string;
     close: string;
@@ -133,6 +194,21 @@ export type Content = {
     servicesEyebrow: string;
     servicesTitle: string;
     servicesLink: string;
+    /**
+     * What the crossroads looks like, for everyone who never sees it move.
+     *
+     * Most visitors: every phone, every tablet held upright, every
+     * reduced-motion request, every browser without WebGL. The fallback is
+     * honest and complete without it and it never told them the place existed.
+     * A 13 kB still of the closing shot does, and it is rendered FROM the
+     * scene by tools/shoot-poster.mjs rather than drawn, so it cannot describe
+     * a world the site stopped having.
+     *
+     * The alt text is the same information again for a reader who gets neither
+     * the scene nor the image, which is why it names the four objects rather
+     * than calling itself an illustration.
+     */
+    sceneAlt: string;
     workEyebrow: string;
     workTitle: string;
     workLead: string;
@@ -159,6 +235,55 @@ export type Content = {
     notTitle: string;
     notBody: string;
     notItems: string[];
+    /**
+     * Sends a price-shopper to the answers instead of leaving them on the
+     * board. This page is where the objection is formed and the six answers
+     * that meet it, including „Was kostet das?", are on the homepage with
+     * nothing pointing at them from here.
+     */
+    faqTitle: string;
+    faqBody: string;
+    faqLink: string;
+    /**
+     * For the visitor who cannot tell which of the four they are.
+     *
+     * The site's answer to that has always been the 30 minute call, which is
+     * right for the positioning and invisible on the page where the doubt
+     * actually forms. One sentence converts it into the funnel that already
+     * exists instead of losing it to a closed tab.
+     */
+    triage: string;
+    /**
+     * A PROPOSED fifth rung, shown on this page only, and null where there
+     * isn't one.
+     *
+     * The ladder jumps 2.500 € to 9.000 €, and the competitors' best selling
+     * tiers cluster at 3.900 to 5.500 €. A buyer who has outgrown a landing
+     * page and cannot sign a five-figure-adjacent number currently has no rung
+     * to stand on and no reason to stay.
+     *
+     * Deliberately NOT a fifth entry in `items`, and that is the whole reason
+     * this field exists. `items` feeds the homepage crossroads, whose floor is
+     * laid out for exactly four lanes: boot() refuses any other number, and
+     * ServiceKey is closed so that adding a service is a compile error until
+     * it has an object to stand at the end of its lane. That guard is correct
+     * and a draft price should not be the thing that trips it. Promoting this
+     * to a real service means modelling a fifth object and a fifth lane, which
+     * is a separate decision taken after this one.
+     *
+     * `after` names the offer it slots in behind, so the page renders the
+     * ladder in price order without anything having to be kept in step by
+     * hand.
+     */
+    middle: {
+      after: ServiceKey;
+      name: string;
+      forWhom: string;
+      body: string;
+      includes: string[];
+      price: string;
+      priceNote: string;
+    } | null;
   };
 
   work: {
@@ -198,6 +323,8 @@ export type Content = {
     eyebrow: string;
     title: string;
     lead: string;
+    /** The same triage line as on the services page, where the form is. */
+    triage: string;
     directTitle: string;
     directBody: string;
     formTitle: string;

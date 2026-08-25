@@ -73,6 +73,8 @@ const de = {
     ctaPrimary: 'Projekt besprechen',
     ctaSecondary: 'Projekte ansehen',
     availablePrefix: 'Freie Kapazität ab',
+    draft: 'VORSCHLAG · NOCH NICHT BUCHBAR',
+    shotPending: 'Screenshot folgt, sobald der Auftraggeber ihn freigegeben hat.',
     skipToContent: 'Zum Inhalt springen',
     menu: 'Menü',
     close: 'Schließen',
@@ -131,6 +133,8 @@ const de = {
     servicesEyebrow: 'Leistungen',
     servicesTitle: 'Vier Wege zur Zusammenarbeit.',
     servicesLink: 'Alle Leistungen und Preise',
+    sceneAlt:
+      'Die vier Wege als Raum: eine Website auf einem Monitor, eine Web-Anwendung mit Datenbank und Server dahinter, ein Büro mit einem freien Platz, ein Server-Rack an einer Wolke.',
 
     workEyebrow: 'Projekte',
     workTitle: 'Drei Systeme, die täglich laufen.',
@@ -150,6 +154,7 @@ const de = {
       {
         q: 'Was kostet das?',
         a: 'Eine Website beginnt bei 2.500\u00A0€, eine individuelle Web-Anwendung bei 9.000\u00A0€. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung. Nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
+        link: { label: 'Alle vier Leistungen mit Preis', to: 'services' },
       },
       {
         q: 'Wie lange dauert es?',
@@ -158,6 +163,7 @@ const de = {
       {
         q: 'Was passiert, wenn Sie ausfallen?',
         a: 'Die berechtigte Frage bei einer Person. Deshalb: Der Code liegt in einem Repository, auf das Sie Zugriff haben, die Dokumentation liegt daneben, und es kommt keine Technik zum Einsatz, die nur ich bedienen kann. Jede andere Entwicklerin und jeder andere Entwickler kann übernehmen. Das ist kein Notfallplan, das ist Grundausstattung.',
+        link: { label: 'Wie ich arbeite', to: 'approach' },
       },
       {
         q: 'Gehört mir der Code?',
@@ -170,6 +176,7 @@ const de = {
       {
         q: 'Arbeiten Sie auch außerhalb von Düsseldorf?',
         a: 'Ja. Im Rheinland komme ich gern persönlich vorbei, alles Weitere geht remote. Bei drei ausgelieferten Projekten war die Entfernung nie das Thema.',
+        link: { label: 'Die drei Projekte', to: 'work' },
       },
     ],
 
@@ -197,6 +204,7 @@ const de = {
         ],
         price: '2.500\u00A0€',
         priceNote: '2 bis 3 Wochen · Festpreis',
+        example: { label: 'Beispiel: Landingpage für ein Reinigungsunternehmen', project: 'landing' }, // prettier-ignore
       },
       {
         key: 'app',
@@ -214,6 +222,7 @@ const de = {
         ],
         price: '9.000\u00A0€',
         priceNote: '4 bis 10 Wochen · Festpreis',
+        example: { label: 'Beispiel: CRM und Provisionsverwaltung', project: 'crm' },
       },
       {
         key: 'capacity',
@@ -263,6 +272,27 @@ const de = {
       'Shopsysteme von der Stange: dafür gibt es Bessere und Günstigere',
       'Teams stellen oder Projekte über zwölf Monate leiten',
     ],
+    faqTitle: 'Noch Fragen zum Preis?',
+    faqBody:
+      'Was in einem Festpreis steckt, was passiert wenn sich der Umfang ändert, und was der Betrieb monatlich wirklich kostet: sechs Antworten auf der Startseite.',
+    faqLink: 'Häufige Fragen',
+    triage:
+      'Unsicher, welcher der vier Wege passt? Beschreiben Sie Ihren Ablauf in zwei Sätzen. Die Einordnung ist Teil des Gesprächs und kostet nichts.',
+    middle: {
+      after: 'website',
+      name: 'Website mit System',
+      forWhom: 'Für Betriebe, die eine Seite brauchen und den ersten Ablauf gleich mit.',
+      body: 'Die Seite aus dem ersten Angebot, und daran der eine Vorgang, der heute die meiste Zeit kostet. Ein Formular, das in einer Datenbank landet statt in einem Postfach, und eine Auswertung, die zeigt, was daraus geworden ist. Der Schritt zwischen Website und eigener Anwendung, für alle, die den großen Sprung noch nicht machen wollen.',
+      includes: [
+        'Alles aus Website & Landingpage',
+        'Ein Ablauf, gemeinsam aufgenommen und abgebildet',
+        'Formular mit Datenbank statt E-Mail-Postfach',
+        'Eine Auswertung, die Sie selbst öffnen können',
+        'Zugänge für Sie und eine zweite Person',
+      ],
+      price: '4.500\u00A0€',
+      priceNote: '3 bis 5 Wochen · Festpreis',
+    },
   },
 
   work: {
@@ -284,6 +314,8 @@ const de = {
         result:
           'Die monatliche Abrechnung läuft automatisch. Keine Datei wandert mehr per E-Mail, und es gibt keine zweite Version, von der niemand weiß, ob sie die richtige ist.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
+        offer: { label: 'Passendes Angebot: Individuelle Web-Anwendung', service: 'app' },
+        shotPending: true,
       },
       {
         key: 'pos',
@@ -299,6 +331,7 @@ const de = {
         result:
           'Bedienbar ohne Schulung. Die Abrechnung am Ende des Abends ist ein Vorgang statt einer Rekonstruktion.',
         stack: ['JavaScript', 'Datenbankmodellierung', 'Touch-UI'],
+        offer: { label: 'Passendes Angebot: Individuelle Web-Anwendung', service: 'app' },
       },
       {
         key: 'landing',
@@ -314,6 +347,8 @@ const de = {
         result:
           'Sichtbarkeit über den Empfehlungskreis hinaus. Aus einem reinen Web-Auftrag wurde ein vollständiges Paket zur Kundengewinnung.',
         stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-Bild und -Video'],
+        offer: { label: 'Passendes Angebot: Website & Landingpage', service: 'website' },
+        shotPending: true,
       },
     ],
     noteTitle: 'Zu Zahlen und Namen',
@@ -404,6 +439,8 @@ const de = {
     eyebrow: 'Kontakt',
     title: 'Erzählen Sie mir, was gerade nicht läuft.',
     lead: `30 Minuten, unverbindlich, ohne Präsentation. Ich melde mich werktags innerhalb von ${profile.responseTime.de}.`,
+    triage:
+      'Sie müssen vorher nicht wissen, welche Leistung die richtige ist. Beschreiben Sie, was gerade nicht läuft, die Einordnung übernehme ich.',
     directTitle: 'Direkt',
     directBody: 'Eine E-Mail geht schneller als jedes Formular.',
     formTitle: 'Oder hier',

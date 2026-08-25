@@ -151,8 +151,25 @@ export const profile = {
   github: null as string | null,
 
   // --- commercial --------------------------------------------------------
-  /** Shown in the header. Update it; a stale availability line is worse than none. */
-  availableFrom: { de: 'September', en: 'September' },
+  /**
+   * When capacity next opens, as an ISO year and month.
+   *
+   * It was two hand-written month names, and the failure mode is not that the
+   * word is wrong, it is that nobody notices when it goes out of date. Written
+   * in August, „Freie Kapazität ab September" is a promise. Read in November it
+   * is a site nobody maintains, which costs more trust than saying nothing.
+   *
+   * A year and a month rather than a name fixes two things at once. The label
+   * is now formatted per language, so „Oktober" and „October" cannot drift
+   * apart. And the month is comparable, so scripts/check-profile.mjs can refuse
+   * a production build whose availability month has already passed.
+   *
+   * Deliberately NOT derived from the build date. „The month after this build"
+   * is a claim about the business that only its owner can make, and a site that
+   * quietly re-promises availability every time it is rebuilt is exactly the
+   * unmaintained-but-plausible thing this is meant to prevent.
+   */
+  availableFrom: '2026-09',
   responseTime: { de: '24 Stunden', en: 'one working day' },
 
   /**
@@ -220,6 +237,32 @@ export function filled(v: string | null | undefined): string | undefined {
  * production site.
  */
 export const isPreviewDeploy = IS_PREVIEW;
+
+/**
+ * The availability month, in the reader's language, e.g. "September".
+ *
+ * Month alone and no year, because the badge sits next to „Freie Kapazität ab"
+ * and a year on a date two months out reads as a much longer wait than it is.
+ * The year is still stored, which is what lets the gate below tell September
+ * 2026 from September 2027.
+ */
+export function availableFrom(lang: 'de' | 'en'): string {
+  return new Intl.DateTimeFormat(lang === 'de' ? 'de-DE' : 'en-GB', {
+    month: 'long',
+    timeZone: 'UTC',
+  }).format(new Date(`${profile.availableFrom}-01T00:00:00Z`));
+}
+
+/**
+ * True once the availability month is behind us, for the pre-flight gate.
+ *
+ * Compared against a month passed in rather than against a clock, so the check
+ * script owns the "now" and nothing in the built site depends on when it was
+ * built. `today` is an ISO year and month, the same shape as the field.
+ */
+export function availabilityIsStale(today: string): boolean {
+  return profile.availableFrom < today;
+}
 
 /** Formats profile.policyUpdated for display, e.g. "2. August 2026". */
 export function policyDate(lang: 'de' | 'en'): string {
