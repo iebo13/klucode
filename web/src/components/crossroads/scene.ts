@@ -65,7 +65,7 @@ import type { Handle, SceneLabels, ServiceKey, Stop, Way } from './types';
  * nothing raised and nothing to see in a stack trace. The check in boot() is
  * what turns that into a loud failure at the first frame.
  */
-const LANES = [
+export const LANES = [
   { key: 'website', angle: 0.8, dist: 17, back: 9.1, aimY: 2.33 },
   { key: 'app', angle: 0.28, dist: 17, back: 11.4, aimY: 2.6 },
   { key: 'capacity', angle: -0.28, dist: 17, back: 13.2, aimY: 0.98 },
@@ -110,7 +110,7 @@ const CAM_Y = 2.4;
  * always satisfied and a wide monitor spends its extra width on air around the
  * subject rather than on a different composition.
  */
-const fovFor = (fitH: number, fitV: number, aspect: number) =>
+export const fovFor = (fitH: number, fitV: number, aspect: number) =>
   2 * Math.max(fitV, MathUtils.radToDeg(Math.atan(Math.tan(MathUtils.degToRad(fitH)) / aspect)));
 
 /**
@@ -146,6 +146,107 @@ function standOff(target: Vector3, back: number): [number, number, number] {
     .setY(CAM_Y);
   return [p.x, p.y, p.z];
 }
+
+/**
+ * Where a lane's camera aims: the middle of the thing standing at the end of
+ * it, swung round by whatever the lane is rotated by.
+ *
+ * Written as a function rather than inlined, because the two places that need
+ * it are now in different scopes. The stop list is module level, so the
+ * framing suite can read it with no GPU and no canvas, and the lane records
+ * are inside boot() because they own a Group.
+ */
+const laneTarget = (turn: number, dist: number, aimY: number): Vector3 =>
+  new Vector3(0, aimY, -dist).applyAxisAngle(Y_AXIS, turn);
+
+/**
+ * The two wide shots, which stand off the fan far enough to hold all four
+ * lanes at once. Their half-angles are wider than a close-up's by design:
+ * this is the establishing shot and the only change of lens in the sequence.
+ *
+ * They are also tilted well down, and that is the part that took measuring.
+ * Four objects on a flat floor occupy a band 36° across and 15° tall, and the
+ * canvas is a portrait column, so a lens wide enough for the band always
+ * leaves the height over-supplied. No camera position fixes that: raising the
+ * camera spreads the fan horizontally by as much as it gains vertically, and
+ * the best height in a sweep of 169,000 still had the objects covering barely
+ * a fifth of the frame.
+ *
+ * What fills the frame is the floor, and how much floor there is depends on
+ * the tilt alone. At the first draft's 6° the horizon sat near the middle and
+ * the whole top half was flat unlit background. At 15° down the floor and its
+ * four lit lanes carry 67% of the height and the objects sit on them rather
+ * than floating in the dark.
+ */
+const WIDE_FIT_H = 35.9;
+const WIDE_FIT_V = 15.2;
+
+/**
+ * The approach: two stops short of the junction, on the same lens.
+ *
+ * The section now opens with the argument for why the two obvious options do
+ * not fit, and the camera spends that argument closing the distance. Holding
+ * the wide shot's half-angles fixed and moving only the camera is what makes
+ * it read as an approach rather than as a zoom: the four ways cover 64% of
+ * the frame from the first stop, 80% from the second and 100% on arrival, so
+ * they are visible and out of reach the whole way in.
+ *
+ * The fog does the rest. At the first stop the far lanes are 45 units off and
+ * a third of their contrast is gone, which is the point: you can see that
+ * there are four of them and not yet what they are.
+ */
+const APPROACH: Stop[] = [
+  { at: 0, focus: -1, pos: [0, 9, 28], look: [0, 0, -8], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
+  {
+    at: APPROACH_END * 0.55,
+    focus: -1,
+    pos: [0, 7.5, 20],
+    look: [0, 0, -9],
+    fitH: WIDE_FIT_H,
+    fitV: WIDE_FIT_V,
+  },
+];
+
+/**
+ * Every camera position in the journey, at module level so the framing suite
+ * can project against the same list the renderer drives.
+ *
+ * It used to live inside boot(), built from the lane records, which meant the
+ * only way to ask what a stop framed was to start a WebGL context and look at
+ * the result. Nothing here needs a Group: a stop is two number triples and two
+ * half-angles, and laneTarget() is the arithmetic that used to be done on the
+ * Vector3 hanging off a lane.
+ */
+export const STOPS: Stop[] = [
+  ...APPROACH,
+  {
+    at: APPROACH_END,
+    focus: -1,
+    pos: [0, 6, 13],
+    look: [0, 0, -10],
+    fitH: WIDE_FIT_H,
+    fitV: WIDE_FIT_V,
+  },
+  // The four ways keep the spacing they had when the crossroads was a section
+  // of its own, remapped into what is left after the approach rather than
+  // written out again. Restating them as new literals is how a change to the
+  // approach quietly re-paces the part of the journey it was not meant to
+  // touch.
+  ...LANES.map((geom, i) => {
+    const target = laneTarget(geom.angle, geom.dist, geom.aimY);
+    return {
+      at: APPROACH_END + (0.18 + i * 0.19) * (1 - APPROACH_END),
+      focus: i,
+      pos: standOff(target, geom.back),
+      look: [target.x, target.y, target.z] as [number, number, number],
+      fitH: LANE_FIT_H,
+      fitV: LANE_FIT_V,
+    };
+  }),
+  // The same shot from further back and a touch higher, so the section ends
+  // by releasing the place rather than by cutting away from it.
+  { at: 1, focus: -1, pos: [0, 7.2, 15.5], look: [0, 0.2, -10], fitH: 32.8, fitV: 13.5 },
+];
 
 export function boot(
   canvas: HTMLCanvasElement,
@@ -340,85 +441,8 @@ export function boot(
     // object belonging to a different service.
     const units = BUILDERS[way.key]({ lane: group, z: -geom.dist, track: reg.track, labels });
 
-    const target = new Vector3(0, geom.aimY, -geom.dist).applyAxisAngle(Y_AXIS, geom.angle);
-    return { group, target, back: geom.back, units, built: 0 };
+    return { group, units, built: 0 };
   });
-
-  /**
-   * The two wide shots, which stand off the fan far enough to hold all four
-   * lanes at once. Their half-angles are wider than a close-up's by design:
-   * this is the establishing shot and the only change of lens in the sequence.
-   *
-   * They are also tilted well down, and that is the part that took measuring.
-   * Four objects on a flat floor occupy a band 36° across and 15° tall, and the
-   * canvas is a portrait column, so a lens wide enough for the band always
-   * leaves the height over-supplied. No camera position fixes that: raising the
-   * camera spreads the fan horizontally by as much as it gains vertically, and
-   * the best height in a sweep of 169,000 still had the objects covering barely
-   * a fifth of the frame.
-   *
-   * What fills the frame is the floor, and how much floor there is depends on
-   * the tilt alone. At the first draft's 6° the horizon sat near the middle and
-   * the whole top half was flat unlit background. At 15° down the floor and its
-   * four lit lanes carry 67% of the height and the objects sit on them rather
-   * than floating in the dark.
-   */
-  const WIDE_FIT_H = 35.9;
-  const WIDE_FIT_V = 15.2;
-
-  /**
-   * The approach: two stops short of the junction, on the same lens.
-   *
-   * The section now opens with the argument for why the two obvious options do
-   * not fit, and the camera spends that argument closing the distance. Holding
-   * the wide shot's half-angles fixed and moving only the camera is what makes
-   * it read as an approach rather than as a zoom: the four ways cover 64% of
-   * the frame from the first stop, 80% from the second and 100% on arrival, so
-   * they are visible and out of reach the whole way in.
-   *
-   * The fog does the rest. At the first stop the far lanes are 45 units off and
-   * a third of their contrast is gone, which is the point: you can see that
-   * there are four of them and not yet what they are.
-   */
-  const APPROACH: Stop[] = [
-    { at: 0, focus: -1, pos: [0, 9, 28], look: [0, 0, -8], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
-    {
-      at: APPROACH_END * 0.55,
-      focus: -1,
-      pos: [0, 7.5, 20],
-      look: [0, 0, -9],
-      fitH: WIDE_FIT_H,
-      fitV: WIDE_FIT_V,
-    },
-  ];
-
-  const STOPS: Stop[] = [
-    ...APPROACH,
-    {
-      at: APPROACH_END,
-      focus: -1,
-      pos: [0, 6, 13],
-      look: [0, 0, -10],
-      fitH: WIDE_FIT_H,
-      fitV: WIDE_FIT_V,
-    },
-    // The four ways keep the spacing they had when the crossroads was a section
-    // of its own, remapped into what is left after the approach rather than
-    // written out again. Restating them as new literals is how a change to the
-    // approach quietly re-paces the part of the journey it was not meant to
-    // touch.
-    ...lanes.map((lane, i) => ({
-      at: APPROACH_END + (0.18 + i * 0.19) * (1 - APPROACH_END),
-      focus: i,
-      pos: standOff(lane.target, lane.back),
-      look: [lane.target.x, lane.target.y, lane.target.z] as [number, number, number],
-      fitH: LANE_FIT_H,
-      fitV: LANE_FIT_V,
-    })),
-    // The same shot from further back and a touch higher, so the section ends
-    // by releasing the place rather than by cutting away from it.
-    { at: 1, focus: -1, pos: [0, 7.2, 15.5], look: [0, 0.2, -10], fitH: 32.8, fitV: 13.5 },
-  ];
 
   const pos = new Vector3();
   const look = new Vector3();
@@ -480,8 +504,28 @@ export function boot(
     );
     camera.updateProjectionMatrix();
 
-    // Light whatever is being looked at, not the junction it was lit from.
-    key.position.set(look.x * 0.75 + pos.x * 0.25, 7, look.z * 0.75 + pos.z * 0.25 + 4.5);
+    /**
+     * Light whatever is being looked at, not the junction it was lit from, and
+     * from the side the camera is on.
+     *
+     * The 4.5 used to be added to z outright, which is „towards the camera"
+     * only while the camera stands at greater z than its subject. Every one of
+     * the four ways does, so nothing in the journey as it ships today was lit
+     * wrongly. Anything placed on the near side of the junction is, and the
+     * dead-end experiment on claude/crossroads-dead-ends found it the hard
+     * way: three objects at +Z came out back lit, and the template block,
+     * token #757975, rendered plainly blue.
+     *
+     * The clamp is what lets that be fixed without relighting the crossroads.
+     * Every existing stop has the camera at least 6.3 units of z behind its
+     * look point and the ramp saturates at 2, so all of them get exactly the
+     * 4.5 they had: the four ways, the junction and the closing shot are
+     * unchanged to the last decimal. Only the sign flips, and it flips through
+     * a ramp rather than a step, so a future shot that crosses the junction
+     * slides the key across the floor instead of jumping it.
+     */
+    const side = Math.max(-1, Math.min(1, (pos.z - look.z) / 2));
+    key.position.set(look.x * 0.75 + pos.x * 0.25, 7, look.z * 0.75 + pos.z * 0.25 + side * 4.5);
     key.target.position.copy(look);
     key.target.updateMatrixWorld();
     fill.position.set(pos.x, 3.4, pos.z - 1);

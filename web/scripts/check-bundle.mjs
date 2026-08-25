@@ -37,6 +37,30 @@ const DEFERRED_CAP = 155 * 1024;
  */
 const THREE_MARKER = 'BufferGeometry';
 
+/**
+ * What identifies the scene's OWN deferred chunk, as against three.js.
+ *
+ * Added because the deferred budget was measuring three.js and nothing else.
+ * Next splits the crossroads modules into a chunk of their own, separate from
+ * the two vendor chunks, and that chunk contains no three.js class name at all:
+ * it imports them. So every line of scene.ts, objects.ts and textures.ts was
+ * outside the budget that exists to bound them. Measured on
+ * claude/crossroads-dead-ends, where it was found, the uncounted chunk was
+ * 4.9 kB and the reported deferred total was 5.0 kB short of the truth.
+ *
+ * That is the same failure the note above THREE_MARKER records for the DOM
+ * marker, in the other direction: a gate that measures the wrong thing reports
+ * a number nobody should trust. The budget is what the scene costs, so it
+ * counts what the scene ships.
+ *
+ * `lightAmbient` is a key on the PALETTE object in palette.ts. Property names
+ * survive minification, this one exists nowhere else in the repo, and
+ * palette.ts is imported by every module in the scene, so the chunk carrying
+ * any of them carries this. An `expectSceneChunk` build that stops finding it
+ * fails loudly rather than quietly measuring less.
+ */
+const SCENE_MARKER = 'lightAmbient';
+
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
 const gz = (path) => gzipSync(readFileSync(path)).length;
 
@@ -95,15 +119,22 @@ const walk = (dir) => {
 walk('out/_next/static/chunks');
 
 const eagerSet = new Set(eagerPaths);
-const sceneChunks = chunks.filter(
-  (p) => !eagerSet.has(p) && readFileSync(p, 'utf8').includes(THREE_MARKER),
+const deferredChunks = chunks.filter((p) => !eagerSet.has(p));
+const bodies = new Map(deferredChunks.map((p) => [p, readFileSync(p, 'utf8')]));
+const vendorChunks = deferredChunks.filter((p) => bodies.get(p)?.includes(THREE_MARKER));
+const ownChunks = deferredChunks.filter(
+  (p) => !vendorChunks.includes(p) && bodies.get(p)?.includes(SCENE_MARKER),
 );
+const sceneChunks = [...vendorChunks, ...ownChunks];
 const deferred = sceneChunks.reduce((n, p) => n + gz(p), 0);
 
 console.log(
   `eager    ${kb(eager)} over ${eagerPaths.length} scripts (baseline ${kb(BASE.eagerGzipBytes)})`,
 );
-console.log(`deferred ${kb(deferred)} over ${sceneChunks.length} chunks (cap ${kb(DEFERRED_CAP)})`);
+console.log(
+  `deferred ${kb(deferred)} over ${sceneChunks.length} chunks (cap ${kb(DEFERRED_CAP)}), ` +
+    `of which ${kb(ownChunks.reduce((n, p) => n + gz(p), 0))} is the scene's own code`,
+);
 
 let failed = false;
 
@@ -115,10 +146,19 @@ if (eager > BASE.eagerGzipBytes + EAGER_SLACK) {
   failed = true;
 }
 
-if (BASE.expectSceneChunk && sceneChunks.length === 0) {
+if (BASE.expectSceneChunk && vendorChunks.length === 0) {
   console.error(
     `::error::no deferred chunk contains "${THREE_MARKER}", so the deferred budget measured nothing. ` +
       'Either three.js stopped emitting that name, or it is no longer being code split.',
+  );
+  failed = true;
+}
+
+if (BASE.expectSceneChunk && ownChunks.length === 0) {
+  console.error(
+    `::error::no deferred chunk contains "${SCENE_MARKER}", so the budget is measuring three.js and ` +
+      "not the scene built on it. Either palette.ts stopped carrying that key, or the scene's own " +
+      'modules have been folded into a chunk this script already counts as eager.',
   );
   failed = true;
 }
