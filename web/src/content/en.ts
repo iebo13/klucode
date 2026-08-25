@@ -16,7 +16,7 @@ const en = {
       home: {
         title: 'KluCode · Freelance React and Node developer, Germany',
         description:
-          'Freelance software developer in Düsseldorf. Senior React and Next.js capacity for product teams and agencies, plus web applications at a fixed price.',
+          'Freelance software developer in Düsseldorf. Senior React and Next.js capacity from €680/day, web applications from €9,000 at a fixed price.',
       },
       services: {
         title: 'Services · KluCode',
@@ -70,7 +70,6 @@ const en = {
     ctaSecondary: 'See the work',
     availablePrefix: 'Available from',
     draft: 'PROPOSED · NOT YET BOOKABLE',
-    shotPending: 'Screenshot to follow, once the client has released it.',
     skipToContent: 'Skip to content',
     menu: 'Menu',
     close: 'Close',
@@ -87,6 +86,7 @@ const en = {
     after: 'After',
     result: 'Result',
     includes: 'Included',
+    excludes: 'Not included',
     from: 'from',
   },
 
@@ -96,36 +96,9 @@ const en = {
     heroTitleAccent: 'Front end to server.',
     heroLead:
       'React, Next.js, TypeScript, Node.js. I take a defined slice of your product and ship it, or slot into your team as capacity that does not need managing. Day rate or fixed price, agreed before anything starts.',
-    heroProof: [
-      'Three systems in production',
-      'BSc Computer Science · 4 years professional',
-      'From €680/day · bookable from five days',
-    ],
-
-    problemEyebrow: 'The situation',
-    problemTitle: 'Three ways to add capacity. Each costs more than it looks.',
-    problemLead:
-      'When a product team or an agency needs more hands, the standard options all carry a hidden invoice.',
-    problemCards: [
-      {
-        title: 'The hire',
-        body: 'Months of sourcing and onboarding for work that needed shipping this quarter, and a permanent seat on the payroll for what was a temporary peak.',
-      },
-      {
-        title: 'The agency',
-        body: 'Capacity on paper, overhead in practice: account managers, briefing rounds, and the distance between the person who understood your product and the person who writes the code.',
-      },
-      {
-        title: 'The stretched team',
-        body: 'The roadmap absorbs it. Features slip, the refactoring waits, and the people you hired for product thinking spend their sprints working through the backlog.',
-      },
-    ],
-    answerTitle: 'The fourth option',
-    answerBody:
-      'A senior engineer who is productive in your codebase within days, follows your conventions, communicates in your rhythm, and can own a defined slice end to end: interface, logic, database, deployment. At a day rate or a fixed price you know before the start.',
-
     servicesEyebrow: 'Services',
     servicesTitle: 'Four ways to work together.',
+    servicesLead: 'The price is fixed before the first line is written.',
     servicesLink: 'All services and prices',
     sceneAlt:
       'The four ways as a place: a website on a monitor, a web application with a database and a server behind it, an office with one free desk, a server rack wired to a cloud.',
@@ -143,28 +116,34 @@ const en = {
 
     faqEyebrow: 'Common questions',
     faqTitle: 'What businesses ask first.',
+    // Money, time and place. The two questions about continuity and code
+    // ownership are on /approach, next to the principles they were repeating.
     faq: [
       {
         q: 'What does it cost?',
         a: 'Development capacity is €680 a day, bookable from five days, with a framework agreement for longer runs. Fixed-price work starts at €2,500 for a website and €9,000 for a custom web application. You get the exact number after a 30-minute call and a written scope, not before, because a number without a scope is worthless.',
         link: { label: 'All four services with prices', to: 'services' },
+        price: true,
       },
       {
         q: 'How long does it take?',
         a: 'A landing page, two to three weeks. A web application, four to ten weeks depending on scope. You see the first working version much earlier, usually after two weeks.',
+        link: { label: 'How a project runs', to: 'approach' },
+        price: true,
       },
+      // „The situation", as the question it always was. It stood as its own
+      // section between the proof and the prices, arguing against hires and
+      // agencies to a reader who had not asked. Asked, it is a fair question
+      // with a fair answer.
       {
-        q: 'What happens if you are unavailable?',
-        a: 'The fair question to ask one person. So: the code sits in a repository you have access to, documentation sits next to it, and nothing in the stack is exotic enough that only I can operate it. Any other developer can take over. That is not a contingency plan, it is the baseline.',
+        q: 'Why not a hire, or an agency?',
+        a: 'Either can be right. A hire takes months of sourcing and onboarding for work that needed shipping this quarter, and leaves a permanent seat for what was a temporary peak. An agency is capacity on paper and overhead in practice: account managers, briefing rounds, and the distance between the person who understood your product and the person writing the code. Stretching the existing team means the roadmap absorbs it. The fourth option is one senior engineer who is productive in your codebase within days and can own a defined slice end to end, at a rate you know before the start.',
         link: { label: 'How I work', to: 'approach' },
-      },
-      {
-        q: 'Do I own the code?',
-        a: 'Yes. Entirely, with all credentials, on final payment. No subscription you are locked into, no licence I can withdraw.',
       },
       {
         q: 'Do you handle maintenance?',
         a: 'Yes, from €90 a month: updates, security patches, backups, small changes. You do not have to take it. But software nobody maintains becomes a problem within two years.',
+        price: true,
       },
       {
         q: 'Do you work remotely?',
@@ -189,7 +168,6 @@ const en = {
         key: 'capacity',
         name: 'Development capacity',
         forWhom: 'For agencies and product teams that need frontend capacity.',
-        reads: 'A free seat in a team that is already working.',
         body: 'React, Next.js, TypeScript, Node.js. I pick up existing code, follow your conventions, and can join a client call without embarrassing you.',
         includes: [
           'React · Next.js · TypeScript · Node.js · PostgreSQL',
@@ -197,6 +175,11 @@ const en = {
           'Code review and pull requests to your standards',
           'Remote, on-site within the Rhineland',
           'Bookable from five days',
+        ],
+        excludes: [
+          'Project management and line management',
+          'Design: I build what your design specifies',
+          'Engagements under five days',
         ],
         price: '€680',
         priceNote: 'per day · framework agreement available',
@@ -206,7 +189,6 @@ const en = {
         key: 'website',
         name: 'Website & landing page',
         forWhom: 'For businesses that need to be found and to receive enquiries.',
-        reads: 'One thing. A page that loads and brings enquiries.',
         body: 'A page that loads, works on a phone and can be found. Hand-built, without site-builder weight, which is why it is fast, and why it can grow later.',
         includes: [
           'Structure, copy architecture and design',
@@ -214,6 +196,11 @@ const en = {
           'Technical SEO, sub-second load',
           'Optional visitor analytics, implemented privacy-first',
           'A handover session so you can maintain the content',
+        ],
+        excludes: [
+          'Copy and photography. You supply them, or I refer someone',
+          'Logo and brand development',
+          'Hosting and domain are held in your name, I set them up',
         ],
         price: '€2,500',
         priceNote: '2 to 3 weeks · fixed price',
@@ -223,7 +210,6 @@ const en = {
         key: 'app',
         name: 'Custom web application',
         forWhom: 'For work stuck in Excel, on paper or in WhatsApp.',
-        reads: 'Not a screen, a system. Interface, database, server.',
         body: 'CRM, point of sale, reporting, internal tooling, portals. Built around your process rather than the other way round, including database, user management and server. This is the work I like most.',
         includes: [
           'Analysis of the current process, with the people who run it',
@@ -233,6 +219,11 @@ const en = {
           'First working version after roughly two weeks',
           'Documentation and handover to your team',
         ],
+        excludes: [
+          'Native iOS and Android apps',
+          'The server itself: it runs on your account, I set it up',
+          'Operations after handover, which is what maintenance is for',
+        ],
         price: '€9,000',
         priceNote: '4 to 10 weeks · fixed price',
         example: { label: 'Example: CRM and commission handling', project: 'crm' },
@@ -241,7 +232,6 @@ const en = {
         key: 'care',
         name: 'Maintenance & operations',
         forWhom: 'For anyone running something, built by me or by someone else.',
-        reads: 'The server stays up, and someone is watching it.',
         body: 'Software nobody maintains becomes a security problem within two years. The cheapest way to avoid that is a small monthly amount instead of a large emergency invoice.',
         includes: [
           'Updates and security patches',
@@ -249,6 +239,11 @@ const en = {
           'Backups, verified regularly',
           'Small changes within an agreed scope',
           'One contact, response within 24 hours',
+        ],
+        excludes: [
+          'New features beyond small changes',
+          'Support for your end customers',
+          'Content and copy maintenance',
         ],
         price: '€90',
         priceNote: 'per month · cancel monthly',
@@ -268,11 +263,11 @@ const en = {
       'Staffing teams or running projects beyond twelve months',
     ],
     faqTitle: 'Still weighing up the price?',
-    faqBody:
-      'What a fixed price covers, what happens when scope moves, and what the monthly retainer actually buys: six answers on the home page.',
-    faqLink: 'Common questions',
-    triage:
-      'Not sure which of the four fits? Describe the workflow in two sentences. Working out which one you need is part of the call and costs nothing.',
+    faqLink: 'All questions and answers',
+    cta: {
+      title: 'Not sure which of the four fits?',
+      lead: 'Describe the workflow in two sentences. Working out which one you need is part of the call and costs nothing.',
+    },
     /**
      * null, and it is a decision rather than a gap.
      *
@@ -305,7 +300,13 @@ const en = {
           'Monthly settlement runs automatically. No file travels by email, and there is no second version nobody can vouch for.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
         offer: { label: 'The matching service: Custom web application', service: 'app' },
-        shotPending: true,
+        diagram: {
+          sources: ['CRM', 'Commission billing', 'Comparison portal'],
+          hub: 'PostgreSQL · one database',
+          out: 'Plesk server',
+          label:
+            'System diagram: the CRM, commission billing and comparison portal share one PostgreSQL database on one Plesk server.',
+        },
       },
       {
         key: 'pos',
@@ -322,6 +323,13 @@ const en = {
           'Usable without training. Cashing up at the end of the night is a procedure rather than a reconstruction.',
         stack: ['JavaScript', 'Database modelling', 'Touch UI'],
         offer: { label: 'The matching service: Custom web application', service: 'app' },
+        diagram: {
+          sources: ['Open tabs', 'Shift changes', 'Cashing up'],
+          hub: 'one data model',
+          out: 'Tablet till',
+          label:
+            'System diagram: open tabs at the table, staff changing mid-shift and cashing up at the end of the night all run through one data model on a tablet till.',
+        },
       },
       {
         key: 'landing',
@@ -338,33 +346,47 @@ const en = {
           'Visibility beyond the referral circle. What began as a web job became a complete customer-acquisition package.',
         stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'AI image & video'],
         offer: { label: 'The matching service: Website and landing page', service: 'website' },
-        shotPending: true,
+        diagram: {
+          sources: ['Hand-built page', 'AI video and imagery', 'LinkedIn campaign'],
+          hub: 'one presence',
+          out: 'Enquiries',
+          label:
+            'System diagram: a hand-built page, AI-generated video and imagery and a LinkedIn campaign form one presence that brings enquiries.',
+        },
       },
     ],
-    noteTitle: 'On numbers and names',
-    noteBody:
-      'Hard metrics and client quotes will be added here once the respective clients have approved them in writing. Until then I would rather describe the work precisely than impressively.',
+    cta: {
+      title: 'A similar problem?',
+      lead: 'Three businesses, three workflows, the same route to a system. Tell me what is stuck in a spreadsheet, on paper or in a chat thread on your side.',
+    },
   },
 
   approach: {
     eyebrow: 'Approach',
     title: 'Four steps. One price. One person.',
     lead: 'No nine-phase process diagram. This is how a project actually runs.',
+    duration:
+      'From first message to handover: a landing page in two to three weeks, a web application in four to ten. You see the first working version after roughly two weeks.',
     steps: [
       {
         title: 'The call',
+        brief:
+          '30 minutes, free, and an honest answer at the end about whether I am the right fit.',
         body: '30 minutes. You describe how things work today and what is wrong with it. I ask questions and tell you honestly whether I am the right fit. Free, and with nothing attached afterwards.',
       },
       {
         title: 'Scope and fixed price',
+        brief: 'One page: what gets built, what does not, by when, for how much.',
         body: 'One page: what gets built, what explicitly does not, by when, for how much. You sign a number, not an estimate. That page is also what we both measure the result against later.',
       },
       {
         title: 'Building, in the open',
+        brief: 'After roughly two weeks, a first version you can click. Then a steady rhythm.',
         body: 'After roughly two weeks you see the first working version: not a picture of one, something you can click. Then a steady rhythm. You always know where things stand without having to attend meetings for it.',
       },
       {
         title: 'Handover',
+        brief: 'Go-live, a walkthrough, documentation, every credential. The code is yours.',
         body: 'Go-live, a walkthrough, documentation, every credential. The code is yours. After that, either a maintenance agreement or silence. Both are fine, and I have had both.',
       },
     ],
@@ -400,6 +422,21 @@ const en = {
         body: 'Contrast, keyboard operation, screen readers. This site is the evidence: no cookies, no third-party servers, WCAG-checked colour values.',
       },
     ],
+    faqTitle: 'Two questions everyone asks',
+    faq: [
+      {
+        q: 'What happens if you are unavailable?',
+        a: 'The fair question to ask one person. So: the code sits in a repository you have access to, documentation sits next to it, and nothing in the stack is exotic enough that only I can operate it. Any other developer can take over. That is not a contingency plan, it is the baseline.',
+      },
+      {
+        q: 'Do I own the code?',
+        a: 'Yes. Entirely, with all credentials, on final payment. No subscription you are locked into, no licence I can withdraw.',
+      },
+    ],
+    cta: {
+      title: 'Does that fit?',
+      lead: 'Then tell me in two sentences how things work today. 30 minutes, no obligation, no slide deck.',
+    },
   },
 
   about: {
@@ -411,6 +448,7 @@ const en = {
       'Alongside that I delivered three projects for my own clients: a CRM with commission management and an attached comparison portal, a point-of-sale system for a shisha bar, and a landing page with a LinkedIn campaign for a cleaning company. All three are running. All three were paid for. That is the work I want to do full time.',
       'What matters to me: I do not build software that impresses. I build software someone uses on a Monday morning without thinking about it, and that someone else can still work on two years later.',
     ],
+    projectsTitle: 'The three projects',
     nameNote:
       'The "Klu" in KluCode comes from Klusmann. And from the German "klug", meaning smart and considered, because that is the part of the work that counts: what gets built is decided before the first line of code.',
     factsTitle: 'The short version',
@@ -423,21 +461,30 @@ const en = {
       { label: 'Languages', value: 'German (native), English' },
     ],
     portraitAlt: `${profile.firstName} ${profile.lastName}, freelance software developer in Düsseldorf`,
+    cta: {
+      title: 'Let us talk.',
+      lead: 'You know who builds it. Tell me what needs building. 30 minutes, no obligation.',
+    },
   },
 
   contact: {
     eyebrow: 'Contact',
     title: 'Tell me what is not working.',
-    lead: `30 minutes, no obligation, no slide deck. You will hear back within ${profile.responseTime.en}.`,
+    // No response time here: „What happens next" says it further down.
+    lead: '30 minutes, no obligation, no slide deck.',
     triage:
       'You do not have to know which service you need before you write. Describe what is not working and I will place it.',
     directTitle: 'Directly',
-    directBody: 'An email is faster than any form.',
+    directBody:
+      'An email is faster than any form. Rather talk? Leave your number in the form and I will call you back.',
+    whatsapp: 'Message on WhatsApp',
+    booking: 'Pick a time for a call',
     formTitle: 'Or here',
     fields: {
       name: 'Name',
       email: 'Email',
       company: 'Company (optional)',
+      phone: 'Phone (optional, for a call back)',
       message: 'What is this about?',
       messagePlaceholder:
         'How does it work today, and what should change? Two or three sentences is plenty.',

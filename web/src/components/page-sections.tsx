@@ -1,12 +1,13 @@
-import Link from 'next/link';
 import { Fragment } from 'react';
 
 import { ContactForm } from '@/components/contact-form';
+import { SystemDiagram } from '@/components/diagram';
 import {
   ArrowLink,
   ButtonLink,
   Card,
   Eyebrow,
+  Faq,
   InkPanel,
   RHYTHM,
   Section,
@@ -14,7 +15,8 @@ import {
   Tags,
 } from '@/components/ui';
 import type { Content } from '@/content';
-import { filled, openTodos, profile } from '@/content/profile';
+import { filled, fullName, openTodos, profile } from '@/content/profile';
+import type { Cta } from '@/content/types';
 import { asset } from '@/lib/base-path';
 import { pathFor, type Lang } from '@/lib/routes';
 
@@ -43,6 +45,33 @@ function PageHero({ eyebrow, title, lead }: { eyebrow: string; title: string; le
 /** Reading-width wrapper for the legal pages. */
 function Prose({ children }: { children: React.ReactNode }) {
   return <div className="mx-auto max-w-narrow px-6 py-section md:px-8">{children}</div>;
+}
+
+/** The dot before an included line, and the dash before an excluded one. */
+function IncludedList({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="mt-4 space-y-3">
+      {items.map((i) => (
+        <li key={i} className="flex gap-3 text-small">
+          <span aria-hidden="true" className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand" />
+          {i}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ExcludedList({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="mt-4 space-y-3">
+      {items.map((i) => (
+        <li key={i} className="flex gap-3 text-small text-muted">
+          <span aria-hidden="true" className="mt-2 h-px w-3 shrink-0 bg-stone-400" />
+          {i}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /* ------------------------------------------------------------------ services */
@@ -83,24 +112,22 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
                 </div>
                 <div>
                   <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
-                  <ul className="mt-4 space-y-3">
-                    {item.includes.map((i) => (
-                      <li key={i} className="flex gap-3 text-small">
-                        <span
-                          aria-hidden="true"
-                          className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand"
-                        />
-                        {i}
-                      </li>
-                    ))}
-                  </ul>
+                  <IncludedList items={item.includes} />
+                  {/* Where the fixed price stops, per offer. The single
+                      site-wide „Was ich nicht mache" list below says what I do
+                      not do at all; this says what THIS price does not buy,
+                      which is the question a buyer actually has in front of a
+                      number. */}
+                  <h3 className="mt-8 text-small font-medium text-muted">{c.ui.excludes}</h3>
+                  <ExcludedList items={item.excludes} />
                 </div>
               </Card>
 
               {/* The proposed rung, rendered in price order behind the offer it
-                slots in after. Marked as a proposal on the page as well as in
-                the content, because a price nobody has agreed to must not be
-                indistinguishable from the four that are settled. */}
+                slots in after, and only while the content carries one. It is
+                null in both languages until the price is settled: a draft
+                offer with a price on a public page is an internal decision
+                rendered for customers. */}
               {s.middle && s.middle.after === item.key ? (
                 <Card
                   id="middle"
@@ -121,17 +148,7 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
                   </div>
                   <div>
                     <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
-                    <ul className="mt-4 space-y-3">
-                      {s.middle.includes.map((i) => (
-                        <li key={i} className="flex gap-3 text-small">
-                          <span
-                            aria-hidden="true"
-                            className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand"
-                          />
-                          {i}
-                        </li>
-                      ))}
-                    </ul>
+                    <IncludedList items={s.middle.includes} />
                   </div>
                 </Card>
               ) : null}
@@ -149,39 +166,31 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
           <div>
             <h2 className="font-display text-h2">{s.notTitle}</h2>
             <p className="mt-4 text-muted">{s.notBody}</p>
-            <ul className="mt-6 space-y-3">
-              {s.notItems.map((i) => (
-                <li key={i} className="flex gap-3 text-small text-muted">
-                  <span aria-hidden="true" className="mt-2 h-px w-3 shrink-0 bg-stone-400" />
-                  {i}
-                </li>
-              ))}
-            </ul>
+            <ExcludedList items={s.notItems} />
           </div>
         </div>
       </Section>
 
-      {/* The price objection is formed on this page and answered on the home
-          page, and until now nothing joined the two. Six answers including
-          „Was kostet das?" sat one click away with no click to make. */}
-      {/* The visitor who cannot place themselves. The site's answer has always
-          been the 30 minute call, and until now it was never offered on the
-          page where the doubt forms. */}
-      <Section>
-        <p className="max-w-measure text-lead text-muted">{s.triage}</p>
-      </Section>
+      {/* The price questions, answered on the page where they are asked.
 
-      <Section>
+          This was a section whose entire content was a link to the homepage
+          FAQ: a price-shopper who had read four cards and the billing terms
+          was asked to leave the page to read the answers. The three answers
+          about money and time are the same array the homepage renders, so
+          they cannot drift, and the link covers the rest. */}
+      <Section id="faq">
         <div className="max-w-narrow">
-          <h2 className="font-display text-h2">{s.faqTitle}</h2>
-          <p className="mt-4 text-muted">{s.faqBody}</p>
-          <div className="mt-6">
-            <ArrowLink href={`${pathFor('home', lang)}#faq`}>{s.faqLink}</ArrowLink>
+          <h2 className="text-h2">{s.faqTitle}</h2>
+          <div className="mt-8">
+            <Faq items={c.home.faq.filter((f) => f.price)} lang={lang} current="services" />
           </div>
+          <p className="mt-6">
+            <ArrowLink href={`${pathFor('home', lang)}#faq`}>{s.faqLink}</ArrowLink>
+          </p>
         </div>
       </Section>
 
-      <FinalCta lang={lang} c={c} />
+      <FinalCta lang={lang} c={c} cta={s.cta} />
     </>
   );
 }
@@ -194,106 +203,110 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
     <>
       <PageHero eyebrow={w.eyebrow} title={w.title} lead={w.lead} />
 
-      {w.projects.map((p, i) => (
-        <Section key={p.key} id={p.key} tint={i % 2 === 1}>
-          <div className="grid gap-8 md:grid-cols-[1fr_1.7fr] md:gap-16">
-            <div>
-              <p className="text-small font-medium text-brand-text">{p.sector}</p>
-              <h2 className="mt-3 text-h2">{p.title}</h2>
-              <p className="mt-3 text-small text-muted">{p.scope}</p>
-              <div className="mt-8">
-                <h3 className="text-small font-medium text-muted">{c.ui.stack}</h3>
-                <div className="mt-3">
-                  <Tags items={p.stack} />
+      {w.projects.map((p, i) => {
+        // The offer this was delivered under, with its price, so the page
+        // does double duty: a reader convinced by the case sees what the
+        // matching offer starts at without a page load.
+        const offer = p.offer
+          ? c.services.items.find((item) => item.key === p.offer?.service)
+          : undefined;
+        return (
+          <Section key={p.key} id={p.key} tint={i % 2 === 1}>
+            <div className="grid gap-8 md:grid-cols-[1fr_1.7fr] md:gap-16">
+              <div>
+                <p className="text-small font-medium text-brand-text">{p.sector}</p>
+                <h2 className="mt-3 text-h2">{p.title}</h2>
+                <p className="mt-3 text-small text-muted">{p.scope}</p>
+                <div className="mt-8">
+                  <h3 className="text-small font-medium text-muted">{c.ui.stack}</h3>
+                  <div className="mt-3">
+                    <Tags items={p.stack} />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              {/* The picture of the thing, above the words about the thing.
-                  Three shipped systems and no pixels of any of them was the
-                  largest single gap on this site. */}
-              {p.shot ? (
-                <div className="relative mb-8 aspect-[16/10] overflow-hidden rounded-lg border border-line bg-surface-raised">
-                  <img
-                    src={asset(p.shot.src)}
-                    alt={p.shot.alt}
-                    className="absolute inset-0 h-full w-full object-cover object-top"
-                  />
-                </div>
-              ) : p.shotPending ? (
-                /* An empty frame and not a stand-in. A stock image under „so
-                   sieht das System aus" would be a fabricated claim on the one
-                   section whose value is that it is honest. check-profile.mjs
-                   refuses a production build while any of these are still up. */
-                <div
-                  aria-hidden="true"
-                  className="mb-8 flex aspect-[16/10] items-center justify-center rounded-lg border border-dashed border-line bg-surface-alt p-6 text-center"
-                >
-                  <p className="max-w-narrow hyphens-none font-mono text-eyebrow text-muted">
-                    {c.ui.shotPending}
-                  </p>
-                </div>
-              ) : null}
-
-              <p className="max-w-measure text-lead">{p.summary}</p>
-              <dl className="mt-8 space-y-6">
-                {(
-                  [
-                    [c.ui.before, p.before],
-                    [c.ui.after, p.after],
-                    [c.ui.result, p.result],
-                  ] as const
-                ).map(([label, text]) => (
-                  <div key={label} className="border-l-2 border-line pl-6">
-                    <dt className="text-small font-medium text-brand-text">{label}</dt>
-                    <dd className="mt-2 max-w-measure text-muted">{text}</dd>
+              <div>
+                {/* The picture of the thing, above the words about the thing.
+                    A real screenshot the moment the client releases one, and
+                    until then the system drawn as what it is. One treatment
+                    for all three: a dashed box saying a screenshot was coming
+                    stood on two of them and nothing on the third, and an
+                    empty box with an excuse is worse than a text-only card. */}
+                {p.shot ? (
+                  <div className="relative mb-8 aspect-[16/10] overflow-hidden rounded-lg border border-line bg-surface-raised">
+                    <img
+                      src={asset(p.shot.src)}
+                      alt={p.shot.alt}
+                      className="absolute inset-0 h-full w-full object-cover object-top"
+                    />
                   </div>
-                ))}
-              </dl>
+                ) : (
+                  <div className="panel mb-8 p-6 md:p-8">
+                    <SystemDiagram
+                      sources={p.diagram.sources}
+                      hub={p.diagram.hub}
+                      out={p.diagram.out}
+                      label={p.diagram.label}
+                      className="w-full"
+                    />
+                  </div>
+                )}
 
-              {/* Slots for the client-approved evidence. Empty until the
-                  approvals from brand/01-strategy.md §7 arrive; then filling
-                  de.ts/en.ts is the entire change. */}
-              {p.metric ? (
-                <p className="mt-8 max-w-measure font-display text-h3 text-brand-text">
-                  {p.metric}
-                </p>
-              ) : null}
-              {p.quote ? (
-                <figure className="panel mt-8 border-t-2 border-t-brand p-6 md:p-8">
-                  {/* Quotation marks belong to the content, not the markup:
-                      German copy quotes „so", English copy "so". */}
-                  <blockquote className="max-w-measure text-lead">{p.quote.text}</blockquote>
-                  <figcaption className="mt-4 text-small text-muted">
-                    {p.quote.attribution}
-                  </figcaption>
-                </figure>
-              ) : null}
+                <p className="max-w-measure text-lead">{p.summary}</p>
+                <dl className="mt-8 space-y-6">
+                  {(
+                    [
+                      [c.ui.before, p.before],
+                      [c.ui.after, p.after],
+                      [c.ui.result, p.result],
+                    ] as const
+                  ).map(([label, text]) => (
+                    <div key={label} className="border-l-2 border-line pl-6">
+                      <dt className="text-small font-medium text-brand-text">{label}</dt>
+                      <dd className="mt-2 max-w-measure text-muted">{text}</dd>
+                    </div>
+                  ))}
+                </dl>
 
-              {/* The other half of the evidence chain. A case study that ends
-                  blind sends a reader who has just been convinced back to the
-                  nav to work out what to buy. */}
-              {p.offer ? (
-                <p className="mt-8">
-                  <ArrowLink href={`${pathFor('services', lang)}#${p.offer.service}`}>
-                    {p.offer.label}
-                  </ArrowLink>
-                </p>
-              ) : null}
+                {/* Slots for the client-approved evidence. Empty until the
+                    approvals from brand/01-strategy.md §7 arrive; then filling
+                    de.ts/en.ts is the entire change. Nothing on the page says
+                    they are coming: a panel apologising for their absence was
+                    a second thing the page could not show. */}
+                {p.metric ? (
+                  <p className="mt-8 max-w-measure font-display text-h3 text-brand-text">
+                    {p.metric}
+                  </p>
+                ) : null}
+                {p.quote ? (
+                  <figure className="panel mt-8 border-t-2 border-t-brand p-6 md:p-8">
+                    {/* Quotation marks belong to the content, not the markup:
+                        German copy quotes „so", English copy "so". */}
+                    <blockquote className="max-w-measure text-lead">{p.quote.text}</blockquote>
+                    <figcaption className="mt-4 text-small text-muted">
+                      {p.quote.attribution}
+                    </figcaption>
+                  </figure>
+                ) : null}
+
+                {/* The other half of the evidence chain. A case study that ends
+                    blind sends a reader who has just been convinced back to the
+                    nav to work out what to buy. */}
+                {p.offer ? (
+                  <p className="mt-8">
+                    <ArrowLink href={`${pathFor('services', lang)}#${p.offer.service}`}>
+                      {p.offer.label}
+                      {offer ? `, ${c.ui.from} ${offer.price}` : null}
+                    </ArrowLink>
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </Section>
-      ))}
+          </Section>
+        );
+      })}
 
-      <Section>
-        <div className="panel max-w-narrow p-6 md:p-8">
-          <h2 className="font-display text-h3">{w.noteTitle}</h2>
-          <p className="mt-3 text-muted">{w.noteBody}</p>
-        </div>
-      </Section>
-
-      <FinalCta lang={lang} c={c} />
+      <FinalCta lang={lang} c={c} cta={w.cta} />
     </>
   );
 }
@@ -307,7 +320,10 @@ export function ApproachPage({ lang, c }: { lang: Lang; c: Content }) {
       <PageHero eyebrow={a.eyebrow} title={a.title} lead={a.lead} />
 
       <Section>
-        <ol className="grid gap-8 md:grid-cols-2 md:gap-12">
+        {/* End to end, in one line, before the four parts. The numbers were
+            only on the offer cards, on another page. */}
+        <p className="max-w-measure text-lead text-muted">{a.duration}</p>
+        <ol className="mt-12 grid gap-8 md:grid-cols-2 md:gap-12">
           {a.steps.map((s, i) => (
             <li key={s.title} className="border-t border-line pt-6">
               <span className="font-mono text-eyebrow text-brand-text">
@@ -351,9 +367,19 @@ export function ApproachPage({ lang, c }: { lang: Lang; c: Content }) {
             </Card>
           ))}
         </div>
+
+        {/* The two questions about continuity and ownership, on the page
+            about how the work is done. They were on the homepage, where they
+            repeated the first two cards above almost word for word. */}
+        <div className="mt-16 max-w-narrow">
+          <h2 className="text-h2">{a.faqTitle}</h2>
+          <div className="mt-8">
+            <Faq items={a.faq} lang={lang} current="approach" />
+          </div>
+        </div>
       </Section>
 
-      <FinalCta lang={lang} c={c} />
+      <FinalCta lang={lang} c={c} cta={a.cta} />
     </>
   );
 }
@@ -374,6 +400,16 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
                 {p}
               </p>
             ))}
+            {/* The bio names the three projects. Now it links them, each to
+                its own case study rather than to the top of the page. */}
+            <h2 className="mt-8 text-small font-medium text-muted">{a.projectsTitle}</h2>
+            <ul className="mt-3 space-y-1">
+              {c.work.projects.map((p) => (
+                <li key={p.key}>
+                  <ArrowLink href={`${pathFor('work', lang)}#${p.key}`}>{p.title}</ArrowLink>
+                </li>
+              ))}
+            </ul>
             {/* A quiet aside, not a punchline — so it gets the panel with a
                 brand top-rule rather than the inverted slab. The two are now
                 distinguishable, which the single 2px left rule never was. */}
@@ -387,13 +423,6 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
                 behind the „ich". Plain <img> with asset(), matching how the
                 repo handles every hand-written public/ URL on a subpath
                 deploy.
-
-                It was a holiday snap on a beach, on a page arguing engineer
-                responsibility, a B.Sc. and „ich prüfe, teste und verantworte
-                jede Zeile". A face beats no face, but the gap between that
-                voice and that picture was doing real work against a 9.000 €
-                trust decision, and both competitors who show a founder show
-                them at work.
 
                 Cropped to 4:5 at source rather than by CSS, so object-cover
                 has nothing left to crop and the framing cannot drift with the
@@ -423,7 +452,7 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
         </div>
       </Section>
 
-      <FinalCta lang={lang} c={c} />
+      <FinalCta lang={lang} c={c} cta={a.cta} />
     </>
   );
 }
@@ -441,10 +470,18 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
   // and TypeScript cannot see through a call to a fact about its argument.
   const email = filled(profile.email);
   const phone = filled(profile.phone);
+  const whatsapp = filled(profile.whatsapp);
+  const booking = filled(profile.booking);
   const direct = [
-    email ? { href: `mailto:${email}`, label: email } : null,
-    phone ? { href: `tel:${phone.replace(/[^\d+]/g, '')}`, label: phone } : null,
-  ].filter((l): l is { href: string; label: string } => l !== null);
+    email ? { href: `mailto:${email}`, label: email, external: false } : null,
+    phone ? { href: `tel:${phone.replace(/[^\d+]/g, '')}`, label: phone, external: false } : null,
+    // The two optional second channels. Both are null until the owner sets
+    // them (see profile.ts for what each one costs), and neither renders
+    // anything until then.
+    whatsapp ? { href: `https://wa.me/${whatsapp}`, label: t.whatsapp, external: true } : null,
+    booking ? { href: booking, label: t.booking, external: true } : null,
+  ].filter((l): l is { href: string; label: string; external: boolean } => l !== null);
+  const street = filled(profile.street);
 
   return (
     <>
@@ -462,12 +499,13 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
             {direct.length > 0 ? (
               <>
                 <h2 className="mt-12 font-display text-h3">{t.directTitle}</h2>
-                <p className="mt-3 text-muted">{t.directBody}</p>
+                <p className="mt-3 max-w-measure text-muted">{t.directBody}</p>
                 <ul className="mt-6 space-y-3">
                   {direct.map((l) => (
                     <li key={l.href}>
                       <a
                         href={l.href}
+                        rel={l.external ? 'noopener' : undefined}
                         className="inline-flex min-h-[2.75rem] items-center font-display text-h3 text-brand-text underline decoration-viridian-300 underline-offset-4"
                       >
                         {l.label}
@@ -475,6 +513,18 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
                     </li>
                   ))}
                 </ul>
+                {/* The place, as a line. A local search lands here wanting to
+                    know the business is where it says it is, and the address
+                    was only on the Impressum. */}
+                {street ? (
+                  <address className="mt-6 text-small not-italic text-muted">
+                    {fullName}
+                    <br />
+                    {street}
+                    <br />
+                    {profile.postalCode} {profile.city}
+                  </address>
+                ) : null}
               </>
             ) : null}
 
@@ -574,32 +624,46 @@ export function PrivacyPage({ c }: { lang: Lang; c: Content }) {
 
 /* ----------------------------------------------------------------- shared cta */
 
-function FinalCta({ lang, c }: { lang: Lang; c: Content }) {
+/**
+ * The closing ask, in the page's own words.
+ *
+ * One heading and one lead per page, handed in, rather than the homepage's
+ * pair repeated on all six: the same H2 closing every page was also the H1 of
+ * /kontakt, and a site that says the same sentence seven times reads as a
+ * site with one sentence. The button is the same everywhere because the
+ * action is. There is no second button: „Projekte ansehen" under every page
+ * was, on /projekte, a link to the page the reader was on.
+ */
+function FinalCta({ lang, c, cta }: { lang: Lang; c: Content; cta: Cta }) {
+  const whatsapp = filled(profile.whatsapp);
   return (
     <Section tint>
       <div className="max-w-narrow">
-        <h2 className="text-h2">{c.home.finalTitle}</h2>
-        <p className="mt-4 max-w-measure text-lead text-muted">{c.home.finalLead}</p>
-        <div className="mt-8 flex flex-wrap items-center gap-6">
+        <h2 className="text-h2">{cta.title}</h2>
+        <p className="mt-4 max-w-measure text-lead text-muted">{cta.lead}</p>
+        <div className="mt-8">
           <ButtonLink href={pathFor('contact', lang)}>{c.ui.ctaPrimary}</ButtonLink>
-          <Link
-            href={pathFor('work', lang)}
-            className="inline-flex min-h-[2.75rem] items-center font-display font-medium text-brand-text underline decoration-viridian-300 underline-offset-4"
-          >
-            {c.ui.ctaSecondary}
-          </Link>
         </div>
         {/* The reader who is already convinced should not need the contact
-            page as an intermediate stop. Renders only with real data. */}
+            page as an intermediate stop. Renders only with real data, and at
+            a thumb's height: 44px, which the bare link was not. */}
         {filled(profile.email) ? (
-          <p className="mt-6 text-small text-muted">
+          <p className="mt-6 flex flex-wrap items-center gap-x-6 text-small text-muted">
             <a
               href={`mailto:${profile.email}`}
-              className="text-brand-text underline decoration-viridian-300 underline-offset-4"
+              className="inline-flex min-h-[2.75rem] items-center text-brand-text underline decoration-viridian-300 underline-offset-4"
             >
               {profile.email}
             </a>
-            {filled(profile.phone) ? <> · {profile.phone}</> : null}
+            {whatsapp ? (
+              <a
+                href={`https://wa.me/${whatsapp}`}
+                rel="noopener"
+                className="inline-flex min-h-[2.75rem] items-center text-brand-text underline decoration-viridian-300 underline-offset-4"
+              >
+                {c.contact.whatsapp}
+              </a>
+            ) : null}
           </p>
         ) : null}
       </div>

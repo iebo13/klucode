@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 
 import { Crossroads } from '@/components/crossroads';
 import { JsonLd } from '@/components/json-ld';
-import { ProblemOptions } from '@/components/problem';
 import { Shell } from '@/components/shell';
 import { SystemDiagram } from '@/components/diagram';
 import {
@@ -12,7 +11,6 @@ import {
   Card,
   Eyebrow,
   Faq,
-  InkPanel,
   RHYTHM,
   Section,
   SectionHead,
@@ -49,6 +47,27 @@ export async function generateMetadata({
   };
 }
 
+/**
+ * The homepage, in six sections.
+ *
+ * Hero, the four ways with their prices, the three delivered systems, the
+ * process in one line per step, the questions about money and time, the ask.
+ * It was seven: „Die Ausgangslage" stood between the proof and the prices,
+ * arguing against agencies and website kits to a reader who had not asked,
+ * and the prices sat 3,000px down behind a pinned 3D section. The argument is
+ * a question in the FAQ now, the crossroads is a section of ordinary height,
+ * and the prices are inside the second screen.
+ *
+ * Services before projects, which reverses the previous day's order. That
+ * order put the proof first on the strength of what competitors do, and it
+ * was right about the principle and wrong about the cost: for the reader who
+ * arrived from a search, the prices are the point of the visit, and they were
+ * three and a half phone viewports away. The three systems are one section
+ * further down with a diagram of the largest. The hero is eyebrow, headline,
+ * lead and the two actions, and nothing else: a portrait with a byline and a
+ * line of three facts sat under the buttons for an afternoon and the owner
+ * took them out, so the face lives on /ueber-mich alone.
+ */
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
@@ -58,24 +77,6 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   // Projects are literally labelled largest / middle / smallest in the copy;
   // the flagship gets the featured panel.
   const [flagship, ...otherProjects] = c.work.projects;
-
-  // The flagship drawn as what it is. Labels are content, so they localise.
-  const diagram =
-    lang === 'de'
-      ? {
-          sources: ['CRM', 'Provisionsabrechnung', 'Vergleichsportal'] as const,
-          hub: 'PostgreSQL · eine Datenbank',
-          out: 'Plesk-Server',
-          label:
-            'Systemdiagramm: CRM, Provisionsabrechnung und Vergleichsportal teilen eine PostgreSQL-Datenbank auf einem Plesk-Server.',
-        }
-      : {
-          sources: ['CRM', 'Commission billing', 'Comparison portal'] as const,
-          hub: 'PostgreSQL · one database',
-          out: 'Plesk server',
-          label:
-            'System diagram: the CRM, commission billing and comparison portal share one PostgreSQL database on one Plesk server.',
-        };
 
   return (
     <Shell lang={lang} current="home">
@@ -111,15 +112,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
               the eye has nothing to follow and the page has not said what it
               wants. The ask is „Projekt besprechen" and everything else on the
               first screen is a way of putting it off, so the second one is an
-              arrow link now.
-
-              It still points at the work rather than at the prices, which is
-              what the audit suggested. The prices are one section further down
-              than the proof on purpose: „Bewiesen statt behauptet" is the
-              order every stronger competitor in this segment uses, and it is
-              the change this branch made yesterday. A hero link straight to
-              #services would undo it for exactly the reader who most needs the
-              proof first. */}
+              arrow link. */}
           <div className="mt-8 flex flex-wrap items-center gap-6">
             <ButtonLink href={pathFor('contact', lang)} variant="ink">
               {c.ui.ctaPrimary}
@@ -128,45 +121,40 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
               {c.ui.ctaSecondary}
             </ArrowLink>
           </div>
-
-          {/* Proof as clear-glass chips: on this surface the blur has the node
-              field and aurora underneath it, which is the one condition glass
-              needs to actually refract. */}
-          <ul className="mt-12 flex flex-wrap gap-3">
-            {h.heroProof.map((p) => (
-              <li
-                key={p}
-                className="glass-chip flex items-center gap-2 rounded-full px-4 py-2 text-small text-ink-muted"
-              >
-                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-ink-accent" />
-                {p}
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
 
-      {/* PROOF BEFORE PRICE, and this band used to sit after the crossroads.
+      {/* ------------------------------------------------------------ services */}
+      {/* THE CROSSROADS, unpinned. „Vier Wege zur Zusammenarbeit" is already a
+          spatial metaphor, so it is one: four lanes off a junction, and at the
+          end of each the thing you would actually get. The camera no longer
+          reads the scroll. It idles at the junction and glides to a way when
+          its row is hovered or focused, which is what the section spent
+          1,800px of pinned scrolling to do before, and every row is a link.
 
-          The order was hero, the problem, the price board, and only then the
-          three delivered systems, so a first-time visitor was asked to take in
-          „ab 9.000 €" before seeing one thing that had been built. Both of the
-          stronger competitors in this market put their credibility devices
-          immediately after the hero and their prices further down. Price
-          transparency is still the right call for this segment, it just lands
-          better on top of capability than under it.
+          The rows are the section's content and its fallback at once, which is
+          why there is exactly one copy of them, and the four names standing at
+          the four objects are the same strings again rather than a second copy
+          in a texture. See components/crossroads. */}
+      <Crossroads
+        lang={lang}
+        eyebrow={h.servicesEyebrow}
+        title={h.servicesTitle}
+        lead={h.servicesLead}
+        link={{ href: pathFor('services', lang), label: h.servicesLink }}
+        servicesPath={pathFor('services', lang)}
+        fromLabel={c.ui.from}
+        sceneAlt={h.sceneAlt}
+        ways={c.services.items}
+      />
 
-          It also follows the hero properly now: the hero's chips say „Drei
-          Systeme im Produktivbetrieb" and the next thing on the page is those
-          three systems. The crossroads is untouched and still runs problem,
-          answer, prices in one move. */}
       {/* ---------------------------------------------------------------- work */}
       {/* STRUCTURAL EXCEPTION 1 of 2: full-bleed. This is the proof section and
           it is the one place the page is allowed to break the left edge every
           other section shares. The projects are labelled largest / middle /
           smallest in the copy and were rendered as three identical stacked
-          cards; the flagship is now a featured panel with room for a
-          screenshot, and the other two sit 2-up beneath it. */}
+          cards; the flagship is now a featured panel with the system drawn as
+          what it is, and the other two sit 2-up beneath it. */}
       <Section glow bleed>
         <SectionHead
           eyebrow={h.workEyebrow}
@@ -192,17 +180,22 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
               <div className="mt-8">
                 <Tags items={flagship.stack} />
               </div>
+              <p className="mt-6">
+                <ArrowLink href={`${pathFor('work', lang)}#${flagship.key}`}>
+                  {h.workLink}
+                </ArrowLink>
+              </p>
             </div>
             {/* The house device as information: the flagship's real topology,
-                drawn from the logo's own geometry. This replaced an empty
-                figure slot — a diagram that says „drei Systeme, eine
-                Datenbank" is proof; an empty dotted box was an apology. */}
+                drawn from the logo's own geometry, from the same content the
+                project page draws it from. A diagram that says „drei Systeme,
+                eine Datenbank" is proof; an empty dotted box was an apology. */}
             <div className="flex items-center">
               <SystemDiagram
-                sources={diagram.sources}
-                hub={diagram.hub}
-                out={diagram.out}
-                label={diagram.label}
+                sources={flagship.diagram.sources}
+                hub={flagship.diagram.hub}
+                out={flagship.diagram.out}
+                label={flagship.diagram.label}
                 className="w-full"
               />
             </div>
@@ -224,63 +217,15 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
         </div>
       </Section>
 
-      {/* ------------------------------------------------------------- problem */}
-      {/* „Die Ausgangslage", back on paper and back at the reader's own pace.
-
-          It spent a day as the first act of the crossroads, pinned, with the
-          camera closing the distance to the junction while the argument was
-          made. The merge was worth trying and it is undone with its reasons
-          written down: see the note at the top of components/problem.tsx and
-          the one at the top of crossroads/progress.ts. The short version is
-          that 122svh of pinned scroll bought a picture that was not about what
-          the words were about, and the experiment that tried to make it about
-          that returned a measured no.
-
-          What survives the reversal is the striking: each option fails as you
-          leave it, and now that runs for every visitor rather than only for
-          the ones without a scene. */}
-      {/* Only the list is a client island. The heading and the answer panel are
-          server-rendered and handed in, so 'use client' does not drag Section,
-          SectionHead and InkPanel into every visitor's First Load JS. */}
-      <Section>
-        <SectionHead eyebrow={h.problemEyebrow} title={h.problemTitle} lead={h.problemLead} />
-        <ProblemOptions cards={h.problemCards}>
-          <InkPanel className="mt-8 md:mt-12">
-            <div className="gap-8 md:grid md:grid-cols-12">
-              <h3 className="text-h3 text-ink-accent md:col-span-4">{h.answerTitle}</h3>
-              <p className="mt-4 max-w-measure text-ink-muted md:col-span-8 md:mt-0">
-                {h.answerBody}
-              </p>
-            </div>
-          </InkPanel>
-        </ProblemOptions>
-      </Section>
-
-      {/* ------------------------------------------------------------ services */}
-      {/* THE CROSSROADS. „Vier Wege zur Zusammenarbeit" is already a spatial
-          metaphor, so it is one: four lanes off a junction, and at the end of
-          each the thing you would actually get. It opens at the junction now,
-          straight off the answer the section above it lands on.
-
-          The rows are the section's content and its fallback at once, which is
-          why there is exactly one copy of them, and the four names standing at
-          the four objects are the same strings again rather than a second copy
-          in a texture. See components/crossroads. */}
-      <Crossroads
-        lang={lang}
-        eyebrow={h.servicesEyebrow}
-        title={h.servicesTitle}
-        link={{ href: pathFor('services', lang), label: h.servicesLink }}
-        fromLabel={c.ui.from}
-        sceneAlt={h.sceneAlt}
-        ways={c.services.items}
-      />
-
       {/* ------------------------------------------------------------ approach */}
       {/* STRUCTURAL EXCEPTION 2 of 2: asymmetric and offset. The heading holds
           columns 1-4 and sticks while the steps scroll past in columns 6-12,
           so the section is read as one thing with four parts rather than as
-          another eyebrow / h2 / lead / grid band. */}
+          another eyebrow / h2 / lead / grid band.
+
+          One line per step, not the full account. That lives on /ablauf, and
+          rendering all four bodies here made this section a copy of the page
+          it links to. */}
       <Section tint>
         <div className="grid gap-8 md:grid-cols-12 md:gap-8">
           <div className="md:sticky md:top-32 md:col-span-4 md:self-start">
@@ -303,7 +248,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
                 </span>
                 <div>
                   <h3 className="font-display text-h3">{s.title}</h3>
-                  <p className="mt-2 max-w-measure text-muted">{s.body}</p>
+                  <p className="mt-2 max-w-measure text-muted">{s.brief}</p>
                 </div>
               </li>
             ))}
@@ -312,14 +257,12 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
       </Section>
 
       {/* ----------------------------------------------------------------- faq */}
-      {/* Addressable, because the Leistungen page is where price objections
-          actually get raised and the answer to the loudest of them lives here.
-          Six answers on the homepage that the page selling the prices does not
-          link to is six answers most price-shoppers never reach. */}
+      {/* Addressable, because the Leistungen page renders the three price
+          questions inline and links here for the rest. */}
       <Section id="faq">
         <SectionHead eyebrow={h.faqEyebrow} title={h.faqTitle} />
         <div className="mt-8 max-w-narrow md:mt-12">
-          <Faq items={h.faq} lang={lang} />
+          <Faq items={h.faq} lang={lang} current="home" />
         </div>
       </Section>
 
@@ -340,16 +283,25 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
               </ButtonLink>
             </div>
             {/* The last step should not cost a page load: the reader who is
-                already convinced gets the address here. Real data only. */}
+                already convinced gets the address here. Real data only, and
+                at a thumb's height. */}
             {filled(profile.email) ? (
-              <p className="mt-6 text-small text-ink-muted">
+              <p className="mt-6 flex flex-wrap items-center gap-x-6 text-small text-ink-muted">
                 <a
                   href={`mailto:${profile.email}`}
-                  className="text-ink-accent underline decoration-viridian-300 underline-offset-4"
+                  className="inline-flex min-h-[2.75rem] items-center text-ink-accent underline decoration-viridian-300 underline-offset-4"
                 >
                   {profile.email}
                 </a>
-                {filled(profile.phone) ? <> · {profile.phone}</> : null}
+                {filled(profile.whatsapp) ? (
+                  <a
+                    href={`https://wa.me/${profile.whatsapp}`}
+                    rel="noopener"
+                    className="inline-flex min-h-[2.75rem] items-center text-ink-accent underline decoration-viridian-300 underline-offset-4"
+                  >
+                    {c.contact.whatsapp}
+                  </a>
+                ) : null}
               </p>
             ) : null}
           </div>

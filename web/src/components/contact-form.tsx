@@ -35,15 +35,17 @@ const field =
  * visitor's own mail client with the message prepared. They can see exactly what
  * is sent and to whom.
  *
- * This is a decision, not a stopgap (issue #11): the cost is that a device with
- * no configured mail client reaches a dead end, which is why the contact page
- * puts the address and phone number above the form and why the hand-off state
- * below repeats the address in selectable text rather than claiming success.
+ * That is the PREVIEW path. On production profile.formEndpoint points at
+ * deploy/contact.php, a first-party handler on the Plesk server, and the form
+ * POSTs to it: with no phone number on the site that form is the second
+ * contact channel § 5 DDG wants, so it has to transmit. The cost of the
+ * preview path is that a device with no configured mail client reaches a dead
+ * end, which is why the contact page puts the address above the form and why
+ * the hand-off state below repeats it in selectable text rather than claiming
+ * success.
  *
- * Set profile.formEndpoint to switch to a real POST (deploy/contact.php is a
- * ready-made first-party handler for the Plesk server, if server-side sending
- * is ever wanted without a third-party processor); update the privacy policy
- * in the same change.
+ * The optional phone field is the answer to „how do I get the call the whole
+ * site offers": the site prints no number, so the reader leaves theirs.
  *
  * Props are the contact strings only, not the whole Content object: client
  * component props are serialized into every page's HTML, and this component
@@ -61,6 +63,7 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
     const name = String(data.get('name') ?? '').trim();
     const email = String(data.get('email') ?? '').trim();
     const company = String(data.get('company') ?? '').trim();
+    const phone = String(data.get('phone') ?? '').trim();
     const message = String(data.get('message') ?? '').trim();
     const consent = data.get('consent') === 'on';
     // The honeypot, forwarded rather than checked here. Deciding on the client
@@ -87,7 +90,10 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
 
     if (!profile.formEndpoint) {
       const subject = encodeURIComponent(`${siteName} — ${name}`);
-      const body = encodeURIComponent([name, company, email, '', message].join('\n'));
+      // The optional lines are left out when empty rather than sent blank.
+      const body = encodeURIComponent(
+        [...[name, company, email, phone].filter(Boolean), '', message].join('\n'),
+      );
       window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
       setStatus('handoff');
       return;
@@ -98,7 +104,7 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
       const res = await fetch(profile.formEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, company, message, website }),
+        body: JSON.stringify({ name, email, company, phone, message, website }),
       });
       setStatus(res.ok ? 'sent' : 'failed');
       if (res.ok) form.reset();
@@ -145,9 +151,16 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
         </Field>
       </div>
 
-      <Field id="company" label={t.fields.company}>
-        <input id="company" name="company" autoComplete="organization" className={field} />
-      </Field>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Field id="company" label={t.fields.company}>
+          <input id="company" name="company" autoComplete="organization" className={field} />
+        </Field>
+        {/* Optional, and the only way a reader can ask for the call rather
+            than the email: the site publishes no number of its own. */}
+        <Field id="phone" label={t.fields.phone}>
+          <input id="phone" name="phone" type="tel" autoComplete="tel" className={field} />
+        </Field>
+      </div>
 
       {/* The honeypot. A real input, positioned off-screen rather than hidden
           with display:none, because some bots skip what is not rendered. A

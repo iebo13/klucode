@@ -21,7 +21,13 @@ function resolve(choice: ThemeChoice): 'light' | 'dark' {
  * touch it — the stored value is only written once the user has expressed a
  * preference, so an untouched browser keeps tracking the system.
  */
-/** Props are the two action labels only — see the Header note on payload. */
+/**
+ * Props are the two action labels only, so the flight payload stays small.
+ *
+ * It lives in the header capsule on a laptop and in the drawer on a phone.
+ * The audit called it developer chrome and it spent an afternoon in the
+ * footer; the owner wants it in the header, so it is.
+ */
 export function ThemeToggle({ labels }: { labels: { toDark: string; toLight: string } }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   // Rendered markup must match the server's, so the icon and the pressed state
@@ -73,7 +79,10 @@ export function ThemeToggle({ labels }: { labels: { toDark: string; toLight: str
       onClick={toggle}
       title={label}
       aria-label={label}
-      className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted transition-colors duration-base hover:border-brand-action hover:text-body"
+      // 2.75rem is 44px, WCAG 2.5.5's minimum target, and it is off the token
+      // scale for the same reason ArrowLink's is: it is somebody else's
+      // constant. It was 32px, which is inside that minimum on a phone.
+      className="grid h-[2.75rem] w-[2.75rem] place-items-center rounded-full border border-line text-muted transition-colors duration-base hover:border-brand-action hover:text-body"
     >
       {/* Both icons are always in the DOM and cross-faded, so the button never
           reflows and the swap has no flicker. Before hydration neither is

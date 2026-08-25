@@ -72,12 +72,13 @@ for (const file of files) {
 }
 
 /**
- * The availability month, read out of the built HTML rather than imported.
+ * The availability date, read out of the built HTML rather than imported.
  *
  * profile.ts is TypeScript and this is a plain .mjs run against `out/`, and
  * more to the point what matters is what the ARTEFACT says: an import would
  * check the source that a stale build was made from rather than the build.
- * The month name is rendered, so it is matched by name in both languages.
+ * The badge renders either a month name or a bare year, so both are matched:
+ * a month is stale once it is over, a year once it is over.
  */
 const MONTHS = {
   de: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'], // prettier-ignore
@@ -95,9 +96,16 @@ const stale = [];
     // No German homepage means something much louder is already wrong, and the
     // page list above will have said so.
   }
-  const match = html.match(/Freie Kapazität ab\s*(?:<[^>]*>\s*)*([A-Za-zÄÖÜäöü]+)/);
+  const match = html.match(/Freie Kapazität ab\s*(?:<[^>]*>\s*)*(\d{4}|[A-Za-zÄÖÜäöü]+)/);
   const month = match?.[1];
-  if (month) {
+  if (month && /^\d{4}$/.test(month)) {
+    if (Number(month) < now.getUTCFullYear()) {
+      stale.push(
+        `the availability badge says "${month}", which is already behind us. ` +
+          'Move availableFrom in src/content/profile.ts, or drop the badge.',
+      );
+    }
+  } else if (month) {
     const index = MONTHS.de.indexOf(month);
     if (index === -1) {
       stale.push(`the availability badge says "${month}", which is not a month name`);
@@ -121,26 +129,28 @@ const stale = [];
 }
 
 /**
- * Empty screenshot frames, which are a development state and not a shippable
- * one.
+ * A production artefact that tells search engines to stay away.
  *
- * Project.shotPending draws a dashed frame saying a screenshot is coming. That
- * is the honest thing to show while the approvals are outstanding and the
- * wrong thing to leave on a live commercial page, where a reader counts it as
- * one more thing the site says it has and cannot show. Matched on the frame's
- * own class rather than on its caption, so it is found in both languages
- * without this script having to know either.
+ * The preview's noindex is switched on by NEXT_PUBLIC_SITE_URL naming
+ * somewhere other than klucode.de, and an UNSET variable is production. So a
+ * build made on a machine where the variable happens to be exported, or in a
+ * CI job that inherits it, is a full copy of the site that no search engine
+ * will index, and nothing about it looks wrong: the pages render, the links
+ * work, and the tag that costs every ranking is one line in the head.
  *
- * Reported per page and not counted. Next serialises the same markup twice
- * into every page, once as HTML and once as the flight payload, so a count of
- * matches is double the number of frames, and a wrong number in an error
- * message is worse than no number at all.
+ * The two legal pages and the 404 page are noindex on purpose and are
+ * skipped. Everything else that reaches this gate has to be indexable,
+ * because this gate only runs on the artefact that is about to be uploaded
+ * to klucode.de.
  */
-const pendingShots = files.filter((file) =>
-  readFileSync(file, 'utf8').includes('border-dashed border-line bg-surface-alt'),
+const hidden = files.filter(
+  (file) =>
+    !/\/(impressum|imprint|datenschutz|privacy|404)\/index\.html$/.test(file) &&
+    !/\/404\.html$/.test(file) &&
+    /<meta name="robots" content="noindex/.test(readFileSync(file, 'utf8')),
 );
 
-if (placeholders.size > 0 || banners.length > 0 || stale.length > 0 || pendingShots.length > 0) {
+if (placeholders.size > 0 || banners.length > 0 || stale.length > 0 || hidden.length > 0) {
   console.error('check-profile: the site is not ready to go live.\n');
 
   for (const [placeholder, pages] of placeholders) {
@@ -152,8 +162,10 @@ if (placeholders.size > 0 || banners.length > 0 || stale.length > 0 || pendingSh
   for (const line of stale) {
     console.error(`  stale: ${line}`);
   }
-  for (const file of pendingShots) {
-    console.error(`  pending: ${file} still shows an empty screenshot frame`);
+  for (const file of hidden) {
+    console.error(
+      `  noindex: ${file} tells search engines to stay away. NEXT_PUBLIC_SITE_URL was set for this build, so it is a preview and not the production artefact.`,
+    );
   }
 
   console.error('\nFill in src/content/profile.ts — see its header for the todo() / null split.');

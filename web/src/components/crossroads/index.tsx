@@ -1,12 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowLink, Eyebrow, RHYTHM } from '@/components/ui';
 import { asset } from '@/lib/base-path';
 import type { Lang } from '@/lib/routes';
 
-import { progressOf } from './progress';
 import type { Handle, Mark, ServiceKey, Way } from './types';
 
 /**
@@ -20,12 +20,8 @@ import type { Handle, Mark, ServiceKey, Way } from './types';
  * measured 2 kB of component and reported that as the deferred budget, which
  * is a gate that cannot fail.
  *
- * Its real job is timing. data-enhanced only flips after hydration, and until
- * it does the track collapses to auto height, the section is exactly one stage
- * tall, and every scroll position computes to the junction. A test that
- * measures before this attribute lands scrolls to p=0 whatever it asked for.
- * Because it is set on the line before boot(), its presence also means there
- * is a handle listening for the scroll that follows.
+ * Its job is timing. Because it is set on the line before boot(), its presence
+ * means there is a handle listening for the hover that follows.
  */
 const SCENE_MARKER = 'kc-crossroads';
 
@@ -49,24 +45,20 @@ const inOrder = (ways: readonly Way[]): Way[] =>
   ORDER.map((key) => ways.find((w) => w.key === key)).filter((w): w is Way => w !== undefined);
 
 /**
- * The room the scene needs, as one query.
+ * The room the scene needs, as one query. Width only.
  *
- * 64rem is not a taste call, it is Tailwind's `lg`, which is where the layout
- * below actually becomes two columns. The first draft mounted at 46rem, and
- * between the two the scene booted into a single-column stack inside a stage
- * fixed at 100svh with overflow hidden: the canvas took half of it and the
- * copy was cut off with nothing to scroll. Two thresholds that must agree are
- * the same drift shape the LANES array exists to avoid, so there is one.
+ * 64rem is Tailwind's `lg`, which is where the copy becomes a panel standing
+ * on the left of the world rather than the whole width of the section. Below
+ * it the panel would cover the canvas, so there is no canvas.
  *
- * The height half is why the query is not just a width. A 1366x768 laptop is
- * wide enough and has roughly 640px of viewport, and the panel plus its four
- * rows is taller than that once the header has taken its 69px: the stage
- * clips, and a clipped price is worse than no scene.
- *
- * One constant, so the mount decision and the listener that re-decides it
- * cannot be handed different strings.
+ * There used to be a height half: `(min-height: 46rem)`, because the section
+ * was a stage fixed at 100svh with the panel inside it, and on a 1366x768
+ * laptop the panel was taller than the stage and clipped a price. The section
+ * is its own height now and grows with the panel, so a short laptop gets the
+ * scene like any other. That laptop is the most common Windows viewport there
+ * is, and it was getting the fallback.
  */
-const ROOM = '(min-width: 64rem) and (min-height: 46rem)';
+const ROOM = '(min-width: 64rem)';
 
 /**
  * How much clear space a label needs on every side before it is shown at all.
@@ -102,7 +94,9 @@ export function Crossroads({
   lang,
   eyebrow,
   title,
+  lead,
   link,
+  servicesPath,
   fromLabel,
   sceneAlt,
   ways,
@@ -110,31 +104,39 @@ export function Crossroads({
   lang: Lang;
   eyebrow: string;
   title: string;
+  lead: string;
   link: { href: string; label: string };
+  /** The services page, so every row can link to its own card there. */
+  servicesPath: string;
   fromLabel: string;
   sceneAlt: string;
   ways: readonly Way[];
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  // The canvas fills the stage now rather than one column of a grid inside it,
-  // so the two are the same box and the renderer could be sized against
-  // either. It is still sized against the view, because the view is the
-  // element that owns the canvas and a stage that grows a second child one day
-  // should not silently re-aspect the scene.
+  // The canvas fills the stage, so the two are the same box and the renderer
+  // could be sized against either. It is sized against the view, because the
+  // view is the element that owns the canvas and a stage that grows a second
+  // child one day should not silently re-aspect the scene.
   const viewRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLOListElement>(null);
   /**
    * The four labels standing at the four objects.
    *
-   * Held as DOM nodes and never as state. marks() answers on every scroll
-   * frame, and routing four pixel positions through React would re-render this
-   * whole section sixty times a second to move a transform.
+   * Held as DOM nodes and never as state. marks() answers on every drawn frame,
+   * and routing four pixel positions through React would re-render this whole
+   * section sixty times a second to move a transform.
    */
   const markRefs = useRef<(HTMLDivElement | null)[]>([]);
+  /** The scene, once it has booted. Read by the hover effect and the observer. */
+  const handleRef = useRef<Handle | null>(null);
+  /** Whether the section has been on screen, for a reveal that beats the boot. */
+  const seenRef = useRef(false);
 
   const [enhanced, setEnhanced] = useState(false);
+  /** The row under the pointer or holding keyboard focus, or -1 for none. */
   const [focus, setFocus] = useState(-1);
   // How many of the four have finished building, as an integer. Reflected onto
   // the section so the browser suite can assert on the reveal without a debug
@@ -164,9 +166,9 @@ export function Crossroads({
    * labels actually is.
    *
    * One measurement rather than three, taken on mount and on resize and never
-   * on a scroll frame. Reading a bounding box mid-frame forces a layout, and
-   * this one would do it four times a frame for the whole time the section is
-   * on screen.
+   * on a drawn frame. Reading a bounding box mid-frame forces a layout, and
+   * this one would do it four times a frame for the whole time the camera is
+   * moving.
    *
    * The label widths are the part that has to be here. A label is a box of
    * text and its width is a font metric: „01 Individuelle Web-Anwendung" is
@@ -219,19 +221,16 @@ export function Crossroads({
     const canvas = canvasRef.current;
     const stage = stageRef.current;
     const view = viewRef.current;
-    const section = sectionRef.current;
-    if (!canvas || !stage || !view || !section) return;
+    if (!canvas || !stage || !view) return;
 
-    let handle: Handle | null = null;
-    let raf = 0;
     let cancelled = false;
 
     /**
      * Moves the four labels, and nothing else touches their transforms.
      *
      * translate3d rather than left/top, so a label move is a compositor
-     * transform and never a layout pass: four of these run on every scroll
-     * frame the scene is on screen for.
+     * transform and never a layout pass: four of these run on every frame the
+     * camera is moving.
      */
     const place = (marks: readonly Mark[]) => {
       const { reserve, stageW, stageH, half, tall } = metrics.current;
@@ -244,14 +243,14 @@ export function Crossroads({
          * half its width to either side and its full height up. What has to
          * clear the panel and the canvas is that box, not the anchor.
          *
-         * And it is nudged rather than dropped. At the 1024x736 floor the free
-         * region is 576px, the fan fills it, and „01 Website & Landingpage" is
-         * 205px wide: at the establishing shot the outer two labels overhang
-         * the panel and the right edge by 28px and 12px. Hiding them there
-         * would cost exactly the shot the labels exist for, which is the one
-         * where all four objects are on screen and the reader is finding out
-         * what they are. A 28px shift on a 205px chip is 14% and reads as
-         * placement.
+         * And it is nudged rather than dropped. At the 1024 floor the free
+         * region is narrow, the fan fills it, and „01 Website & Landingpage"
+         * is 205px wide: at the establishing shot the outer two labels
+         * overhang the panel and the right edge by a few pixels. Hiding them
+         * there would cost exactly the shot the labels exist for, which is
+         * the one where all four objects are on screen and the reader is
+         * finding out what they are. A 28px shift on a 205px chip is 14% and
+         * reads as placement.
          *
          * Bounded at half the box, because past that the nudge stops meaning
          * „this label, slightly moved" and starts meaning „this label, over
@@ -275,23 +274,6 @@ export function Crossroads({
       }
     };
 
-    const drive = () => {
-      raf = 0;
-      if (!handle) return;
-      const rect = section.getBoundingClientRect();
-      const p = progressOf(rect.top, rect.height, stage.clientHeight);
-      handle.set(p);
-      setFocus(handle.focus());
-      setBuilt(handle.built());
-      // Read from the same progress the camera was just given, not from a
-      // second measurement, so the labels and the camera can never disagree
-      // about where in the section the reader is.
-      place(handle.marks());
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(drive);
-    };
-
     // The labels are fetched WITH the scene rather than imported statically.
     // index.tsx is a client component, so a static import puts the mock landing
     // page and the mock dashboard, in both languages, into First Load JS for
@@ -301,12 +283,23 @@ export function Crossroads({
       .then(([{ boot }, { LABELS }]) => {
         if (cancelled) return;
         canvas.dataset.scene = SCENE_MARKER;
-        // The copy panel goes in as the fifth argument: it is standing on the
-        // left of the canvas, and the camera composes into what is left.
-        handle = boot(canvas, view, ordered, LABELS[lang], copyRef.current);
-        drive();
-        window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', onScroll, { passive: true });
+        const handle = boot(canvas, view, ordered, LABELS[lang], {
+          // The copy panel is standing on the left of the canvas, and the
+          // camera composes into what is left.
+          panel: copyRef.current,
+          // Read from the frame that was just drawn, not from a second
+          // measurement, so the labels and the camera can never disagree
+          // about where the objects are.
+          onFrame: () => {
+            place(handle.marks());
+            setBuilt(handle.built());
+          },
+        });
+        handleRef.current = handle;
+        // Whatever happened while the scene was loading: a reader who was
+        // already looking at the section gets the reveal now rather than
+        // never, and one whose pointer is already on a row gets that way.
+        if (seenRef.current) handle.reveal();
       })
       .catch((error) => {
         if (cancelled) return;
@@ -318,157 +311,210 @@ export function Crossroads({
 
     return () => {
       cancelled = true;
-      if (raf) cancelAnimationFrame(raf);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      handle?.stop();
+      handleRef.current?.stop();
+      handleRef.current = null;
     };
   }, [enhanced, ordered, lang]);
+
+  /**
+   * The reveal: the four drawings become the four objects, once, when the
+   * section first comes into view. Not on boot, which can happen four
+   * viewports before the reader arrives, and not on scroll position, which is
+   * the coupling this section no longer has. A fifth of the section on screen
+   * is enough to be looking at it.
+   */
+  useEffect(() => {
+    if (!enhanced) return;
+    const section = sectionRef.current;
+    if (!section) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        seenRef.current = true;
+        handleRef.current?.reveal();
+        io.disconnect();
+      },
+      { threshold: 0.2 },
+    );
+    io.observe(section);
+    return () => io.disconnect();
+  }, [enhanced]);
+
+  /**
+   * The camera follows the row. Hover and keyboard focus are the same input,
+   * which is what makes the enhanced state reachable without a pointer: the
+   * old one disclosed by scroll position, and a keyboard user could not open
+   * a row because rows were not focusable. They are links now.
+   */
+  useEffect(() => {
+    handleRef.current?.aim(focus);
+  }, [focus, built]);
 
   return (
     <section
       id="services"
-      // No overflow-hidden, which every other ink section carries. An element
-      // with a clipped overflow is a scroll container, and a sticky child
-      // sticks to the nearest one, so the stage would have stuck to a box that
-      // never scrolls: it sat at the top of the section and slid away with it,
-      // leaving four viewports of empty ink. The stage clips itself.
       ref={sectionRef}
       data-enhanced={enhanced}
       data-built={built}
-      className="grain relative isolate bg-ink text-ink-fg"
+      className="grain relative isolate overflow-hidden bg-ink text-ink-fg"
     >
       {/* The wash and the grain belong to the fallback, where this section is
           ink carrying text. With the scene up they are the thing that made the
           canvas read as a video embedded in a slide: a flat fogged rectangle
-          with a different dark either side of it. The scene IS the ink now, so
-          it runs to the viewport edges and nothing is layered over it. */}
+          with a different dark either side of it. The scene IS the ink, so it
+          runs to the viewport edges and nothing is layered over it. */}
       {enhanced ? null : <div aria-hidden="true" className="ink-aurora -z-10" />}
 
-      {/* The track is the runway and the stage sticks INSIDE it, not beside it
-          with a negative margin. A sticky box travels its containing block's
-          height minus its own MARGIN box, so a -100svh margin buys one extra
-          viewport of travel and the stage releases a viewport late, painting
-          over the section below. Nested, the travel is 300svh minus 100svh and
-          stays right with no arithmetic to keep in step.
+      {/* The stage is the section's own height: the canvas is absolutely
+          positioned behind the layout and the layout is the panel plus the
+          section rhythm. No track, no sticky, no svh. A reader scrolls past
+          this like any other section. */}
+      <div ref={stageRef} className="crossroads-stage">
+        <div ref={viewRef} className="crossroads-view">
+          {enhanced ? <canvas ref={canvasRef} aria-hidden="true" /> : null}
+        </div>
 
-          Never aria-hidden: the track holds every word of the section, so
-          hiding it would hide the content from the readers the fallback is
-          for. */}
-      <div className="crossroads-track">
-        <div ref={stageRef} className="crossroads-stage">
-          <div ref={viewRef} className="crossroads-view">
-            {enhanced ? <canvas ref={canvasRef} aria-hidden="true" /> : null}
-          </div>
+        {/* The gutter, faded to the scene's own background. See the note
+            above .crossroads-veil: the strip between the viewport edge and
+            the panel is the one part of a full-bleed frame that no camera
+            position can compose, and the neighbouring lane's object stands
+            in it. */}
+        {enhanced ? <div aria-hidden="true" className="crossroads-veil" /> : null}
 
-          {/* The gutter, faded to the scene's own background. See the note
-              above .crossroads-veil: the strip between the viewport edge and
-              the panel is the one part of a full-bleed frame that no camera
-              position can compose, and the neighbouring lane's object stands
-              in it. */}
-          {enhanced ? <div aria-hidden="true" className="crossroads-veil" /> : null}
+        {/* py-16 rather than the section rhythm, because this section's height
+            is what the panel has to fit inside a laptop viewport with, and the
+            two columns of rhythm padding were 20% of it. */}
+        <div className="crossroads-layout relative mx-auto max-w-container px-6 py-16 md:px-8">
+          {/* The price board, which is also this section's fallback, which is
+              also the only copy of these four rows anywhere on the homepage.
+              On ink it is a glass panel over the scene rather than a column
+              beside it, and .glass-chip is the material the hero's proof
+              chips are already made of: ink with real frequency under it,
+              which is the one condition a backdrop blur needs to produce
+              anything at all. */}
+          <div ref={copyRef} className="crossroads-copy lg:max-w-[30rem]">
+            <Eyebrow onInk>{eyebrow}</Eyebrow>
+            <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
+            <p className={`${RHYTHM.lead} max-w-measure text-ink-muted`}>{lead}</p>
 
-          <div className="crossroads-layout mx-auto grid h-full max-w-container items-center px-6 py-section md:px-8 lg:grid-cols-[26rem_1fr]">
-            {/* The price board, which is also this section's fallback, which is
-                also the only copy of these four rows anywhere on the homepage.
-                On ink it is a glass panel over the scene rather than a column
-                beside it, and .glass-chip is the material the hero's proof
-                chips are already made of: ink with real frequency under it,
-                which is the one condition a backdrop blur needs to produce
-                anything at all. */}
-            <div ref={copyRef} className="crossroads-copy">
-              <Eyebrow onInk>{eyebrow}</Eyebrow>
-              <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
+            {/* The place, once, for everyone who never sees it move.
 
-              {/* The place, once, for everyone who never sees it move.
+                Rendered from this scene by tools/shoot-poster.mjs rather
+                than drawn, so it cannot end up describing a world the site
+                stopped having, and 13 kB of WebP against the 148 kB of
+                three.js the fallback exists to not download. Rendered only
+                in the fallback, so a laptop that gets the real thing never
+                fetches it, and not on a phone at all: a 1600x481 strip at
+                327px wide is 98px tall, and nothing in it is identifiable at
+                that size. It reads as a dark banner, which is worse than no
+                picture. */}
+            {enhanced ? null : (
+              <img
+                src={asset('/crossroads.webp')}
+                alt={sceneAlt}
+                width={1600}
+                height={481}
+                loading="lazy"
+                decoding="async"
+                className="mt-6 hidden w-full rounded-md border border-ink-line sm:block"
+              />
+            )}
 
-                  Rendered from this scene by tools/shoot-poster.mjs rather
-                  than drawn, so it cannot end up describing a world the site
-                  stopped having, and 13 kB of WebP against the 148 kB of
-                  three.js the fallback exists to not download. Rendered only
-                  in the fallback, so a laptop that gets the real thing never
-                  fetches it. */}
-              {enhanced ? null : (
-                <img
-                  src={asset('/crossroads.webp')}
-                  alt={sceneAlt}
-                  width={1600}
-                  height={378}
-                  loading="lazy"
-                  decoding="async"
-                  className="mt-6 w-full rounded-md border border-ink-line"
-                />
-              )}
+            {/* Four rows, every detail open, every row a link.
 
-              <ol className="crossroads-ways mt-6 divide-y divide-ink-line border-y border-ink-line">
-                {ordered.map((way, i) => (
-                  <li key={way.key} data-key={way.key} data-focus={focus === i}>
-                    <p className="crossroads-way-no font-mono text-eyebrow text-ink-accent">
-                      {String(i + 1).padStart(2, '0')}
-                    </p>
-                    <h3 className="crossroads-way-name text-h3">{way.name}</h3>
-                    <p className="crossroads-way-price font-display text-h3 font-medium text-ink-accent">
+                The old board opened one row's detail at a time, on the row
+                the camera was standing at, so at the two positions a normal
+                scroll lands on nothing was open at all and a laptop got less
+                than a phone. Nothing collapses now. And each row goes to its
+                own card on the services page, because four objects and four
+                services with nothing to click was the strangest thing about
+                the section. */}
+            <ol
+              ref={listRef}
+              className="crossroads-ways mt-8 divide-y divide-ink-line border-y border-ink-line"
+              onMouseLeave={() => setFocus(-1)}
+              onBlur={(e) => {
+                // Tabbing from one row to the next fires blur before focus.
+                // Only a departure from the list as a whole sends the camera
+                // back to the junction.
+                if (!listRef.current?.contains(e.relatedTarget as Node | null)) setFocus(-1);
+              }}
+            >
+              {ordered.map((way, i) => (
+                <li key={way.key} data-key={way.key} data-focus={focus === i}>
+                  <Link
+                    href={`${servicesPath}#${way.key}`}
+                    className="crossroads-way"
+                    onMouseEnter={() => setFocus(i)}
+                    onFocus={() => setFocus(i)}
+                  >
+                    {/* text-lead rather than the h3 size: four of these in a
+                        panel that has to fit a laptop viewport, and the
+                        name's job is to be found, not to headline. The number
+                        is inside the heading rather than in a column of its
+                        own, because a column costs the name the width it
+                        needs to stay on one line, and it is hidden from the
+                        accessibility tree because the list is already
+                        numbered. */}
+                    <h3 className="crossroads-way-name text-lead">
+                      <span
+                        aria-hidden="true"
+                        className="crossroads-way-no font-mono text-eyebrow text-ink-accent"
+                      >
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                      {way.name}
+                    </h3>
+                    <span className="crossroads-way-price font-display text-lead font-medium text-ink-accent">
                       <span className="font-sans text-small font-normal text-ink-muted">
                         {fromLabel}{' '}
                       </span>
                       {way.price}
-                    </p>
-                    {/* Open on the row the camera is standing at and shut on
-                        the other three, so the board is four names against
-                        four prices at a glance and the one you are looking at
-                        says who it is for and what the price covers.
+                    </span>
+                    <span className="crossroads-way-detail text-small text-ink-muted">
+                      {way.forWhom}
+                    </span>
+                    <span className="crossroads-way-note text-small text-ink-muted">
+                      {way.priceNote}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
 
-                        Collapsed with grid-template-rows and never with
-                        display or visibility: at 0fr the text is still in the
-                        accessibility tree, still in order, and still found by
-                        the browser's own find-in-page. */}
-                    <div className="crossroads-way-detail">
-                      <div>
-                        <p className="text-small text-ink-muted">{way.forWhom}</p>
-                        <p className="mt-1 text-small text-ink-muted">{way.priceNote}</p>
-                        <p className="crossroads-reads mt-1 text-small text-ink-muted">
-                          {way.reads}
-                        </p>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-
-              <div className="mt-6">
-                <ArrowLink onInk href={link.href}>
-                  {link.label}
-                </ArrowLink>
-              </div>
+            <div className="mt-6">
+              <ArrowLink onInk href={link.href}>
+                {link.label}
+              </ArrowLink>
             </div>
           </div>
-
-          {/* The names, standing at the things they name.
-              aria-hidden, and that is the whole i18n and accessibility story
-              in one attribute: every one of these four strings is the same
-              `way.name` the row above already carries, so a screen reader
-              hears it once and a search engine indexes it once. What this
-              layer adds is the bond a list beside a canvas could not make. */}
-          {enhanced ? (
-            <div aria-hidden="true" className="crossroads-marks">
-              {ordered.map((way, i) => (
-                <div
-                  key={way.key}
-                  data-on="false"
-                  ref={(el) => {
-                    markRefs.current[i] = el;
-                  }}
-                  className="crossroads-mark"
-                >
-                  <span className="crossroads-mark-box" data-focus={focus === i}>
-                    <span className="crossroads-mark-no">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="crossroads-mark-name">{way.name}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </div>
+
+        {/* The names, standing at the things they name.
+            aria-hidden, and that is the whole i18n and accessibility story
+            in one attribute: every one of these four strings is the same
+            `way.name` the row above already carries, so a screen reader
+            hears it once and a search engine indexes it once. What this
+            layer adds is the bond a list beside a canvas could not make. */}
+        {enhanced ? (
+          <div aria-hidden="true" className="crossroads-marks">
+            {ordered.map((way, i) => (
+              <div
+                key={way.key}
+                data-on="false"
+                ref={(el) => {
+                  markRefs.current[i] = el;
+                }}
+                className="crossroads-mark"
+              >
+                <span className="crossroads-mark-box" data-focus={focus === i}>
+                  <span className="crossroads-mark-no">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="crossroads-mark-name">{way.name}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );

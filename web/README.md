@@ -42,9 +42,8 @@ npm run lint && npm run typecheck
    presence of the Impressum alert box. It is deliberately **not** in CI — CI
    has to stay green while the placeholders are legitimately still there.
 
-2. **Add a portrait** as `public/portrait.jpg` and swap the placeholder block in
-   `src/components/page-sections.tsx` (`AboutPage`). A one-person brand with no
-   face is asking for trust it has not offered.
+2. **The portrait is `public/founder.webp`**, on /ueber-mich. Replace the
+   file to replace the face.
 3. **Have the Impressum and Datenschutzerklärung reviewed once.** They are
    written carefully and are a solid starting point, but they are not legal
    advice and only you know your final setup. Two things are already handled:
@@ -55,6 +54,13 @@ npm run lint && npm run typecheck
    `profile.insurance`: § 2 no. 11 DL-InfoV wants insurer, address and
    territorial scope, and a partial disclosure is worse than none.
 4. Work through the launch checklist in `../brand/04-launch-playbook.md` §3.3.
+5. **Decide who moves `availableFrom`.** It is a bare year („Freie
+   Kapazität ab 2027") or a year and month („ab September"). A month is a
+   promise in August and a site nobody maintains in November, which is why
+   the field is a year for now. `npm run check:profile` refuses a production
+   build whose year or month has passed, so a stale line can never ship, but
+   it does not roll forward: somebody has to bump `profile.availableFrom`
+   before each upload, and the check is the reminder rather than the fix.
 
 ### Going live on the real domain
 
@@ -187,36 +193,39 @@ it.
 
 ## The contact form
 
-**Decided (issue #11): the mailto hand-off stays. No endpoint.**
+Two deploys, two behaviours, one variable. `profile.formEndpoint` is
+`/contact.php` when `NEXT_PUBLIC_SITE_URL` is unset or names `klucode.de`, and
+empty everywhere else. Read `src/content/profile.ts` before touching either.
 
-There is no server, so the form does **not** silently post to a third-party
-service. It opens the visitor's own mail client with the message prepared —
-they see exactly what is sent and to whom, and the privacy policy stays true
-because there is no additional processor to name.
+**Production (the Plesk upload, a plain `npm run build`)** posts the form to
+`deploy/contact.php`, a first-party handler on the same server. This is what
+makes the form a real second contact channel: there is no phone number on the
+site (owner's decision, recorded in `profile.phone`), § 5 DDG wants a second
+route alongside email, and the ECJ accepted an electronic enquiry form for
+exactly that in C-298/07, but only a form that actually transmits. Upload
+`contact.php` to the document root with the rest of `out/`, confirm `mail()`
+sends and that `website@klucode.de` passes SPF/DMARC, then send one message
+from the live site before relying on it.
 
-The cost is real and is handled rather than hidden. A device with no configured
-mail client reaches a dead end, and nothing is logged, so a lost enquiry is
-silently lost. Three things follow from that:
+**Previews (GitHub Pages, where the variable is set)** cannot run PHP, so the
+form hands off to the visitor's own mail client with the message prepared, and
+the note under the form says so. A device with no mail client reaches a dead
+end there, which is why the address sits above the form. Do not share the
+preview with a client as if it were the site: on the preview the form is the
+email channel wearing a second hat.
 
-- The form has a `handoff` state, not a `sent` state. Assigning
-  `window.location.href` tells you nothing about whether a mail client opened,
-  so the copy says what _should_ have happened and repeats the address in
-  selectable text. It must never claim a message was sent — and the form stays
-  rendered through the hand-off, so the typed message is never lost to a
-  success screen.
-- The address and phone number sit above the form in DOM order, so on a phone
-  the guaranteed path is the one you meet first.
-- `mailtoNote` says plainly what the form does and does not do.
+The form carries an optional phone field for a call back. The site publishes
+no number, so this is how the 30 minute call it offers everywhere can actually
+be arranged by a reader who would rather talk than write. Two more channels
+are wired and switched off: `profile.whatsapp` (a wa.me link, digits only) and
+`profile.booking` (a slot picker URL). Both render nothing while null. Setting
+`booking` adds a third party the privacy policy currently says the site has
+none of, so amend `privacy.sections` in the same change.
 
-To switch to a real endpoint: **`deploy/contact.php` is a ready-made
-same-origin handler** for the Plesk server — the one option that adds no
-processor at all: the host is already named under Art. 28 in §3 of the policy,
-and the CSP already permits `form-action 'self'`. The header of that file lists
-the enable steps (recipient, upload, `profile.formEndpoint: '/contact.php'`,
-privacy §5 update). A hosted service (Formspree, Basin, …) also works via
-`profile.formEndpoint` — but then **update `privacy.sections` §5 in `de.ts` and
-`en.ts` in the same change**: you will have added a processor, and the policy
-currently says you have not.
+The privacy policy's § 5 describes the production path, which is the one
+visitors are subject to. `tests/e2e/contact.spec.ts` asserts that the form
+posts to the same origin, that the honeypot is unreachable, and that the note
+under the form matches the path the build actually takes.
 
 ---
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import type { Faq as FaqItem } from '@/content/types';
-import { pathFor, type Lang } from '@/lib/routes';
+import { pathFor, type Lang, type PageKey } from '@/lib/routes';
 
 /**
  * Section label: a node dot and sentence-case text.
@@ -357,10 +357,18 @@ export function Tags({ items }: { items: readonly string[] }) {
 export function Faq({
   items,
   lang,
+  current,
 }: {
   items: readonly FaqItem[];
   /** Needed because a link target is a page key, and slugs are localised. */
   lang: Lang;
+  /**
+   * The page this accordion is on, so an answer never links to it. The price
+   * questions render on the services page as well as the homepage, and „Alle
+   * vier Leistungen mit Preis" pointing at the page it is on is the kind of
+   * self-link this site was criticised for.
+   */
+  current?: PageKey | 'home';
 }) {
   return (
     <div className="divide-y divide-line border-y border-line">
@@ -380,7 +388,7 @@ export function Faq({
             </span>
           </summary>
           <p className="mt-4 max-w-measure text-muted">{item.a}</p>
-          {item.link ? (
+          {item.link && item.link.to !== current ? (
             <p className="mt-3">
               <ArrowLink href={pathFor(item.link.to, lang)}>{item.link.label}</ArrowLink>
             </p>

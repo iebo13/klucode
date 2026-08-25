@@ -12,10 +12,13 @@ const de = {
     description:
       'Ich baue die Software, mit der Ihr Betrieb tatsächlich arbeitet: Web-Anwendungen, interne Tools und Websites. Ein Ansprechpartner, Festpreis, vom ersten Klick bis zum laufenden Server.',
     pages: {
+      // The entry price is in the snippet because it is the query intent: a
+      // reader searching for a local developer wants to know what it costs
+      // before they click, and the services page's snippet already says so.
       home: {
         title: 'KluCode · Software & Webentwicklung in Düsseldorf',
         description:
-          'Freiberuflicher Softwareentwickler in Düsseldorf. Web-Anwendungen, interne Tools und Websites zum Festpreis. Frontend, Backend und Server von einer Person.',
+          'Freiberuflicher Softwareentwickler in Düsseldorf. Websites ab 2.500 €, Web-Anwendungen ab 9.000 €, Festpreis vor dem Start. Alles von einer Person.',
       },
       // Plain spaces in this description on purpose: check-meta parses and
       // budgets the raw source string (an escape counts six chars), and a
@@ -31,8 +34,11 @@ const de = {
         description:
           'Drei Systeme im Produktivbetrieb: ein CRM mit Provisionsverwaltung, ein Kassensystem für die Gastronomie und eine Landingpage samt Kampagne.',
       },
+      // „Ablauf", not „Ansatz". An owner looking for how this works looks for
+      // „so läuft es ab", and „Ansatz" is a word developers use about
+      // themselves. The slug follows the label (lib/routes.ts).
       approach: {
-        title: 'Ansatz · KluCode',
+        title: 'Ablauf · KluCode',
         description:
           'Wie ein Projekt bei mir abläuft: vier Schritte, ein Festpreis, ein Ansprechpartner. Und eine ehrliche Antwort auf die Frage, welche Rolle KI dabei spielt.',
       },
@@ -62,7 +68,7 @@ const de = {
     home: 'Start',
     services: 'Leistungen',
     work: 'Projekte',
-    approach: 'Ansatz',
+    approach: 'Ablauf',
     about: 'Über mich',
     contact: 'Kontakt',
     imprint: 'Impressum',
@@ -74,7 +80,6 @@ const de = {
     ctaSecondary: 'Projekte ansehen',
     availablePrefix: 'Freie Kapazität ab',
     draft: 'VORSCHLAG · NOCH NICHT BUCHBAR',
-    shotPending: 'Screenshot folgt, sobald der Auftraggeber ihn freigegeben hat.',
     skipToContent: 'Zum Inhalt springen',
     menu: 'Menü',
     close: 'Schließen',
@@ -91,6 +96,7 @@ const de = {
     after: 'Nachher',
     result: 'Ergebnis',
     includes: 'Enthalten',
+    excludes: 'Nicht enthalten',
     from: 'ab',
   },
 
@@ -102,36 +108,9 @@ const de = {
     heroTitleAccent: 'tatsächlich arbeitet.',
     heroLead:
       'Web-Anwendungen, interne Tools und Websites, vom ersten Klick bis zum laufenden Server. Ein Ansprechpartner, ein Festpreis. Und der Mensch im Termin ist derselbe, der den Code schreibt.',
-    heroProof: [
-      'Drei Systeme im Produktivbetrieb',
-      'Informatik B.Sc. · 4 Jahre Berufserfahrung',
-      'Festpreis vor Projektstart',
-    ],
-
-    problemEyebrow: 'Die Ausgangslage',
-    problemTitle: 'Zwei Angebote, und beide passen nicht.',
-    problemLead:
-      'Die meisten Betriebe, mit denen ich spreche, haben das Thema schon zweimal angefasst und wieder liegen gelassen. Aus guten Gründen.',
-    problemCards: [
-      {
-        title: 'Die Agentur',
-        body: 'Vier Monate, fünfstellig, drei Ansprechpartner. Bezahlt wird auch der Weg von dem, der Ihr Problem verstanden hat, zu dem, der es umsetzt. Auf diesem Weg geht das meiste verloren.',
-      },
-      {
-        title: 'Der Baukasten',
-        body: 'Sieht nach zwei Tagen fertig aus und hört genau da auf, wo Ihr Geschäft anfängt: bei der Provisionslogik, beim Schichtbetrieb, bei der einen Auswertung, die Sie wirklich brauchen.',
-      },
-      {
-        title: 'Also weiter wie bisher',
-        body: 'Excel, WhatsApp und ein Ordner, den nur eine Person versteht. Funktioniert. Bis diese Person Urlaub hat oder die Datei in drei Versionen existiert.',
-      },
-    ],
-    answerTitle: 'Die dritte Möglichkeit',
-    answerBody:
-      'Eine Person, die mit Ihnen spricht, Ihren Ablauf versteht und danach das ganze System baut: Oberfläche, Logik, Datenbank, Server. Der Preis steht fest, bevor die erste Zeile geschrieben ist.',
-
     servicesEyebrow: 'Leistungen',
     servicesTitle: 'Vier Wege zur Zusammenarbeit.',
+    servicesLead: 'Der Preis steht fest, bevor die erste Zeile geschrieben ist.',
     servicesLink: 'Alle Leistungen und Preise',
     sceneAlt:
       'Die vier Wege als Raum: eine Website auf einem Monitor, eine Web-Anwendung mit Datenbank und Server dahinter, ein Büro mit einem freien Platz, ein Server-Rack an einer Wolke.',
@@ -142,7 +121,7 @@ const de = {
       'Keine Konzeptstudien, keine Templates. Drei Projekte, die ausgeliefert sind und benutzt werden.',
     workLink: 'Projekte im Detail',
 
-    approachEyebrow: 'Ansatz',
+    approachEyebrow: 'Ablauf',
     approachTitle: 'Warum das in Wochen geht und nicht in Quartalen.',
     approachLead:
       'Kein Angebot läuft durch drei Abteilungen, kein Briefing wird zweimal übersetzt. Und ich arbeite KI-gestützt. Was das konkret heißt, steht offen auf einer eigenen Seite.',
@@ -150,28 +129,34 @@ const de = {
 
     faqEyebrow: 'Häufige Fragen',
     faqTitle: 'Was Betriebe vorher wissen wollen.',
+    // Money, time and place. The two questions about continuity and code
+    // ownership are on /ablauf, next to the principles they were repeating.
     faq: [
       {
         q: 'Was kostet das?',
         a: 'Eine Website beginnt bei 2.500\u00A0€, eine individuelle Web-Anwendung bei 9.000\u00A0€. Den genauen Festpreis nenne ich Ihnen nach einem 30-Minuten-Gespräch und einer schriftlichen Leistungsbeschreibung. Nicht vorher, weil eine Zahl ohne Umfang wertlos ist.',
         link: { label: 'Alle vier Leistungen mit Preis', to: 'services' },
+        price: true,
       },
       {
         q: 'Wie lange dauert es?',
         a: 'Eine Landingpage zwei bis drei Wochen. Eine Web-Anwendung vier bis zehn Wochen, je nach Umfang. Die erste lauffähige Version sehen Sie deutlich früher, meist nach zwei Wochen.',
+        link: { label: 'So läuft ein Projekt ab', to: 'approach' },
+        price: true,
       },
+      // „Die Ausgangslage", as the question it always was. It stood as its own
+      // section between the proof and the prices, arguing against agencies and
+      // website kits to a reader who had not asked. Asked, it is a fair
+      // question with a fair answer.
       {
-        q: 'Was passiert, wenn Sie ausfallen?',
-        a: 'Die berechtigte Frage bei einer Person. Deshalb: Der Code liegt in einem Repository, auf das Sie Zugriff haben, die Dokumentation liegt daneben, und es kommt keine Technik zum Einsatz, die nur ich bedienen kann. Jede andere Entwicklerin und jeder andere Entwickler kann übernehmen. Das ist kein Notfallplan, das ist Grundausstattung.',
+        q: 'Warum nicht eine Agentur oder ein Baukasten?',
+        a: 'Beides kann richtig sein. Eine Agentur bringt vier Monate, ein fünfstelliges Budget und drei Ansprechpartner mit, und auf dem Weg von dem, der Ihr Problem verstanden hat, zu dem, der es umsetzt, geht das meiste verloren. Ein Baukasten sieht nach zwei Tagen fertig aus und endet bei der ersten Anforderung, die nur Ihr Betrieb hat: der Provisionslogik, dem Schichtplan, der einen Auswertung. Die dritte Möglichkeit ist eine Person, die Ihren Ablauf versteht und danach das ganze System baut, zu einem Preis, der vorher feststeht.',
         link: { label: 'Wie ich arbeite', to: 'approach' },
-      },
-      {
-        q: 'Gehört mir der Code?',
-        a: 'Ja. Vollständig, mit allen Zugängen, nach der Schlussrechnung. Kein Abo, in dem Sie festhängen, keine Lizenz, die ich Ihnen entziehen kann.',
       },
       {
         q: 'Machen Sie auch die Wartung?',
         a: 'Ja, ab 90\u00A0€ im Monat: Updates, Sicherheits-Patches, Backups, kleine Änderungen. Sie müssen es nicht buchen. Aber Software, die niemand pflegt, wird nach zwei Jahren zum Problem.',
+        price: true,
       },
       {
         q: 'Arbeiten Sie auch außerhalb von Düsseldorf?',
@@ -193,7 +178,6 @@ const de = {
         key: 'website',
         name: 'Website & Landingpage',
         forWhom: 'Für Betriebe, die online gefunden werden und Anfragen bekommen wollen.',
-        reads: 'Ein Ding. Eine Seite, die lädt und Anfragen bringt.',
         body: 'Eine Seite, die lädt, auf dem Handy funktioniert und bei Google auffindbar ist. Handgebaut, ohne Baukasten-Ballast: deshalb schnell, und deshalb später erweiterbar.',
         includes: [
           'Aufbau, Text-Struktur und Gestaltung',
@@ -201,6 +185,11 @@ const de = {
           'Technisches SEO, Ladezeit unter einer Sekunde',
           'Auf Wunsch mit Besucher-Statistik, datenschutzfreundlich umgesetzt',
           'Einweisung, damit Sie Inhalte selbst pflegen können',
+        ],
+        excludes: [
+          'Texte und Fotos. Sie liefern sie, oder ich vermittle jemanden',
+          'Logo und Markenentwicklung',
+          'Hosting und Domain laufen auf Ihren Namen, ich richte sie ein',
         ],
         price: '2.500\u00A0€',
         priceNote: '2 bis 3 Wochen · Festpreis',
@@ -210,7 +199,6 @@ const de = {
         key: 'app',
         name: 'Individuelle Web-Anwendung',
         forWhom: 'Für Abläufe, die heute in Excel, auf Papier oder in WhatsApp hängen.',
-        reads: 'Kein Bildschirm, ein System. Oberfläche, Datenbank, Server.',
         body: 'CRM, Kassensystem, Auswertung, internes Werkzeug, Portal. Gebaut für Ihren Ablauf statt umgekehrt, inklusive Datenbank, Benutzerverwaltung und Server. Das ist die Arbeit, die ich am liebsten mache.',
         includes: [
           'Analyse des Ist-Ablaufs, gemeinsam mit den Menschen, die ihn ausführen',
@@ -220,6 +208,11 @@ const de = {
           'Erste lauffähige Version nach etwa zwei Wochen',
           'Dokumentation und Übergabe an Ihr Team',
         ],
+        excludes: [
+          'Native Apps für iOS und Android',
+          'Der Server selbst: er läuft auf Ihrem Konto, ich richte ihn ein',
+          'Betrieb nach der Übergabe, dafür gibt es die Wartung',
+        ],
         price: '9.000\u00A0€',
         priceNote: '4 bis 10 Wochen · Festpreis',
         example: { label: 'Beispiel: CRM und Provisionsverwaltung', project: 'crm' },
@@ -228,7 +221,6 @@ const de = {
         key: 'capacity',
         name: 'Entwickler-Kapazität',
         forWhom: 'Für Agenturen und Produktteams, die Frontend-Kapazität brauchen.',
-        reads: 'Ein freier Platz in einem Team, das schon arbeitet.',
         body: 'React, Next.js, TypeScript, Node.js. Ich arbeite mich in bestehenden Code ein, halte mich an Ihre Konventionen und kann in einen Kundentermin, ohne dass es Ihnen unangenehm wird.',
         includes: [
           'React · Next.js · TypeScript · Node.js · PostgreSQL',
@@ -236,6 +228,11 @@ const de = {
           'Code-Reviews und Pull Requests nach Ihren Regeln',
           'Remote, im Rheinland auch vor Ort',
           'Ab fünf Tagen buchbar',
+        ],
+        excludes: [
+          'Projektleitung und Personalverantwortung',
+          'Gestaltung: ich setze um, was Ihr Design vorgibt',
+          'Einsätze unter fünf Tagen',
         ],
         price: '680\u00A0€',
         priceNote: 'pro Tag · Rahmenvertrag möglich',
@@ -245,7 +242,6 @@ const de = {
         key: 'care',
         name: 'Betrieb & Wartung',
         forWhom: 'Für alle, die etwas laufen haben. Von mir oder von jemand anderem.',
-        reads: 'Der Server bleibt online, und jemand schaut hin.',
         body: 'Software, die niemand pflegt, wird nach zwei Jahren zum Sicherheitsproblem. Der günstigste Weg, das zu vermeiden, ist ein kleiner monatlicher Betrag statt einer großen Rechnung im Notfall.',
         includes: [
           'Updates und Sicherheits-Patches',
@@ -253,6 +249,11 @@ const de = {
           'Backups, regelmäßig geprüft',
           'Kleine Änderungen im vereinbarten Umfang',
           'Fester Ansprechpartner, Reaktion innerhalb von 24 Stunden',
+        ],
+        excludes: [
+          'Neue Funktionen über kleine Änderungen hinaus',
+          'Support für Ihre Endkunden',
+          'Pflege von Inhalten und Texten',
         ],
         price: '90\u00A0€',
         priceNote: 'pro Monat · monatlich kündbar',
@@ -273,26 +274,37 @@ const de = {
       'Teams stellen oder Projekte über zwölf Monate leiten',
     ],
     faqTitle: 'Noch Fragen zum Preis?',
-    faqBody:
-      'Was in einem Festpreis steckt, was passiert wenn sich der Umfang ändert, und was der Betrieb monatlich wirklich kostet: sechs Antworten auf der Startseite.',
-    faqLink: 'Häufige Fragen',
-    triage:
-      'Unsicher, welcher der vier Wege passt? Beschreiben Sie Ihren Ablauf in zwei Sätzen. Die Einordnung ist Teil des Gesprächs und kostet nichts.',
-    middle: {
-      after: 'website',
-      name: 'Website mit System',
-      forWhom: 'Für Betriebe, die eine Seite brauchen und den ersten Ablauf gleich mit.',
-      body: 'Die Seite aus dem ersten Angebot, und daran der eine Vorgang, der heute die meiste Zeit kostet. Ein Formular, das in einer Datenbank landet statt in einem Postfach, und eine Auswertung, die zeigt, was daraus geworden ist. Der Schritt zwischen Website und eigener Anwendung, für alle, die den großen Sprung noch nicht machen wollen.',
-      includes: [
-        'Alles aus Website & Landingpage',
-        'Ein Ablauf, gemeinsam aufgenommen und abgebildet',
-        'Formular mit Datenbank statt E-Mail-Postfach',
-        'Eine Auswertung, die Sie selbst öffnen können',
-        'Zugänge für Sie und eine zweite Person',
-      ],
-      price: '4.500\u00A0€',
-      priceNote: '3 bis 5 Wochen · Festpreis',
+    faqLink: 'Alle Fragen und Antworten',
+    cta: {
+      title: 'Unsicher, welcher der vier Wege passt?',
+      lead: 'Beschreiben Sie Ihren Ablauf in zwei Sätzen. Die Einordnung ist Teil des Gesprächs und kostet nichts.',
     },
+    /**
+     * null, since 2026-08-25: the proposed rung is not public until it is
+     * bookable.
+     *
+     * It was live on the preview as a dashed card reading „VORSCHLAG · NOCH
+     * NICHT BUCHBAR" with a price of 4.500 €, which is an internal decision
+     * rendered for customers, under a page whose H1 counts four. The draft is
+     * kept here so shipping it is a matter of restoring it, and shipping it
+     * means: settle the price, drop the draft marker, and give it an object
+     * and a lane in the crossroads (see the note on `middle` in types.ts).
+     *
+     *   after: 'website'
+     *   name: 'Website mit System'
+     *   forWhom: 'Für Betriebe, die eine Seite brauchen und den ersten Ablauf gleich mit.'
+     *   body: 'Die Seite aus dem ersten Angebot, und daran der eine Vorgang, der
+     *     heute die meiste Zeit kostet. Ein Formular, das in einer Datenbank
+     *     landet statt in einem Postfach, und eine Auswertung, die zeigt, was
+     *     daraus geworden ist. Der Schritt zwischen Website und eigener
+     *     Anwendung, für alle, die den großen Sprung noch nicht machen wollen.'
+     *   includes: 'Alles aus Website & Landingpage' · 'Ein Ablauf, gemeinsam
+     *     aufgenommen und abgebildet' · 'Formular mit Datenbank statt
+     *     E-Mail-Postfach' · 'Eine Auswertung, die Sie selbst öffnen können' ·
+     *     'Zugänge für Sie und eine zweite Person'
+     *   price: '4.500 €', priceNote: '3 bis 5 Wochen · Festpreis'
+     */
+    middle: null,
   },
 
   work: {
@@ -315,7 +327,13 @@ const de = {
           'Die monatliche Abrechnung läuft automatisch. Keine Datei wandert mehr per E-Mail, und es gibt keine zweite Version, von der niemand weiß, ob sie die richtige ist.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
         offer: { label: 'Passendes Angebot: Individuelle Web-Anwendung', service: 'app' },
-        shotPending: true,
+        diagram: {
+          sources: ['CRM', 'Provisionsabrechnung', 'Vergleichsportal'],
+          hub: 'PostgreSQL · eine Datenbank',
+          out: 'Plesk-Server',
+          label:
+            'Systemdiagramm: CRM, Provisionsabrechnung und Vergleichsportal teilen eine PostgreSQL-Datenbank auf einem Plesk-Server.',
+        },
       },
       {
         key: 'pos',
@@ -332,6 +350,13 @@ const de = {
           'Bedienbar ohne Schulung. Die Abrechnung am Ende des Abends ist ein Vorgang statt einer Rekonstruktion.',
         stack: ['JavaScript', 'Datenbankmodellierung', 'Touch-UI'],
         offer: { label: 'Passendes Angebot: Individuelle Web-Anwendung', service: 'app' },
+        diagram: {
+          sources: ['Offene Rechnungen', 'Schichtwechsel', 'Abrechnung'],
+          hub: 'ein Datenmodell',
+          out: 'Tablet-Kasse',
+          label:
+            'Systemdiagramm: offene Rechnungen am Tisch, Wechsel während der Schicht und die Abrechnung am Abend laufen über ein Datenmodell auf einer Tablet-Kasse.',
+        },
       },
       {
         key: 'landing',
@@ -348,33 +373,46 @@ const de = {
           'Sichtbarkeit über den Empfehlungskreis hinaus. Aus einem reinen Web-Auftrag wurde ein vollständiges Paket zur Kundengewinnung.',
         stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-Bild und -Video'],
         offer: { label: 'Passendes Angebot: Website & Landingpage', service: 'website' },
-        shotPending: true,
+        diagram: {
+          sources: ['Handgebaute Seite', 'KI-Video und -Bild', 'LinkedIn-Kampagne'],
+          hub: 'ein Auftritt',
+          out: 'Anfragen',
+          label:
+            'Systemdiagramm: eine handgebaute Seite, KI-erzeugte Videos und Bilder und eine LinkedIn-Kampagne bilden einen Auftritt, der Anfragen bringt.',
+        },
       },
     ],
-    noteTitle: 'Zu Zahlen und Namen',
-    noteBody:
-      'Belastbare Kennzahlen und Kundenstimmen ergänze ich hier, sobald die jeweiligen Auftraggeber sie schriftlich freigegeben haben. Bis dahin beschreibe ich die Projekte lieber genau als beeindruckend.',
+    cta: {
+      title: 'Ähnliches Problem?',
+      lead: 'Drei Betriebe, drei Abläufe, derselbe Weg dorthin. Erzählen Sie mir, was bei Ihnen heute in Excel, auf Papier oder in WhatsApp hängt.',
+    },
   },
 
   approach: {
-    eyebrow: 'Ansatz',
+    eyebrow: 'Ablauf',
     title: 'Vier Schritte. Ein Preis. Ein Ansprechpartner.',
     lead: 'Kein Prozessdiagramm mit neun Phasen. So läuft ein Projekt tatsächlich ab.',
+    duration:
+      'Von der ersten Nachricht bis zur Übergabe: eine Landingpage in zwei bis drei Wochen, eine Web-Anwendung in vier bis zehn. Die erste lauffähige Version sehen Sie nach etwa zwei Wochen.',
     steps: [
       {
         title: 'Gespräch',
+        brief: '30 Minuten, kostenlos, und am Ende eine ehrliche Antwort, ob ich der Richtige bin.',
         body: '30 Minuten. Sie erzählen, was heute wie läuft und was daran stört. Ich stelle Rückfragen und sage Ihnen am Ende ehrlich, ob ich der Richtige bin. Kostenlos, und ohne dass Sie danach etwas an der Backe haben.',
       },
       {
         title: 'Leistungsbeschreibung und Festpreis',
+        brief: 'Eine Seite: was gebaut wird, was nicht, bis wann, zu welchem Preis.',
         body: 'Eine Seite: was gebaut wird, was ausdrücklich nicht, bis wann, zu welchem Preis. Sie unterschreiben eine Zahl, keine Schätzung. Diese Seite ist später auch der Maßstab, an dem sich das Ergebnis messen lässt.',
       },
       {
         title: 'Bauen, mit Zwischenständen',
+        brief: 'Nach etwa zwei Wochen die erste Version zum Anklicken, danach im festen Rhythmus.',
         body: 'Nach etwa zwei Wochen sehen Sie die erste lauffähige Version: nicht ein Bild davon, sondern etwas, das Sie anklicken können. Danach im festen Rhythmus weiter. Sie sind immer im Bilde, ohne dafür Termine wahrnehmen zu müssen.',
       },
       {
         title: 'Übergabe',
+        brief: 'Live-Schaltung, Einweisung, Dokumentation, alle Zugänge. Der Code gehört Ihnen.',
         body: 'Live-Schaltung, Einweisung, Dokumentation, alle Zugänge. Der Code gehört Ihnen. Danach entweder Wartungsvertrag oder Funkstille. Beides ist in Ordnung, und beides habe ich schon gehabt.',
       },
     ],
@@ -410,6 +448,21 @@ const de = {
         body: 'Kontraste, Tastaturbedienung, Bildschirmleser. Diese Seite selbst ist der Beleg dafür: keine Cookies, keine fremden Server, WCAG-konforme Farbwerte.',
       },
     ],
+    faqTitle: 'Zwei Fragen, die jeder stellt',
+    faq: [
+      {
+        q: 'Was passiert, wenn Sie ausfallen?',
+        a: 'Die berechtigte Frage bei einer Person. Deshalb: Der Code liegt in einem Repository, auf das Sie Zugriff haben, die Dokumentation liegt daneben, und es kommt keine Technik zum Einsatz, die nur ich bedienen kann. Jede andere Entwicklerin und jeder andere Entwickler kann übernehmen. Das ist kein Notfallplan, das ist Grundausstattung.',
+      },
+      {
+        q: 'Gehört mir der Code?',
+        a: 'Ja. Vollständig, mit allen Zugängen, nach der Schlussrechnung. Kein Abo, in dem Sie festhängen, keine Lizenz, die ich Ihnen entziehen kann.',
+      },
+    ],
+    cta: {
+      title: 'Passt das zu Ihnen?',
+      lead: 'Dann erzählen Sie mir in zwei Sätzen, was heute wie läuft. 30 Minuten, unverbindlich, ohne Präsentation.',
+    },
   },
 
   about: {
@@ -421,6 +474,7 @@ const de = {
       'Parallel dazu habe ich drei Projekte für eigene Kunden umgesetzt: ein CRM mit Provisionsverwaltung und angeschlossenem Vergleichsportal, ein Kassensystem für eine Shisha-Bar und eine Landingpage samt LinkedIn-Kampagne für ein Reinigungsunternehmen. Alle drei laufen. Alle drei wurden bezahlt. Genau diese Arbeit möchte ich hauptberuflich machen.',
       'Was mir dabei wichtig ist: Ich baue keine Software, die beeindruckt. Ich baue Software, die jemand am Montagmorgen benutzt, ohne darüber nachzudenken, und die nach zwei Jahren noch jemand anderes weiterentwickeln kann.',
     ],
+    projectsTitle: 'Die drei Projekte',
     nameNote:
       'Das „Klu“ in KluCode kommt von Klusmann. Und von „klug“, weil das der Teil der Arbeit ist, der zählt: Die Entscheidung, was gebaut wird, fällt vor der ersten Zeile Code.',
     factsTitle: 'Kurz und sachlich',
@@ -433,21 +487,31 @@ const de = {
       { label: 'Sprachen', value: 'Deutsch (Muttersprache), Englisch' },
     ],
     portraitAlt: `${profile.firstName} ${profile.lastName}, freiberuflicher Softwareentwickler in Düsseldorf`,
+    cta: {
+      title: 'Sprechen wir.',
+      lead: 'Sie wissen jetzt, wer baut. Erzählen Sie mir, was gebaut werden soll. 30 Minuten, unverbindlich.',
+    },
   },
 
   contact: {
     eyebrow: 'Kontakt',
     title: 'Erzählen Sie mir, was gerade nicht läuft.',
-    lead: `30 Minuten, unverbindlich, ohne Präsentation. Ich melde mich werktags innerhalb von ${profile.responseTime.de}.`,
+    // No response time here: „Was danach passiert" says it 200px further down
+    // and the two were reading as the page repeating itself.
+    lead: '30 Minuten, unverbindlich, ohne Präsentation.',
     triage:
       'Sie müssen vorher nicht wissen, welche Leistung die richtige ist. Beschreiben Sie, was gerade nicht läuft, die Einordnung übernehme ich.',
     directTitle: 'Direkt',
-    directBody: 'Eine E-Mail geht schneller als jedes Formular.',
+    directBody:
+      'Eine E-Mail geht schneller als jedes Formular. Lieber telefonieren? Hinterlassen Sie im Formular Ihre Nummer, ich rufe zurück.',
+    whatsapp: 'Per WhatsApp schreiben',
+    booking: 'Gesprächstermin auswählen',
     formTitle: 'Oder hier',
     fields: {
       name: 'Name',
       email: 'E-Mail',
       company: 'Unternehmen (optional)',
+      phone: 'Telefon (optional, für einen Rückruf)',
       message: 'Worum geht es?',
       messagePlaceholder:
         'Was läuft heute wie, und was soll sich ändern? Zwei, drei Sätze reichen völlig.',

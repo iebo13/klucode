@@ -5,6 +5,20 @@ import type { Content } from '@/content';
 import { profile } from '@/content/profile';
 import { LEGAL_KEYS, NAV_KEYS, pathFor, type Lang } from '@/lib/routes';
 
+/**
+ * prefetch={false} on every link here, and only here.
+ *
+ * Next prefetches the payload of every <Link> that enters the viewport, and
+ * the footer holds a link to every page on the site: six route payloads,
+ * about 50 kB, fetched the moment a phone reaches the bottom of any page. On
+ * a laptop that is harmless. On a phone on a slow connection it is the
+ * site's own pitch („Ladezeit unter einer Sekunde") spending the reader's
+ * data on pages they have not asked for. The header keeps its prefetching,
+ * because those are the links a reader actually clicks next.
+ */
+const footerLink =
+  'flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg';
+
 export function Footer({ lang, c }: { lang: Lang; c: Content }) {
   // Evaluated at build time — this is a static export, so the footer year is
   // whatever the site was last built in rather than whatever was hardcoded in
@@ -25,6 +39,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
           <div className="max-w-sm">
             <Link
               href={pathFor('home', lang)}
+              prefetch={false}
               className="inline-flex min-h-[2.75rem] items-center text-[1.35rem] text-ink-fg"
             >
               <Logo />
@@ -41,10 +56,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
               <ul className="mt-4">
                 {[...NAV_KEYS, 'contact' as const].map((k) => (
                   <li key={k}>
-                    <Link
-                      href={pathFor(k, lang)}
-                      className="flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
-                    >
+                    <Link href={pathFor(k, lang)} prefetch={false} className={footerLink}>
                       {c.nav[k]}
                     </Link>
                   </li>
@@ -57,10 +69,7 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
               <ul className="mt-4">
                 {LEGAL_KEYS.map((k) => (
                   <li key={k}>
-                    <Link
-                      href={pathFor(k, lang)}
-                      className="flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
-                    >
+                    <Link href={pathFor(k, lang)} prefetch={false} className={footerLink}>
                       {c.nav[k]}
                     </Link>
                   </li>
@@ -76,22 +85,14 @@ export function Footer({ lang, c }: { lang: Lang; c: Content }) {
                 <ul className="mt-4">
                   {profile.linkedin ? (
                     <li>
-                      <a
-                        href={profile.linkedin}
-                        rel="me noopener"
-                        className="flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
-                      >
+                      <a href={profile.linkedin} rel="me noopener" className={footerLink}>
                         LinkedIn
                       </a>
                     </li>
                   ) : null}
                   {profile.github ? (
                     <li>
-                      <a
-                        href={profile.github}
-                        rel="me noopener"
-                        className="flex min-h-[2.75rem] items-center text-small text-ink-muted transition-colors duration-base hover:text-ink-fg"
-                      >
+                      <a href={profile.github} rel="me noopener" className={footerLink}>
                         GitHub
                       </a>
                     </li>

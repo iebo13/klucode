@@ -14,6 +14,11 @@ import { NAV_KEYS, alternatePath, pathFor, type Lang, type PageKey } from '@/lib
  * payload — which is why it takes the handful of strings it renders rather
  * than the whole Content object (that once shipped the full privacy policy
  * with the homepage).
+ *
+ * Four pages, the language switch, the theme toggle and „Kontakt". The two
+ * controls spent an afternoon in the footer on the audit's advice that they
+ * are developer chrome; the owner wants them reachable from the header, so
+ * they are back here on a laptop and in the drawer on a phone.
  */
 export function Header({
   lang,
@@ -55,7 +60,8 @@ export function Header({
   // viewports, font settings) opened a page-coloured seam at the viewport
   // top. A fixed overlay takes no space at all, so the ink slab starts at
   // pixel zero by construction. Every page opens with a hero whose top
-  // padding clears the capsule.
+  // padding clears the capsule, and globals.css sets scroll-padding-top so an
+  // anchor jump clears it too.
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-4 pt-2 md:px-6">
       {/* A floating capsule rather than a full-width bar: the chrome is an
@@ -112,9 +118,9 @@ export function Header({
         </nav>
 
         {/* On phones the persistent capsule carries the contact button — the
-            one action a business site exists for — ahead of the theme toggle,
-            which moves into the drawer. Most first visits from local owners
-            are on a phone; contact must not be a tap deeper than the menu. */}
+            one action a business site exists for — ahead of the menu. Most
+            first visits from local owners are on a phone; contact must not be
+            a tap deeper than the menu. */}
         <div className="flex items-center gap-1 lg:hidden">
           <Link
             href={pathFor('contact', lang)}
@@ -196,7 +202,7 @@ export function Header({
             <Link
               href={alternatePath(current, lang)}
               lang={lang === 'de' ? 'en' : 'de'}
-              className="text-small text-muted"
+              className="inline-flex min-h-[2.75rem] items-center text-small text-muted"
             >
               {ui.switchLangLabel}
             </Link>

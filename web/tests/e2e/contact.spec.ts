@@ -22,6 +22,7 @@ test('the form posts to the first-party handler, not to a third party', async ({
 
   await page.fill('#name', 'Test Person');
   await page.fill('#email', 'test@example.com');
+  await page.fill('#phone', '+49 211 000000');
   await page.fill('#message', 'Hello there');
   await page.check('#consent');
   await page.click('button[type="submit"]');
@@ -31,6 +32,9 @@ test('the form posts to the first-party handler, not to a third party', async ({
   expect(body.name).toBe('Test Person');
   expect(body.email).toBe('test@example.com');
   expect(body.message).toBe('Hello there');
+  // The call-back number. The site prints no phone number of its own, so
+  // this optional field is how a reader who would rather talk gets the call.
+  expect(body.phone).toBe('+49 211 000000');
   // The honeypot travels with every submission, empty when a person sent it.
   expect(body, 'the honeypot field was not forwarded').toHaveProperty('website');
   expect(body.website).toBe('');
@@ -100,4 +104,19 @@ test('no page offers a phone number any more', async ({ page }) => {
     await expect(page.locator('a[href^="tel:"]'), `${path} still has a tel: link`).toHaveCount(0);
     await expect(page.locator('body'), `${path} renders a null`).not.toContainText('null');
   }
+});
+
+test('the contact page names the place, and the optional channels stay off until set', async ({
+  page,
+}) => {
+  // A local search lands here wanting to know the business is where it says
+  // it is, and the address was only on the Impressum.
+  await page.goto('/de/kontakt/');
+  await expect(page.locator('main address')).toContainText('Düsseldorf');
+  // profile.whatsapp and profile.booking are null until the owner decides,
+  // and a null must render nothing rather than a link to nowhere.
+  await expect(page.locator('a[href^="https://wa.me/"]')).toHaveCount(0);
+  // The form offers the call back the site cannot otherwise arrange.
+  await expect(page.locator('#phone')).toBeVisible();
+  await expect(page.locator('#phone')).not.toHaveAttribute('required', /.*/);
 });

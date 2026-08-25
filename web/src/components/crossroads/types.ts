@@ -11,20 +11,22 @@ export type Way = {
   price: string;
   priceNote: string;
   forWhom: string;
-  reads: string;
 };
 
 /**
- * One camera position on the journey.
+ * One camera position: the junction, or the close-up of one way.
+ *
+ * It was a Stop, with an `at` saying where on the scroll track it sat. The
+ * track is gone: the camera glides from wherever it is to whichever shot the
+ * reader's pointer or keyboard has asked for, and nothing about a shot says
+ * when. See journey.ts for the glide.
  *
  * Positions are number tuples rather than Vector3 on purpose: it keeps the
- * choreography out of three.js, which is what lets the whole of progress.ts be
+ * choreography out of three.js, which is what lets the whole of journey.ts be
  * unit-tested with no GPU, no canvas and no browser.
  */
-export type Stop = {
-  /** Scroll progress at which the camera is exactly here, 0 to 1. */
-  at: number;
-  /** Index of the way this stop looks at, or -1 for the junction and the closing shot. */
+export type Shot = {
+  /** Index of the way this shot looks at, or -1 for the junction. */
   focus: number;
   pos: [number, number, number];
   look: [number, number, number];
@@ -72,9 +74,21 @@ export type Mark = { x: number; y: number; front: boolean };
 
 /** What boot() hands back. The component talks to the scene only through this. */
 export type Handle = {
-  /** Scroll progress, 0 to 1. Applies state synchronously, defers the draw. */
-  set(p: number): void;
-  /** Index of the way in focus, or -1 at the junction. Never stale. */
+  /**
+   * Glide to the close-up of way `way`, or back to the junction for -1.
+   *
+   * Asking for the shot the camera is already on, or already gliding to, is
+   * a no-op. Asking for another one mid-glide starts a new glide from where
+   * the camera is, so a pointer sweeping down the four rows never snaps.
+   */
+  aim(way: number): void;
+  /**
+   * Starts the build: the four drawings become the four objects, one after
+   * another. Called once, when the section first comes into view. Calling it
+   * again does nothing, and the objects never go back to being drawings.
+   */
+  reveal(): void;
+  /** The way the camera is on or gliding to, or -1 for the junction. */
   focus(): number;
   /**
    * Where each way's label belongs, in the order the ways were handed over.
@@ -87,6 +101,23 @@ export type Handle = {
   built(): number;
   /** Cancels the loop, drops listeners, disposes every GPU resource. */
   stop(): void;
+};
+
+export type BootOptions = {
+  /**
+   * The copy panel, so the camera knows which part of the canvas it may not
+   * compose into. Null-tolerant: a scene with nothing standing on it composes
+   * centrally, which is what every shot was solved for before the stage went
+   * full bleed.
+   */
+  panel?: HTMLElement | null;
+  /**
+   * Called after every drawn frame. The labels follow the camera, and the
+   * camera now moves on its own clock rather than on the scroll, so the
+   * component has to be told when there is something new to place rather
+   * than asking on every scroll event.
+   */
+  onFrame?: () => void;
 };
 
 /**
