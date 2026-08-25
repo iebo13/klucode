@@ -30,6 +30,22 @@
     /* German compounds are long; let the browser break them rather than
        letting a 24-letter word blow out a narrow column. */
     hyphens: auto;
+    /* No visible scrollbar, on every page, in every engine. The page still
+       scrolls by wheel, touch, keyboard and the scroll-padding above; what
+       goes is the bar drawn beside the content. scrollbar-width covers
+       Firefox and current Chromium, the pseudo-element covers WebKit and
+       older Chromium, and -ms-overflow-style the last of old Edge. The
+       trade-off is stated rather than hidden: a reader loses the visual
+       sense of where in the page they are, which the section rhythm and the
+       fixed capsule have to carry instead. Owner's call, 2026-08-25. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   body {
