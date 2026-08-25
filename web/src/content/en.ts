@@ -69,6 +69,8 @@ const en = {
     ctaPrimary: 'Discuss a project',
     ctaSecondary: 'See the work',
     availablePrefix: 'Available from',
+    draft: 'PROPOSED · NOT YET BOOKABLE',
+    shotPending: 'Screenshot to follow, once the client has released it.',
     skipToContent: 'Skip to content',
     menu: 'Menu',
     close: 'Close',
@@ -269,6 +271,16 @@ const en = {
     faqLink: 'Common questions',
     triage:
       'Not sure which of the four fits? Describe the workflow in two sentences. Working out which one you need is part of the call and costs nothing.',
+    /**
+     * null, and it is a decision rather than a gap.
+     *
+     * The rung exists to answer a German local business that has outgrown a
+     * landing page. This side of the site sells capacity to agencies and
+     * product teams, who are not shopping for a 4.500 € site with one workflow
+     * on it, and the day rate already gives them a small first step. Adding it
+     * here would be translating an offer rather than making one.
+     */
+    middle: null,
   },
 
   work: {
@@ -291,6 +303,7 @@ const en = {
           'Monthly settlement runs automatically. No file travels by email, and there is no second version nobody can vouch for.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
         offer: { label: 'The matching service: Custom web application', service: 'app' },
+        shotPending: true,
       },
       {
         key: 'pos',
@@ -323,6 +336,7 @@ const en = {
           'Visibility beyond the referral circle. What began as a web job became a complete customer-acquisition package.',
         stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'AI image & video'],
         offer: { label: 'The matching service: Website and landing page', service: 'website' },
+        shotPending: true,
       },
     ],
     noteTitle: 'On numbers and names',

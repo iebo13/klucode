@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Fragment } from 'react';
 
 import { ContactForm } from '@/components/contact-form';
 import {
@@ -55,49 +56,86 @@ export function ServicesPage({ lang, c }: { lang: Lang; c: Content }) {
       <Section>
         <div className="space-y-6">
           {s.items.map((item) => (
-            <Card
-              key={item.key}
-              id={item.key}
-              className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-12"
-            >
-              <div>
-                <h2 className="text-h2">{item.name}</h2>
-                <p className="mt-3 max-w-measure text-small font-medium text-brand-text">
-                  {item.forWhom}
-                </p>
-                <p className="mt-4 max-w-measure text-muted">{item.body}</p>
-                <div className="mt-8 flex items-baseline gap-3 border-t border-line pt-6">
-                  <span className="text-small text-muted">{c.ui.from}</span>
-                  <span className="font-display text-h2 text-brand-text">{item.price}</span>
-                </div>
-                <p className="mt-1 text-small text-muted">{item.priceNote}</p>
-                {/* The offer pointing at the thing that proves it. Two of the
+            <Fragment key={item.key}>
+              <Card id={item.key} className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:gap-12">
+                <div>
+                  <h2 className="text-h2">{item.name}</h2>
+                  <p className="mt-3 max-w-measure text-small font-medium text-brand-text">
+                    {item.forWhom}
+                  </p>
+                  <p className="mt-4 max-w-measure text-muted">{item.body}</p>
+                  <div className="mt-8 flex items-baseline gap-3 border-t border-line pt-6">
+                    <span className="text-small text-muted">{c.ui.from}</span>
+                    <span className="font-display text-h2 text-brand-text">{item.price}</span>
+                  </div>
+                  <p className="mt-1 text-small text-muted">{item.priceNote}</p>
+                  {/* The offer pointing at the thing that proves it. Two of the
                     four have a delivered case and two do not, and the two that
                     do not simply have no link: a reader who follows one of
                     these must land on something real. */}
-                {item.example ? (
-                  <p className="mt-6">
-                    <ArrowLink href={`${pathFor('work', lang)}#${item.example.project}`}>
-                      {item.example.label}
-                    </ArrowLink>
-                  </p>
-                ) : null}
-              </div>
-              <div>
-                <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
-                <ul className="mt-4 space-y-3">
-                  {item.includes.map((i) => (
-                    <li key={i} className="flex gap-3 text-small">
-                      <span
-                        aria-hidden="true"
-                        className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand"
-                      />
-                      {i}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Card>
+                  {item.example ? (
+                    <p className="mt-6">
+                      <ArrowLink href={`${pathFor('work', lang)}#${item.example.project}`}>
+                        {item.example.label}
+                      </ArrowLink>
+                    </p>
+                  ) : null}
+                </div>
+                <div>
+                  <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
+                  <ul className="mt-4 space-y-3">
+                    {item.includes.map((i) => (
+                      <li key={i} className="flex gap-3 text-small">
+                        <span
+                          aria-hidden="true"
+                          className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand"
+                        />
+                        {i}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Card>
+
+              {/* The proposed rung, rendered in price order behind the offer it
+                slots in after. Marked as a proposal on the page as well as in
+                the content, because a price nobody has agreed to must not be
+                indistinguishable from the four that are settled. */}
+              {s.middle && s.middle.after === item.key ? (
+                <Card
+                  id="middle"
+                  className="grid gap-8 border-dashed md:grid-cols-[1.2fr_1fr] md:gap-12"
+                >
+                  <div>
+                    <p className="font-mono text-eyebrow text-muted">{c.ui.draft}</p>
+                    <h2 className="mt-3 text-h2">{s.middle.name}</h2>
+                    <p className="mt-3 max-w-measure text-small font-medium text-brand-text">
+                      {s.middle.forWhom}
+                    </p>
+                    <p className="mt-4 max-w-measure text-muted">{s.middle.body}</p>
+                    <div className="mt-8 flex items-baseline gap-3 border-t border-line pt-6">
+                      <span className="text-small text-muted">{c.ui.from}</span>
+                      <span className="font-display text-h2 text-brand-text">{s.middle.price}</span>
+                    </div>
+                    <p className="mt-1 text-small text-muted">{s.middle.priceNote}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-small font-medium text-muted">{c.ui.includes}</h3>
+                    <ul className="mt-4 space-y-3">
+                      {s.middle.includes.map((i) => (
+                        <li key={i} className="flex gap-3 text-small">
+                          <span
+                            aria-hidden="true"
+                            className="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand"
+                          />
+                          {i}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Card>
+              ) : null}
+            </Fragment>
           ))}
         </div>
       </Section>
@@ -172,6 +210,32 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
             </div>
 
             <div>
+              {/* The picture of the thing, above the words about the thing.
+                  Three shipped systems and no pixels of any of them was the
+                  largest single gap on this site. */}
+              {p.shot ? (
+                <div className="relative mb-8 aspect-[16/10] overflow-hidden rounded-lg border border-line bg-surface-raised">
+                  <img
+                    src={asset(p.shot.src)}
+                    alt={p.shot.alt}
+                    className="absolute inset-0 h-full w-full object-cover object-top"
+                  />
+                </div>
+              ) : p.shotPending ? (
+                /* An empty frame and not a stand-in. A stock image under „so
+                   sieht das System aus" would be a fabricated claim on the one
+                   section whose value is that it is honest. check-profile.mjs
+                   refuses a production build while any of these are still up. */
+                <div
+                  aria-hidden="true"
+                  className="mb-8 flex aspect-[16/10] items-center justify-center rounded-lg border border-dashed border-line bg-surface-alt p-6 text-center"
+                >
+                  <p className="max-w-narrow hyphens-none font-mono text-eyebrow text-muted">
+                    {c.ui.shotPending}
+                  </p>
+                </div>
+              ) : null}
+
               <p className="max-w-measure text-lead">{p.summary}</p>
               <dl className="mt-8 space-y-6">
                 {(
@@ -320,16 +384,28 @@ export function AboutPage({ lang, c }: { lang: Lang; c: Content }) {
 
           <div>
             {/* The one photograph the site cannot do without: the person
-                behind the "ich". Plain <img> with asset(), matching how the
+                behind the „ich". Plain <img> with asset(), matching how the
                 repo handles every hand-written public/ URL on a subpath
-                deploy. object-cover crops the near-square file to the 4:5
-                slot. */}
+                deploy.
+
+                It was a holiday snap on a beach, on a page arguing engineer
+                responsibility, a B.Sc. and „ich prüfe, teste und verantworte
+                jede Zeile". A face beats no face, but the gap between that
+                voice and that picture was doing real work against a 9.000 €
+                trust decision, and both competitors who show a founder show
+                them at work.
+
+                Cropped to 4:5 at source rather than by CSS, so object-cover
+                has nothing left to crop and the framing cannot drift with the
+                column width. 4.0 MB of PNG became 64 kB of WebP, which matters
+                on a page whose own checklist sells „Ladezeit unter einer
+                Sekunde". */}
             <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-line bg-surface-raised">
               <img
-                src={asset('/me.png')}
+                src={asset('/founder.webp')}
                 alt={a.portraitAlt}
-                width={429}
-                height={421}
+                width={1000}
+                height={1250}
                 className="absolute inset-0 h-full w-full object-cover"
               />
             </div>

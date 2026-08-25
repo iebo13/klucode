@@ -73,6 +73,8 @@ const de = {
     ctaPrimary: 'Projekt besprechen',
     ctaSecondary: 'Projekte ansehen',
     availablePrefix: 'Freie Kapazität ab',
+    draft: 'VORSCHLAG · NOCH NICHT BUCHBAR',
+    shotPending: 'Screenshot folgt, sobald der Auftraggeber ihn freigegeben hat.',
     skipToContent: 'Zum Inhalt springen',
     menu: 'Menü',
     close: 'Schließen',
@@ -274,6 +276,21 @@ const de = {
     faqLink: 'Häufige Fragen',
     triage:
       'Unsicher, welcher der vier Wege passt? Beschreiben Sie Ihren Ablauf in zwei Sätzen. Die Einordnung ist Teil des Gesprächs und kostet nichts.',
+    middle: {
+      after: 'website',
+      name: 'Website mit System',
+      forWhom: 'Für Betriebe, die eine Seite brauchen und den ersten Ablauf gleich mit.',
+      body: 'Die Seite aus dem ersten Angebot, und daran der eine Vorgang, der heute die meiste Zeit kostet. Ein Formular, das in einer Datenbank landet statt in einem Postfach, und eine Auswertung, die zeigt, was daraus geworden ist. Der Schritt zwischen Website und eigener Anwendung, für alle, die den großen Sprung noch nicht machen wollen.',
+      includes: [
+        'Alles aus Website & Landingpage',
+        'Ein Ablauf, gemeinsam aufgenommen und abgebildet',
+        'Formular mit Datenbank statt E-Mail-Postfach',
+        'Eine Auswertung, die Sie selbst öffnen können',
+        'Zugänge für Sie und eine zweite Person',
+      ],
+      price: '4.500\u00A0€',
+      priceNote: '3 bis 5 Wochen · Festpreis',
+    },
   },
 
   work: {
@@ -296,6 +313,7 @@ const de = {
           'Die monatliche Abrechnung läuft automatisch. Keine Datei wandert mehr per E-Mail, und es gibt keine zweite Version, von der niemand weiß, ob sie die richtige ist.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
         offer: { label: 'Passendes Angebot: Individuelle Web-Anwendung', service: 'app' },
+        shotPending: true,
       },
       {
         key: 'pos',
@@ -328,6 +346,7 @@ const de = {
           'Sichtbarkeit über den Empfehlungskreis hinaus. Aus einem reinen Web-Auftrag wurde ein vollständiges Paket zur Kundengewinnung.',
         stack: ['Vanilla JavaScript', 'HTML', 'CSS', 'KI-Bild und -Video'],
         offer: { label: 'Passendes Angebot: Website & Landingpage', service: 'website' },
+        shotPending: true,
       },
     ],
     noteTitle: 'Zu Zahlen und Namen',

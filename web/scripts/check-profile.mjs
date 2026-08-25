@@ -120,7 +120,27 @@ const stale = [];
   }
 }
 
-if (placeholders.size > 0 || banners.length > 0 || stale.length > 0) {
+/**
+ * Empty screenshot frames, which are a development state and not a shippable
+ * one.
+ *
+ * Project.shotPending draws a dashed frame saying a screenshot is coming. That
+ * is the honest thing to show while the approvals are outstanding and the
+ * wrong thing to leave on a live commercial page, where a reader counts it as
+ * one more thing the site says it has and cannot show. Matched on the frame's
+ * own class rather than on its caption, so it is found in both languages
+ * without this script having to know either.
+ *
+ * Reported per page and not counted. Next serialises the same markup twice
+ * into every page, once as HTML and once as the flight payload, so a count of
+ * matches is double the number of frames, and a wrong number in an error
+ * message is worse than no number at all.
+ */
+const pendingShots = files.filter((file) =>
+  readFileSync(file, 'utf8').includes('border-dashed border-line bg-surface-alt'),
+);
+
+if (placeholders.size > 0 || banners.length > 0 || stale.length > 0 || pendingShots.length > 0) {
   console.error('check-profile: the site is not ready to go live.\n');
 
   for (const [placeholder, pages] of placeholders) {
@@ -131,6 +151,9 @@ if (placeholders.size > 0 || banners.length > 0 || stale.length > 0) {
   }
   for (const line of stale) {
     console.error(`  stale: ${line}`);
+  }
+  for (const file of pendingShots) {
+    console.error(`  pending: ${file} still shows an empty screenshot frame`);
   }
 
   console.error('\nFill in src/content/profile.ts — see its header for the todo() / null split.');

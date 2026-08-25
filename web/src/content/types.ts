@@ -100,6 +100,28 @@ export type Project = {
    * half of Service.example.
    */
   offer?: { label: string; service: ServiceKey };
+  /**
+   * A picture of the delivered system. Three shipped systems and zero pixels
+   * of any of them is the single largest gap on this site: every competitor
+   * shows work, and precision without evidence reads as copywriting.
+   *
+   * `src` is a path under public/. Anonymised is fine, and preferable to
+   * nothing.
+   */
+  shot?: { src: string; alt: string };
+  /**
+   * True while a real screenshot is still coming, which draws an empty framed
+   * panel where it will go.
+   *
+   * A marked absence and NOT a stand-in image. A stock photograph sitting
+   * under „so sieht das System aus" is a fabricated claim on the one section
+   * whose entire value is that it is honest, and a picture taken off the web
+   * is somebody else's copyright on a commercial page. The panel says a
+   * screenshot is coming, which is true, and scripts/check-profile.mjs refuses
+   * a production build while any of them are still up. Same bargain as todo()
+   * in profile.ts: visible in development, impossible to ship by accident.
+   */
+  shotPending?: boolean;
 };
 
 export type LegalSection = { heading: string; paragraphs: string[] };
@@ -131,6 +153,10 @@ export type Content = {
     ctaPrimary: string;
     ctaSecondary: string;
     availablePrefix: string;
+    /** Marks an offer that is proposed rather than settled. */
+    draft: string;
+    /** Caption inside the empty frame where a screenshot will go. */
+    shotPending: string;
     skipToContent: string;
     menu: string;
     close: string;
@@ -212,6 +238,37 @@ export type Content = {
      * exists instead of losing it to a closed tab.
      */
     triage: string;
+    /**
+     * A PROPOSED fifth rung, shown on this page only, and null where there
+     * isn't one.
+     *
+     * The ladder jumps 2.500 € to 9.000 €, and the competitors' best selling
+     * tiers cluster at 3.900 to 5.500 €. A buyer who has outgrown a landing
+     * page and cannot sign a five-figure-adjacent number currently has no rung
+     * to stand on and no reason to stay.
+     *
+     * Deliberately NOT a fifth entry in `items`, and that is the whole reason
+     * this field exists. `items` feeds the homepage crossroads, whose floor is
+     * laid out for exactly four lanes: boot() refuses any other number, and
+     * ServiceKey is closed so that adding a service is a compile error until
+     * it has an object to stand at the end of its lane. That guard is correct
+     * and a draft price should not be the thing that trips it. Promoting this
+     * to a real service means modelling a fifth object and a fifth lane, which
+     * is a separate decision taken after this one.
+     *
+     * `after` names the offer it slots in behind, so the page renders the
+     * ladder in price order without anything having to be kept in step by
+     * hand.
+     */
+    middle: {
+      after: ServiceKey;
+      name: string;
+      forWhom: string;
+      body: string;
+      includes: string[];
+      price: string;
+      priceNote: string;
+    } | null;
   };
 
   work: {
