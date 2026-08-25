@@ -1,4 +1,4 @@
-import { policyDate, profile } from './profile';
+import { filled, policyDate, profile } from './profile';
 import type { Content } from './types';
 
 const de = {
@@ -453,7 +453,14 @@ const de = {
       },
       {
         heading: 'Kontakt',
-        paragraphs: [`Telefon: ${profile.phone}`, `E-Mail: ${profile.email}`],
+        // The phone line is dropped rather than printed empty when there is no
+        // number. An Impressum that says „Telefon:" and stops is worse than one
+        // that does not raise the subject. See profile.phone for what carrying
+        // email alone costs under § 5 DDG.
+        paragraphs: [
+          ...(filled(profile.phone) ? [`Telefon: ${profile.phone}`] : []),
+          `E-Mail: ${profile.email}`,
+        ],
       },
       // Either a USt-IdNr. under § 27 a UStG, or the Kleinunternehmer statement
       // under § 19 UStG. Printing the § 27 a heading with nothing under it is
@@ -541,7 +548,9 @@ const de = {
         paragraphs: [
           'Verantwortlich für die Datenverarbeitung auf dieser Website im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:',
           `${profile.firstName} ${profile.lastName}, ${profile.street}, ${profile.postalCode} ${profile.city}, ${profile.country.de}`,
-          `E-Mail: ${profile.email} · Telefon: ${profile.phone}`,
+          filled(profile.phone)
+            ? `E-Mail: ${profile.email} · Telefon: ${profile.phone}`
+            : `E-Mail: ${profile.email}`,
         ],
       },
       {
@@ -564,7 +573,7 @@ const de = {
       {
         heading: '4. Kontaktaufnahme',
         paragraphs: [
-          'Wenn Sie mir per E-Mail, Telefon oder über das Kontaktformular schreiben, verarbeite ich Ihre Angaben ausschließlich zur Bearbeitung Ihrer Anfrage und für den Fall von Anschlussfragen.',
+          'Wenn Sie mir per E-Mail oder über das Kontaktformular schreiben, verarbeite ich Ihre Angaben ausschließlich zur Bearbeitung Ihrer Anfrage und für den Fall von Anschlussfragen.',
           'Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, soweit die Anfrage auf einen Vertrag abzielt, im Übrigen Art. 6 Abs. 1 lit. f DSGVO beziehungsweise Ihre Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO.',
           'Ihre Daten gebe ich nicht ohne Ihre Einwilligung weiter. Sie werden gelöscht, sobald Ihre Anfrage abschließend bearbeitet ist und keine gesetzlichen Aufbewahrungspflichten entgegenstehen. Handelsrechtliche und steuerrechtliche Aufbewahrungsfristen bleiben unberührt.',
         ],

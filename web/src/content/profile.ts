@@ -49,10 +49,32 @@ export const profile = {
   },
 
   // --- contact -----------------------------------------------------------
-  // § 5 DDG requires an email address PLUS a second fast channel. A phone
-  // number is the simplest way to satisfy that.
   email: 'info@klucode.de',
-  phone: todo('Telefonnummer'),
+
+  /**
+   * No phone number on the site. Owner's decision, 2026-08-25.
+   *
+   * null rather than todo(), because this is a deliberate absence and not an
+   * unfilled field: it never renders, never reaches openTodos(), and does not
+   * hold the Impressum banner up. Every line that would have printed it is
+   * dropped instead, in both languages.
+   *
+   * What this costs, stated plainly because it is a legal question and not a
+   * layout one. § 5 Abs. 1 Nr. 2 DDG wants details allowing "schnelle
+   * elektronische Kontaktaufnahme und unmittelbare Kommunikation", the email
+   * address included. A phone number is NOT compulsory: the ECJ settled that
+   * in C-298/07, where an electronic enquiry form answered inside 30 to 60
+   * minutes was held sufficient. But the ruling asks for a second route
+   * alongside email, and this site currently has none, because formEndpoint is
+   * '' and the contact form hands off to mailto. Email and a mailto form are
+   * one channel wearing two hats.
+   *
+   * So the second channel is now the contact form's job. deploy/contact.php is
+   * a ready-made first-party handler for the Plesk server: set formEndpoint to
+   * '/contact.php' and update privacy.sections § 5 in de.ts and en.ts in the
+   * same change. Until that happens the Impressum leans on email alone.
+   */
+  phone: null as string | null,
 
   // --- ladungsfähige Anschrift -------------------------------------------
   // Must be a real street address. A P.O. box does not satisfy § 5 DDG.

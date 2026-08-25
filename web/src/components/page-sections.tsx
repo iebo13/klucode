@@ -312,11 +312,15 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
   // The Impressum gets a loud warning while profile.ts is unfilled; the
   // contact page must not instead silently ship mailto:«E-Mail-Adresse» and an
   // empty tel: link — on the one page whose whole job is being reachable.
+  // filled() is read for its RETURN value, not as a predicate. It hands back
+  // the string or undefined, which narrows; testing it narrows nothing, because
+  // profile.phone is `string | null` now that there is deliberately no number
+  // and TypeScript cannot see through a call to a fact about its argument.
+  const email = filled(profile.email);
+  const phone = filled(profile.phone);
   const direct = [
-    filled(profile.email) ? { href: `mailto:${profile.email}`, label: profile.email } : null,
-    filled(profile.phone)
-      ? { href: `tel:${profile.phone.replace(/[^\d+]/g, '')}`, label: profile.phone }
-      : null,
+    email ? { href: `mailto:${email}`, label: email } : null,
+    phone ? { href: `tel:${phone.replace(/[^\d+]/g, '')}`, label: phone } : null,
   ].filter((l): l is { href: string; label: string } => l !== null);
 
   return (

@@ -1,4 +1,4 @@
-import { policyDate, profile } from './profile';
+import { filled, policyDate, profile } from './profile';
 import type { Content } from './types';
 
 // The English side is NOT a translation of the German one, deliberately.
@@ -448,7 +448,10 @@ const en = {
       },
       {
         heading: 'Contact',
-        paragraphs: [`Phone: ${profile.phone}`, `Email: ${profile.email}`],
+        paragraphs: [
+          ...(filled(profile.phone) ? [`Phone: ${profile.phone}`] : []),
+          `Email: ${profile.email}`,
+        ],
       },
       // Mirrors de.ts: either the § 27 a VAT ID or the § 19 small-business
       // statement, never an empty § 27 a heading.
@@ -534,7 +537,9 @@ const en = {
         paragraphs: [
           'The controller for data processing on this website within the meaning of the General Data Protection Regulation (GDPR) is:',
           `${profile.firstName} ${profile.lastName}, ${profile.street}, ${profile.postalCode} ${profile.city}, ${profile.country.en}`,
-          `Email: ${profile.email} · Phone: ${profile.phone}`,
+          filled(profile.phone)
+            ? `Email: ${profile.email} · Phone: ${profile.phone}`
+            : `Email: ${profile.email}`,
         ],
       },
       {
@@ -557,7 +562,7 @@ const en = {
       {
         heading: '4. Getting in touch',
         paragraphs: [
-          'If you contact me by email, by phone or via the contact form, I process your details solely to handle your enquiry and for any follow-up questions.',
+          'If you contact me by email or via the contact form, I process your details solely to handle your enquiry and for any follow-up questions.',
           'The legal basis is Art. 6 (1) (b) GDPR where the enquiry relates to a contract, and otherwise Art. 6 (1) (f) GDPR or your consent under Art. 6 (1) (a) GDPR.',
           'I do not pass your data on without your consent. It is deleted once your enquiry has been dealt with conclusively and no statutory retention obligations apply. Commercial and tax retention periods remain unaffected.',
         ],
