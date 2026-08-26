@@ -12,6 +12,7 @@ import {
   RHYTHM,
   Section,
   SectionHead,
+  Shot,
   Tags,
 } from '@/components/ui';
 import type { Content } from '@/content';
@@ -233,13 +234,15 @@ export function WorkPage({ lang, c }: { lang: Lang; c: Content }) {
                     stood on two of them and nothing on the third, and an
                     empty box with an excuse is worse than a text-only card. */}
                 {p.shot ? (
-                  <div className="relative mb-8 aspect-[16/10] overflow-hidden rounded-lg border border-line bg-surface-raised">
-                    <img
-                      src={asset(p.shot.src)}
-                      alt={p.shot.alt}
-                      className="absolute inset-0 h-full w-full object-cover object-top"
-                    />
-                  </div>
+                  // The same frame the homepage hero uses, and the same reason:
+                  // a screenshot of somebody else's software is the one thing on
+                  // this page that does not belong to the palette, and a dark
+                  // browser chrome is what makes the foreign colours read as
+                  // something being shown rather than as the page losing its
+                  // nerve. object-cover is gone with the fixed 16/10 box — the
+                  // picture is cropped where it is captured, so nothing is
+                  // cropped twice and the framing cannot drift with the column.
+                  <Shot shot={p.shot} className="mb-8" />
                 ) : (
                   <div className="panel mb-8 p-6 md:p-8">
                     <SystemDiagram
@@ -326,7 +329,15 @@ export function ApproachPage({ lang, c }: { lang: Lang; c: Content }) {
         <ol className="mt-12 grid gap-8 md:grid-cols-2 md:gap-12">
           {a.steps.map((s, i) => (
             <li key={s.title} className="border-t border-line pt-6">
-              <span className="font-mono text-eyebrow text-brand-text">
+              {/* Filled, like the homepage's. One of the three places the green
+                  becomes a ground rather than ink: the palette is a single hue
+                  that only ever appeared as small text, hairlines and 8px dots,
+                  which is what made it read as desaturated rather than as
+                  monochrome. */}
+              <span
+                aria-hidden="true"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-action font-mono text-eyebrow font-medium text-on-brand"
+              >
                 {String(i + 1).padStart(2, '0')}
               </span>
               <h2 className="mt-3 font-display text-h3">{s.title}</h2>
@@ -488,7 +499,13 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
       <PageHero eyebrow={t.eyebrow} title={t.title} lead={t.lead} />
 
       <Section>
-        <div className="grid gap-12 md:grid-cols-[1fr_1.3fr] md:gap-16">
+        {/* A hairline between the columns. „Direkt" and „Oder hier" are two
+            different offers of the same thing and there was nothing between
+            them at all, so the page read as one column that changed its mind
+            halfway. A rule rather than a panel around the form: the fields now
+            carry their own 3:1 edge, and a panel behind them would put a raised
+            surface under a control whose fill is a raised surface. */}
+        <div className="grid gap-12 md:grid-cols-[1fr_1.3fr] md:gap-16 md:divide-x md:divide-line">
           <div>
             {/* Said before the form rather than after it, because the doubt it
                 answers is what stops a visitor filling the form in at all:
@@ -532,8 +549,11 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
               <h2 className="text-small font-medium text-muted">{t.expectTitle}</h2>
               <ol className="mt-4 space-y-3">
                 {t.expect.map((e, i) => (
-                  <li key={e} className="flex gap-3 text-small text-muted">
-                    <span className="font-mono text-eyebrow text-brand-text">
+                  <li key={e} className="flex items-start gap-3 text-small text-muted">
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-action font-mono text-eyebrow font-medium text-on-brand"
+                    >
                       {String(i + 1).padStart(2, '0')}
                     </span>
                     {e}
@@ -543,7 +563,7 @@ export function ContactPage({ c }: { lang: Lang; c: Content }) {
             </div>
           </div>
 
-          <div>
+          <div className="md:pl-16">
             <h2 className="mb-8 font-display text-h3">{t.formTitle}</h2>
             <ContactForm t={t} siteName={c.meta.siteName} />
           </div>

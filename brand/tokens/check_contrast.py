@@ -22,17 +22,37 @@ they were written:
 Each of those is one subtraction away from being obvious. None of them was
 obvious by eye, which is the entire argument for measuring.
 
-THE FOUR TIERS
---------------
+THE TIERS
+---------
   TEXT      4.5:1  WCAG 1.4.3, normal-size text
   LARGE     3.0:1  WCAG 1.4.3, >=24px or >=18.66px bold
   NONTEXT   3.0:1  WCAG 1.4.11, graphical objects and UI component state —
                    bullet dots, the FAQ affordance, focus rings, accent rules
+  CONTROL   3.0:1  WCAG 1.4.11 again, but specifically the BOUNDARY OF A
+                   CONTROL: a form field's edge, and the sticky capsule's.
   BOUNDARY  1.4:1  panel edges and dividers. NOT a WCAG number: a panel border
                    is decorative reinforcement of an elevation step that also
                    carries a fill difference, so 1.4.11 does not bind it. It is
                    here because 1.007:1 shipped once and must not again.
   ELEVATION 1.15:1 raised surface against the page it sits on
+
+WHY CONTROL AND BOUNDARY ARE TWO TIERS
+--------------------------------------
+The 26 August visual audit measured /kontakt and found four input boxes with
+no edges: a fill 1.26:1 against the page and a border 1.41:1 against that fill.
+Both cleared BOUNDARY, because BOUNDARY is the tier for a panel edge, and a
+form field is not a panel — 1.4.11 binds it at 3:1 and it was failing by a
+factor of two.
+
+The audit's own prescription was to raise `border` itself and assert 3:1 on it.
+That is not what happened here, and the reason is worth stating: `border` is
+the edge of every card on the site, and at 3:1 in dark mode it lands around
+stone.550, which outlines every panel on the page in a mid grey. The rule
+1.4.11 states is about controls, so the ROLES were split instead —
+`fieldSurface` and `fieldBorder` are new, they are held to CONTROL, and
+`border` keeps BOUNDARY and keeps looking like a hairline. `navBorder` moves to
+CONTROL as well: the capsule is a floating control surface over content it does
+not own, which is the argument its own comment already made.
 
 THE NAV COMPOSITE CHECK
 -----------------------
@@ -54,7 +74,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TOKENS = json.loads((HERE / "tokens.json").read_text())
 
-TEXT, LARGE, NONTEXT, BOUNDARY, ELEVATION = 4.5, 3.0, 3.0, 1.4, 1.15
+TEXT, LARGE, NONTEXT, CONTROL, BOUNDARY, ELEVATION = 4.5, 3.0, 3.0, 3.0, 1.4, 1.15
 
 
 # --------------------------------------------------------------------------
@@ -81,6 +101,23 @@ def contrast(fg: str, bg: str) -> float:
     a, b = luminance(fg), luminance(bg)
     hi, lo = max(a, b), min(a, b)
     return (hi + 0.05) / (lo + 0.05)
+
+
+def lstar(hexv: str) -> float:
+    """CIE L*, 0 to 100. The unit the grounds are separated in — see GROUNDS."""
+    y = luminance(hexv)
+    return 116 * (y ** (1 / 3)) - 16 if y > 216 / 24389 else y * 24389 / 27
+
+
+def chroma(hexv: str) -> float:
+    """OKLCH chroma. How far off the neutral axis a colour sits."""
+    r, g, b = (_lin(c) for c in _rgb(hexv))
+    l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    a_ = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+    b_ = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+    return (a_ * a_ + b_ * b_) ** 0.5
 
 
 RGBA = re.compile(r"rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,/\s]+([\d.]+))?\s*\)")
@@ -181,6 +218,32 @@ def pairs(mode: str) -> list[tuple[str, str, str, float, str]]:
         ("panel vs tint", r("surfaceRaised"), r("surfaceAlt"), ELEVATION, "ELEVATION"),
     ]
 
+    # --- form controls: 1.4.11 binds these at 3:1, not at BOUNDARY --------
+    # The BORDER is the boundary and it is measured against its own fill and
+    # against every ground a field can land on, because that is the pair 1.4.11
+    # is about and the one that was failing at 1.41:1.
+    #
+    # The FILL is only measured against the page. A field on this site sits on
+    # the page and nowhere else, and asking a fill to step away from a raised
+    # panel as well would pin fieldSurface between two surfaces it has no room
+    # between — in light mode a white field on a white panel is 1.00:1 and it
+    # is still an obvious field, because it has a 3:1 edge. The edge is the
+    # requirement; the fill is a courtesy where there is room for one.
+    for sname, sval in surfaces:
+        out.append((f"field border on {sname}", r("fieldBorder"), sval, CONTROL, "CONTROL"))
+    out += [
+        ("field fill on page", r("fieldSurface"), r("surface"), ELEVATION, "ELEVATION"),
+        (
+            "field border on its own fill",
+            r("fieldBorder"),
+            r("fieldSurface"),
+            CONTROL,
+            "CONTROL",
+        ),
+        ("text in a field", r("text"), r("fieldSurface"), TEXT, "TEXT"),
+        ("placeholder in a field", r("textMuted"), r("fieldSurface"), TEXT, "TEXT"),
+    ]
+
     # --- interface states --------------------------------------------------
     sem = TOKENS["color"]["semantic"]
     out += [
@@ -230,9 +293,7 @@ def nav_pairs(mode: str) -> list[tuple[str, str, str, float, str]]:
         over = composite(fill, bval)
         for t in ("text", "textMuted", "brandText"):
             out.append((f"nav {t} over {bname}", r(t), over, TEXT, "TEXT"))
-        out.append(
-            (f"navBorder over {bname}", r("navBorder"), over, BOUNDARY, "BOUNDARY")
-        )
+        out.append((f"navBorder over {bname}", r("navBorder"), over, CONTROL, "CONTROL"))
     return out
 
 
@@ -241,9 +302,104 @@ def nav_pairs(mode: str) -> list[tuple[str, str, str, float, str]]:
 # --------------------------------------------------------------------------
 
 
+# --------------------------------------------------------------------------
+# ordering
+# --------------------------------------------------------------------------
+
+# The value ladder, darkest ground first, as a rule rather than as four
+# numbers somebody once agreed on.
+#
+# This exists because the defect it catches is invisible to every ratio in the
+# tables above. contrast() is symmetric: it says how far apart two colours are
+# and never which of them is darker. Dark mode shipped for a fortnight with
+# inkSurface one step LIGHTER than surface, so the slab the page is framed in
+# was a pale band at the top and bottom of a darker page, and every pair
+# involving it passed. Light mode passes this trivially, which is the point —
+# the rule is the same in both schemes and only the values move.
+ORDERING = [
+    ("ink", "inkSurface"),
+    ("page", "surface"),
+    ("tint", "surfaceAlt"),
+    ("raised", "surfaceRaised"),
+]
+
+
+def ordering_failures(mode: str) -> list[str]:
+    """Assert ink < page <= tint < raised, by luminance, in this scheme."""
+    out: list[str] = []
+    lums = [(name, role(mode, key), luminance(role(mode, key))) for name, key in ORDERING]
+    for (an, ah, al), (bn, bh, bl) in zip(lums, lums[1:]):
+        if al > bl:
+            out.append(
+                f"{mode}/ORDERING: {an} ({ah}) is lighter than {bn} ({bh}) — "
+                "the ground ladder runs ink, page, tint, raised, darkest first"
+            )
+    return out
+
+
+# --------------------------------------------------------------------------
+# ground separation
+# --------------------------------------------------------------------------
+
+# How far apart two GROUNDS have to be, and it is deliberately not a WCAG
+# ratio.
+#
+# A contrast ratio is the wrong instrument at the dark end. Ink and the page
+# sit 4.0 CIE L* apart in the dark scheme, which is a plainly visible frame,
+# and the ratio for it is 1.09:1 — the same number two colours nobody could
+# tell apart would produce in the light scheme. WCAG's formula is built for
+# legibility of a mark on a ground, not for the difference between two grounds,
+# and it compresses hard below about 15% luminance. The 26 August audit
+# measured this section of the site in L* for exactly that reason, and its
+# thresholds are stated in L*, so the check is too.
+#
+# `min_l` is the value separation. `min_c` is the escape hatch, and it is the
+# light scheme's tint band: viridian.100 sits 0.3 L* from stone.100 and is
+# still an obvious mint band, because on a bright ground a chroma shift
+# registers as a change of material. On a dark ground it does not, which is the
+# whole finding — so the tint owes ONE of the two, and dark has to pay in
+# value because chroma is not available to it.
+DELTA_L, DELTA_C = 4.0, 0.02
+
+GROUNDS = [
+    ("ink vs page", "inkSurface", "surface", DELTA_L, 0.0),
+    ("tint vs page", "surfaceAlt", "surface", DELTA_L, DELTA_C),
+]
+
+
+def ground_rows(mode: str) -> list[tuple[str, str, str, float, float, float, float, bool]]:
+    """(label, a, b, dL, dC, wantL, wantC, ok) for one colour scheme."""
+    out = []
+    for label, ak, bk, want_l, want_c in GROUNDS:
+        a, b = role(mode, ak), role(mode, bk)
+        d_l = abs(lstar(a) - lstar(b))
+        d_c = abs(chroma(a) - chroma(b))
+        ok = d_l >= want_l - 5e-3 or (want_c > 0 and d_c >= want_c - 5e-5)
+        out.append((label, a, b, d_l, d_c, want_l, want_c, ok))
+    return out
+
+
 def main() -> int:
     quiet = "--quiet" in sys.argv
     failures: list[str] = []
+
+    for mode in ("light", "dark"):
+        failures += ordering_failures(mode)
+        if not quiet:
+            print(f"\n=== {mode} — ground separation (CIE L*, OKLCH C) ===")
+        for label, a, b, d_l, d_c, want_l, want_c, ok in ground_rows(mode):
+            if not ok:
+                failures.append(
+                    f"{mode}/GROUND: {label} — {a} vs {b} differ by {d_l:.2f} L* and "
+                    f"{d_c:.4f} C, needs {want_l} L*"
+                    + (f" or {want_c} C" if want_c else "")
+                )
+            if not quiet:
+                want = f">= {want_l} L*" + (f" or {want_c} C" if want_c else "")
+                print(
+                    f"  [{'ok  ' if ok else 'FAIL'}] GROUND    {label:42} "
+                    f"{a} vs {b}  dL* {d_l:6.2f}  dC {d_c:.4f}  ({want})"
+                )
 
     for mode in ("light", "dark"):
         for title, rows in (

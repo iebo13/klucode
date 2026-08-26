@@ -99,6 +99,19 @@ export type Handle = {
   marks(): readonly Mark[];
   /** How many of the four ways are finished, 0 to 4. A count, not a fraction. */
   built(): number;
+  /**
+   * Repaints the world's ground: the background the fan stands in and the fog
+   * that swallows the far end of the floor, which are the same colour by
+   * definition.
+   *
+   * It exists because the scene is FULL BLEED and the ink slab above it is
+   * not. The canvas runs to the viewport edges and the hero sits directly on
+   * top of it, so any difference between the scene's background and
+   * --kc-inkSurface draws a hard horizontal line across the page at the
+   * boundary. A hex literal cannot track that: ink is one value in the light
+   * scheme and a darker one in dark, and three.js does not read CSS.
+   */
+  setGround(colour: string): void;
   /** Cancels the loop, drops listeners, disposes every GPU resource. */
   stop(): void;
 };
@@ -111,6 +124,13 @@ export type BootOptions = {
    * full bleed.
    */
   panel?: HTMLElement | null;
+  /**
+   * The colour the world stands in, as anything `THREE.Color` accepts —
+   * in practice the `rgb(...)` string getComputedStyle hands back for the
+   * section's own background. Defaults to PALETTE.background, which is what
+   * every shot was lit and fogged against. See Handle.setGround.
+   */
+  ground?: string;
   /**
    * Called after every drawn frame. The labels follow the camera, and the
    * camera now moves on its own clock rather than on the scroll, so the

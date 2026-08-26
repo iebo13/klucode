@@ -21,8 +21,11 @@
   --kc-viridian-600: #488859;
   --kc-viridian-700: #396C43;
   --kc-viridian-800: #2B5131;
+  --kc-viridian-875: #244428;
   --kc-viridian-900: #1D3720;
+  --kc-viridian-925: #172E19;
   --kc-viridian-950: #112413;
+  --kc-viridian-975: #0B1B0C;
   --kc-stone-0: #FFFFFF;
   --kc-stone-50: #F5F8F6;
   --kc-stone-100: #EAEEEB;
@@ -33,8 +36,11 @@
   --kc-stone-600: #757975;
   --kc-stone-700: #5C605C;
   --kc-stone-800: #444844;
+  --kc-stone-875: #383D38;
   --kc-stone-900: #2D322D;
+  --kc-stone-925: #242924;
   --kc-stone-950: #1C201C;
+  --kc-stone-975: #141814;
   --kc-warm-300: #F2A359;
   --kc-warm-600: #C16F00;
   --kc-success: #2B564A;
@@ -51,7 +57,7 @@
   --kc-text-small: 0.875rem;
   --kc-text-body: 1.0625rem;
   --kc-text-lead: clamp(1.125rem, 0.98rem + 0.6vw, 1.375rem);
-  --kc-text-h3: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
+  --kc-text-h3: clamp(1.25rem, 1.05rem + 0.9vw, 1.75rem);
   --kc-text-h2: clamp(1.75rem, 1.4rem + 1.6vw, 2.5rem);
   --kc-text-h1: clamp(2.25rem, 1.6rem + 3vw, 4rem);
   --kc-text-display: clamp(2.875rem, 1.6rem + 5.4vw, 6rem);
@@ -72,11 +78,13 @@
   --kc-space-24: 6rem;
   --kc-space-32: 8rem;
   --kc-space-section: clamp(4rem, 2.5rem + 6vw, 6.5rem);
+  --kc-space-sectionLg: clamp(5.5rem, 3rem + 8vw, 10rem);
   --kc-radius-sm: 0.25rem;
   --kc-radius-md: 0.5rem;
   --kc-radius-lg: 0.875rem;
   --kc-radius-full: 9999px;
   --kc-measure: 64ch;
+  --kc-measureTight: 52ch;
   --kc-container: 72rem;
   --kc-containerNarrow: 48rem;
   --kc-motion-fast: 120ms;
@@ -84,77 +92,23 @@
   --kc-motion-slow: 360ms;
   --kc-motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  /* --- semantic roles: light (default) ---------------------------- */
-  --kc-surface: var(--kc-stone-100);
-  --kc-surfaceAlt: var(--kc-viridian-100);
-  --kc-surfaceRaised: var(--kc-stone-0);
-  --kc-surfaceInverse: var(--kc-stone-950);
-  --kc-border: var(--kc-stone-300);
-  --kc-navBorder: var(--kc-stone-400);
-  --kc-text: var(--kc-stone-950);
-  --kc-textMuted: var(--kc-stone-700);
-  --kc-brand: var(--kc-viridian-600);
-  --kc-brandText: var(--kc-viridian-700);
-  --kc-brandAction: var(--kc-viridian-700);
-  --kc-onBrand: var(--kc-stone-50);
-  --kc-dangerText: var(--kc-danger);
-  --kc-accentWarm: var(--kc-warm-600);
-  --kc-inkSurface: var(--kc-stone-950);
-  --kc-inkText: var(--kc-stone-50);
-  --kc-inkTextMuted: var(--kc-stone-300);
-  --kc-inkTextFaint: var(--kc-stone-400);
-  --kc-inkBorder: var(--kc-stone-800);
-  --kc-inkAccent: var(--kc-viridian-300);
-  --kc-glass-fill: rgba(255, 255, 255, 0.86);
-  --kc-glass-rim: rgba(255, 255, 255, 0.72);
-  --kc-glass-rimLow: rgba(255, 255, 255, 0.22);
-  --kc-glass-spec: rgba(255, 255, 255, 0.34);
-  --kc-glass-specLow: rgba(255, 255, 255, 0.08);
-  --kc-glass-cast: rgba(12, 26, 21, 0.13);
-  --kc-glass-shadow: 0 1px 2px rgba(12, 26, 21, 0.03), 0 12px 32px -8px rgba(12, 26, 21, 0.10);
-}
-
-/* Dark mode follows the OS by default, and can be forced with
-   <html data-theme="dark"> for a preview or a screenshot. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --kc-surface: var(--kc-stone-950);
-    --kc-surfaceAlt: var(--kc-viridian-950);
-    --kc-surfaceRaised: var(--kc-stone-900);
-    --kc-surfaceInverse: var(--kc-stone-50);
-    --kc-border: var(--kc-stone-800);
-    --kc-navBorder: var(--kc-stone-700);
-    --kc-text: var(--kc-stone-100);
-    --kc-textMuted: var(--kc-stone-300);
-    --kc-brand: var(--kc-viridian-400);
-    --kc-brandText: var(--kc-viridian-300);
-    --kc-brandAction: var(--kc-viridian-400);
-    --kc-onBrand: var(--kc-stone-950);
-    --kc-dangerText: var(--kc-dangerOnDark);
-    --kc-accentWarm: var(--kc-warm-300);
-    --kc-inkSurface: var(--kc-stone-900);
-    --kc-inkText: var(--kc-stone-50);
-    --kc-inkTextMuted: var(--kc-stone-300);
-    --kc-inkTextFaint: var(--kc-stone-400);
-    --kc-inkBorder: var(--kc-stone-700);
-    --kc-inkAccent: var(--kc-viridian-300);
-    --kc-glass-fill: rgba(28, 32, 28, 0.86);
-    --kc-glass-rim: rgba(255, 255, 255, 0.26);
-    --kc-glass-rimLow: rgba(255, 255, 255, 0.05);
-    --kc-glass-spec: rgba(255, 255, 255, 0.09);
-    --kc-glass-specLow: rgba(255, 255, 255, 0.02);
-    --kc-glass-cast: rgba(0, 0, 0, 0.5);
-    --kc-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
-  }
-}
-
-[data-theme="dark"] {
+  /* --- semantic roles: DARK, which is the fallback ----------------- */
+  /* Dark sits on bare :root and light is the media override, rather than
+     the other way round, because dark is this site's declared default:
+     whatever the browser cannot tell us, it gets. In practice every
+     current browser answers prefers-color-scheme with a concrete light or
+     dark and never with neither, so this decides the rendering only where
+     media queries do not reach — a UA that does not support them, and the
+     colour-scheme hint the UA paints its own widgets and scrollbars with
+     before it knows anything else. Owner's call, 2026-08-26. */
   --kc-surface: var(--kc-stone-950);
-  --kc-surfaceAlt: var(--kc-viridian-950);
-  --kc-surfaceRaised: var(--kc-stone-900);
+  --kc-surfaceAlt: var(--kc-viridian-925);
+  --kc-surfaceRaised: var(--kc-stone-875);
   --kc-surfaceInverse: var(--kc-stone-50);
-  --kc-border: var(--kc-stone-800);
-  --kc-navBorder: var(--kc-stone-700);
+  --kc-border: var(--kc-stone-700);
+  --kc-navBorder: var(--kc-stone-600);
+  --kc-fieldSurface: var(--kc-stone-900);
+  --kc-fieldBorder: var(--kc-stone-500);
   --kc-text: var(--kc-stone-100);
   --kc-textMuted: var(--kc-stone-300);
   --kc-brand: var(--kc-viridian-400);
@@ -163,7 +117,75 @@
   --kc-onBrand: var(--kc-stone-950);
   --kc-dangerText: var(--kc-dangerOnDark);
   --kc-accentWarm: var(--kc-warm-300);
-  --kc-inkSurface: var(--kc-stone-900);
+  --kc-inkSurface: var(--kc-stone-975);
+  --kc-inkText: var(--kc-stone-50);
+  --kc-inkTextMuted: var(--kc-stone-300);
+  --kc-inkTextFaint: var(--kc-stone-400);
+  --kc-inkBorder: var(--kc-stone-700);
+  --kc-inkAccent: var(--kc-viridian-300);
+  --kc-glass-fill: rgba(28, 32, 28, 0.86);
+  --kc-glass-rim: rgba(255, 255, 255, 0.26);
+  --kc-glass-rimLow: rgba(255, 255, 255, 0.05);
+  --kc-glass-spec: rgba(255, 255, 255, 0.09);
+  --kc-glass-specLow: rgba(255, 255, 255, 0.02);
+  --kc-glass-cast: rgba(0, 0, 0, 0.5);
+  --kc-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.20), 0 12px 32px -8px rgba(0, 0, 0, 0.45);
+}
+
+/* Light mode follows the OS, and can be forced with
+   <html data-theme="light"> for a preview or a screenshot. */
+@media (prefers-color-scheme: light) {
+  :root {
+    --kc-surface: var(--kc-stone-100);
+    --kc-surfaceAlt: var(--kc-viridian-100);
+    --kc-surfaceRaised: var(--kc-stone-0);
+    --kc-surfaceInverse: var(--kc-stone-950);
+    --kc-border: var(--kc-stone-300);
+    --kc-navBorder: var(--kc-stone-600);
+    --kc-fieldSurface: var(--kc-stone-0);
+    --kc-fieldBorder: var(--kc-stone-600);
+    --kc-text: var(--kc-stone-950);
+    --kc-textMuted: var(--kc-stone-700);
+    --kc-brand: var(--kc-viridian-600);
+    --kc-brandText: var(--kc-viridian-700);
+    --kc-brandAction: var(--kc-viridian-700);
+    --kc-onBrand: var(--kc-stone-50);
+    --kc-dangerText: var(--kc-danger);
+    --kc-accentWarm: var(--kc-warm-600);
+    --kc-inkSurface: var(--kc-stone-950);
+    --kc-inkText: var(--kc-stone-50);
+    --kc-inkTextMuted: var(--kc-stone-300);
+    --kc-inkTextFaint: var(--kc-stone-400);
+    --kc-inkBorder: var(--kc-stone-800);
+    --kc-inkAccent: var(--kc-viridian-300);
+    --kc-glass-fill: rgba(255, 255, 255, 0.86);
+    --kc-glass-rim: rgba(255, 255, 255, 0.72);
+    --kc-glass-rimLow: rgba(255, 255, 255, 0.22);
+    --kc-glass-spec: rgba(255, 255, 255, 0.34);
+    --kc-glass-specLow: rgba(255, 255, 255, 0.08);
+    --kc-glass-cast: rgba(12, 26, 21, 0.13);
+    --kc-glass-shadow: 0 1px 2px rgba(12, 26, 21, 0.03), 0 12px 32px -8px rgba(12, 26, 21, 0.10);
+  }
+}
+
+[data-theme="dark"] {
+  --kc-surface: var(--kc-stone-950);
+  --kc-surfaceAlt: var(--kc-viridian-925);
+  --kc-surfaceRaised: var(--kc-stone-875);
+  --kc-surfaceInverse: var(--kc-stone-50);
+  --kc-border: var(--kc-stone-700);
+  --kc-navBorder: var(--kc-stone-600);
+  --kc-fieldSurface: var(--kc-stone-900);
+  --kc-fieldBorder: var(--kc-stone-500);
+  --kc-text: var(--kc-stone-100);
+  --kc-textMuted: var(--kc-stone-300);
+  --kc-brand: var(--kc-viridian-400);
+  --kc-brandText: var(--kc-viridian-300);
+  --kc-brandAction: var(--kc-viridian-400);
+  --kc-onBrand: var(--kc-stone-950);
+  --kc-dangerText: var(--kc-dangerOnDark);
+  --kc-accentWarm: var(--kc-warm-300);
+  --kc-inkSurface: var(--kc-stone-975);
   --kc-inkText: var(--kc-stone-50);
   --kc-inkTextMuted: var(--kc-stone-300);
   --kc-inkTextFaint: var(--kc-stone-400);
@@ -184,7 +206,9 @@
   --kc-surfaceRaised: var(--kc-stone-0);
   --kc-surfaceInverse: var(--kc-stone-950);
   --kc-border: var(--kc-stone-300);
-  --kc-navBorder: var(--kc-stone-400);
+  --kc-navBorder: var(--kc-stone-600);
+  --kc-fieldSurface: var(--kc-stone-0);
+  --kc-fieldBorder: var(--kc-stone-600);
   --kc-text: var(--kc-stone-950);
   --kc-textMuted: var(--kc-stone-700);
   --kc-brand: var(--kc-viridian-600);

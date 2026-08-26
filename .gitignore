@@ -10,6 +10,10 @@ next-env.d.ts
 # Font cache for the logo generator — re-downloaded on demand
 brand/logo/_build/.cache/
 
+# Python bytecode from the token and logo generators
+__pycache__/
+*.pyc
+
 # Local env
 .env
 .env*.local

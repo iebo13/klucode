@@ -37,6 +37,7 @@ const ALLOWED = new Set([
   '24',
   '32',
   'section',
+  'section-lg',
 ]);
 
 // Every utility family Tailwind resolves through theme.spacing.

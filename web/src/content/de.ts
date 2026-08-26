@@ -87,9 +87,11 @@ const de = {
     switchLangLabel: 'Switch to English',
     themeToDark: 'Dunkles Design',
     themeToLight: 'Helles Design',
+    themeLabel: 'Design',
     footerNavLabel: 'Seiten',
     footerLegalLabel: 'Rechtliches',
     footerSocialLabel: 'Profile',
+    footerContactLabel: 'Kontakt',
     backHome: 'Zur Startseite',
     stack: 'Technik',
     before: 'Vorher',
@@ -108,12 +110,28 @@ const de = {
     heroTitleAccent: 'tatsächlich arbeitet.',
     heroLead:
       'Web-Anwendungen, interne Tools und Websites, vom ersten Klick bis zum laufenden Server. Ein Ansprechpartner, ein Festpreis. Und der Mensch im Termin ist derselbe, der den Code schreibt.',
+    // The client has released images of this system. The other two case
+    // studies wait on written approval and keep their diagram until it comes.
+    // The frame's title names the system and not the customer, which is the
+    // same rule the case study itself follows.
+    heroShot: {
+      src: '/revento-tarifrechner.webp',
+      alt: 'Tarifvergleich im laufenden Betrieb: 113 gefundene Tarife, und je Zeile Arbeitspreis, Grundpreis, Jahreskosten und die Ersparnis gegenüber dem Grundversorger.',
+      label: 'Vergleichsportal · Tarifabfrage',
+      width: 1200,
+      height: 730,
+    },
+    heroShotCaption:
+      'Ausgeliefert und täglich im Einsatz: das Vergleichsportal aus dem größten der drei Systeme.',
     servicesEyebrow: 'Leistungen',
     servicesTitle: 'Vier Wege zur Zusammenarbeit.',
     servicesLead: 'Der Preis steht fest, bevor die erste Zeile geschrieben ist.',
     servicesLink: 'Alle Leistungen und Preise',
+    servicesHint: 'Fahren Sie über eine Zeile, um den Weg dorthin zu sehen.',
     sceneAlt:
       'Die vier Wege als Raum: eine Website auf einem Monitor, eine Web-Anwendung mit Datenbank und Server dahinter, ein Büro mit einem freien Platz, ein Server-Rack an einer Wolke.',
+    scenePhoneAlt:
+      'Zwei der vier Wege als Raum: eine Website auf einem Monitor und daneben eine Web-Anwendung mit Datenbank und Server.',
 
     workEyebrow: 'Projekte',
     workTitle: 'Drei Systeme, die täglich laufen.',
@@ -326,6 +344,13 @@ const de = {
         result:
           'Die monatliche Abrechnung läuft automatisch. Keine Datei wandert mehr per E-Mail, und es gibt keine zweite Version, von der niemand weiß, ob sie die richtige ist.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
+        shot: {
+          src: '/revento-start.webp',
+          alt: 'Startseite des Portals: eine Überschrift über das Vermitteln von Energieverträgen, zwei Schaltflächen und darunter drei Zahlen, 500.000+ vermittelte Verträge, 200+ aktive Partner und 52+ Energieanbieter.',
+          label: 'Vergleichsportal · Startseite',
+          width: 1200,
+          height: 672,
+        },
         offer: { label: 'Passendes Angebot: Individuelle Web-Anwendung', service: 'app' },
         diagram: {
           sources: ['CRM', 'Provisionsabrechnung', 'Vergleichsportal'],

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import type { Faq as FaqItem } from '@/content/types';
+import type { Faq as FaqItem, Shot as ShotContent } from '@/content/types';
+import { asset } from '@/lib/base-path';
 import { pathFor, type Lang, type PageKey } from '@/lib/routes';
 
 /**
@@ -45,11 +46,29 @@ export function Section({
   glow = false,
   bleed = false,
   ink = false,
+  rhythm = 'base',
   id,
 }: {
   children: ReactNode;
   className?: string;
   tint?: boolean;
+  /**
+   * How much air the section is framed in. THREE values, and there used to be
+   * one.
+   *
+   * Five of the homepage's six sections landed on exactly 104px top and
+   * bottom, so a 645px closing ask and a 1,102px project grid were framed
+   * identically and nothing in the page's rhythm said which one mattered. A
+   * uniform rhythm is the right default and the wrong final answer.
+   *
+   *   base     the workhorse. Most sections, and it is still 104px.
+   *   bookend  the ink slabs at the two ends of the page, at ~160px, so they
+   *            read as chapter breaks rather than as two more bands.
+   *   tight    for a section whose columns finish early. The Ablauf section's
+   *            two columns ended 60px apart and then sat in 110px of nothing
+   *            before the boundary: it did not end, it ran out.
+   */
+  rhythm?: 'base' | 'bookend' | 'tight';
   /**
    * The ink register: the section becomes a full-bleed slab of the same
    * surface the footer is made of — dark in BOTH themes. The homepage is
@@ -70,15 +89,32 @@ export function Section({
    */
   glow?: boolean;
   /**
-   * Drops the 72rem container cap so the section runs nearly to the viewport
-   * edge. This is a STRUCTURAL EXCEPTION and there is exactly one on the
+   * Drops the container entirely, so the section's own children decide where
+   * they sit. This is a STRUCTURAL EXCEPTION and there is exactly one on the
    * homepage, on the work section. Seven sections sharing one left edge is
    * what made the page read as a single undifferentiated column; the fix is
    * punctuation, not variety, so a second one would undo the first.
+   *
+   * IT DROPS THE PADDING TOO, and that is the change. It used to widen the cap
+   * to 104rem and keep `px-8`, which produced an exception whose size depended
+   * on the viewport: 64px off the spine at 1280, 144px at 1440, 256px at 1920.
+   * At the wide end it read as a deliberate wide moment and at 1280 — the most
+   * common desktop viewport there is — it read as a 64px misalignment. A
+   * device that only works above a certain width is a device that fails for
+   * most of the audience.
+   *
+   * So the section now hands its children the whole viewport and they inset
+   * themselves: the heading keeps the spine, the grid runs to 24px of both
+   * edges. Half a bleed is worse than none.
    */
   bleed?: boolean;
   id?: string;
 }) {
+  const pad = {
+    base: 'py-section',
+    bookend: 'py-section-lg',
+    tight: 'pb-16 pt-section',
+  }[rhythm];
   return (
     <section
       id={id}
@@ -100,9 +136,7 @@ export function Section({
         <div aria-hidden="true" className="node-field-ink absolute inset-0 -z-10 opacity-40" />
       ) : null}
       <div
-        className={`relative mx-auto px-6 py-section md:px-8 ${
-          bleed ? 'max-w-[104rem]' : 'max-w-container'
-        }`}
+        className={`relative ${pad} ${bleed ? 'w-full' : 'mx-auto max-w-container px-6 md:px-8'}`}
       >
         {children}
       </div>
@@ -181,6 +215,75 @@ export function InkPanel({
       <span aria-hidden="true" className="mb-6 block h-1 w-8 rounded-full bg-ink-accent" />
       {children}
     </div>
+  );
+}
+
+/**
+ * A product screenshot, in a browser frame.
+ *
+ * `loading` is the one prop worth explaining. A shot in the hero is the
+ * largest thing above the fold and must not be lazy — lazy-loading the LCP
+ * element is the classic way to make a fast page measure slow. Everything
+ * further down the page is `lazy`, which is the default.
+ *
+ * width/height are the intrinsic pixel size of the file and they are required
+ * rather than optional: without them the frame has no aspect ratio until the
+ * bytes land, and a picture this large arriving into an unreserved box is a
+ * layout shift on the first screen.
+ */
+export function Shot({
+  shot,
+  caption,
+  className = '',
+  eager = false,
+  onInk = false,
+}: {
+  shot: ShotContent;
+  /**
+   * One line saying what is being looked at. Where the picture is the page's
+   * evidence it is not optional in practice: an unlabelled screenshot in a
+   * hero is a stock image as far as a reader is concerned, and the entire
+   * point of this one is that it is not.
+   */
+  caption?: string;
+  className?: string;
+  /** Set on the one shot that is above the fold. */
+  eager?: boolean;
+  onInk?: boolean;
+}) {
+  return (
+    <figure className={className}>
+      <div className="shot">
+        {/* Chrome, and it is decoration: the title says what the caption under
+            it already says, so a screen reader that read it here would hear it
+            twice. The alt text on the picture is where the description is. */}
+        <div aria-hidden="true" className="shot-bar">
+          <span className="shot-dots">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="shot-title">{shot.label}</span>
+        </div>
+        <img
+          src={asset(shot.src)}
+          alt={shot.alt}
+          width={shot.width}
+          height={shot.height}
+          loading={eager ? 'eager' : 'lazy'}
+          decoding="async"
+          // fetchPriority, not just eager: eager only removes the deferral, and
+          // the hero shot is competing with two web fonts for the same first
+          // round trip.
+          fetchPriority={eager ? 'high' : undefined}
+        />
+      </div>
+      {caption ? (
+        <figcaption className={`mt-4 text-small ${onInk ? 'text-ink-muted' : 'text-muted'}`}>
+          {caption}
+        </figcaption>
+      ) : null}
+    </figure>
   );
 }
 
@@ -380,9 +483,13 @@ export function Faq({
               scale felt arbitrary. */}
           <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-2 text-lead font-medium transition-colors duration-fast marker:content-none hover:text-brand-text">
             {item.q}
+            {/* Filled, and the third of the three places the green becomes a
+                ground. It was a bare viridian glyph, which is the same
+                small-text green the rest of the page was already made of, on
+                the one control in the section. */}
             <span
               aria-hidden="true"
-              className="mt-1 shrink-0 text-brand transition-transform duration-base group-open:rotate-45"
+              className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-action text-small leading-none text-on-brand transition-transform duration-base group-open:rotate-45"
             >
               +
             </span>

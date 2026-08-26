@@ -99,6 +99,30 @@ export type Service = {
   priceUnit?: 'day' | 'month';
 };
 
+/**
+ * A screenshot of a delivered system, and everything needed to render it
+ * without a layout shift.
+ *
+ * `width` and `height` are the file's intrinsic pixels, not the size it is
+ * displayed at, and they are required: a picture this large arriving into an
+ * unreserved box moves the first screen. Regenerate both alongside the file —
+ * tools/shoot-revento.mjs prints them.
+ *
+ * `label` is the frame's title bar. A TITLE and not an address, which is a
+ * deliberate choice twice over: the site names no client without written
+ * release, and a made-up domain in an address bar is a small lie in the one
+ * place on the page whose whole job is being verifiable. It is aria-hidden,
+ * because it is chrome. The description is `alt`.
+ */
+export type Shot = {
+  /** Path under public/. */
+  src: string;
+  alt: string;
+  label: string;
+  width: number;
+  height: number;
+};
+
 export type Project = {
   key: string;
   title: string;
@@ -127,14 +151,14 @@ export type Project = {
   offer?: { label: string; service: ServiceKey };
   /**
    * A picture of the delivered system. Three shipped systems and zero pixels
-   * of any of them is the single largest gap on this site: every competitor
+   * of any of them was the single largest gap on this site: every competitor
    * shows work, and precision without evidence reads as copywriting.
    *
-   * `src` is a path under public/. Anonymised is fine, and preferable to
-   * nothing. Once it exists it replaces the diagram below on the project
-   * page; until then the diagram is the figure.
+   * One of the three has it. The other two wait on written client release, and
+   * they show the diagram until then rather than a box apologising for an
+   * absent screenshot.
    */
-  shot?: { src: string; alt: string };
+  shot?: Shot;
   /**
    * The system, drawn as what it is: what feeds it, what it is built around,
    * where it runs.
@@ -197,11 +221,30 @@ export type Content = {
     /** Action labels, not state labels: they say what the press will do. */
     themeToDark: string;
     themeToLight: string;
+    /**
+     * The theme control's NAME, for the mobile drawer.
+     *
+     * In the header capsule the toggle stands alone and an aria-label is
+     * enough. In the drawer it sits next to a labelled language link, and two
+     * controls of the same rank presented two different ways is the thing the
+     * 26 August audit caught: one was a sentence, the other was an unlabelled
+     * sun in a circle.
+     */
+    themeLabel: string;
     /** Footer navigation landmarks — one for the pages, one for the legal pair. */
     footerNavLabel: string;
     footerLegalLabel: string;
     /** Heading over the LinkedIn/GitHub links, shown only once they exist. */
     footerSocialLabel: string;
+    /**
+     * Heading over the footer's name-address-email column.
+     *
+     * The footer had two link columns holding five items and three, so they
+     * did not balance each other, and 727px of air between them and the mark.
+     * For a German local business the missing thing was also the useful one: a
+     * real address in the place every visitor scrolls to looking for it.
+     */
+    footerContactLabel: string;
     backHome: string;
     stack: string;
     before: string;
@@ -218,6 +261,22 @@ export type Content = {
     heroTitle: string;
     heroTitleAccent: string;
     heroLead: string;
+    /**
+     * The picture the hero commits to, and the sentence under it.
+     *
+     * The homepage had no imagery at all: on a 390px phone it was 6,750px tall
+     * and rendered zero images, because the only picture in the section order
+     * was a poster hidden below the `sm` breakpoint and a 3D scene that needs
+     * 1024px to mount. This is a real screenshot of a delivered system, it is
+     * shown at the container's full width so the figures on it are legible,
+     * and it renders on every device the site reaches.
+     *
+     * The caption is not decoration. An unlabelled screenshot in a hero is a
+     * stock image as far as a reader is concerned, and the whole point of this
+     * one is that it is not.
+     */
+    heroShot: Shot;
+    heroShotCaption: string;
     servicesEyebrow: string;
     servicesTitle: string;
     /**
@@ -228,6 +287,17 @@ export type Content = {
      */
     servicesLead: string;
     servicesLink: string;
+    /**
+     * That the rows do anything.
+     *
+     * The camera follows the row under the pointer, which is the section's
+     * whole device, and nothing on the page said so: no cursor note, no
+     * caption, and a hover fill that only arrives once the pointer is already
+     * on a row. So the shot the section exists for was one almost nobody saw.
+     * Rendered only where the scene mounts, because in the fallback it is a
+     * promise the page cannot keep.
+     */
+    servicesHint: string;
     /**
      * What the crossroads looks like, for everyone who never sees it move.
      *
@@ -243,6 +313,19 @@ export type Content = {
      * than calling itself an illustration.
      */
     sceneAlt: string;
+    /**
+     * The same place, cropped for a phone, and a different picture rather than
+     * the same one smaller.
+     *
+     * The wide strip renders 103px tall at 327px and nothing in it is
+     * identifiable, so it was hidden below `sm` and the services section had no
+     * image at all on the device most visitors use. The upright crop holds the
+     * two objects the audit called credible — the landing page and the
+     * dashboard — at about three times the width they had in the strip, and it
+     * shows two of the four ways rather than all four, which is what this alt
+     * text has to say.
+     */
+    scenePhoneAlt: string;
     workEyebrow: string;
     workTitle: string;
     workLead: string;

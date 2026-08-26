@@ -6,8 +6,12 @@
 @tailwind utilities;
 
 @layer base {
+  /* dark first, because dark is the declared default — see the note above the
+     role block in tokens.css. The first keyword is what the UA paints its own
+     widgets, scrollbars and form controls with before it knows anything else,
+     so it has to agree with which set of roles sits on bare :root. */
   :root {
-    color-scheme: light dark;
+    color-scheme: dark light;
   }
 
   /* A forced theme must also force the UA's own rendering — checkboxes,
@@ -91,6 +95,30 @@
     font-weight: 500;
   }
 
+  /* Balance OFF, for the one heading set at display size.
+
+     `text-wrap: balance` is right for a 24px card title and wrong for a 96px
+     headline, and the homepage hero is where that showed. Balancing evens the
+     line LENGTHS, so it took a headline that greedy wrapping sets on two full
+     lines and made it three, the middle of which was 474px in a 1088px
+     measure — 614px short of the column. A display setting that never reaches
+     an edge is the thing that reads as a wireframe: the loudest element on the
+     page stops well inside its own container and leaves the eye somewhere
+     empty to land.
+
+     Applied by hand rather than by size, because it is a decision about ONE
+     heading. Sub-page h1s are 64px in a narrower measure and balance suits
+     them. */
+  .rag-natural {
+    /* `wrap`, not `normal`. `text-wrap` is a shorthand for text-wrap-mode and
+       text-wrap-style, and `normal` is not a value of either: the declaration
+       parses as invalid, gets dropped, and the h1 above keeps balancing while
+       the class sits in the markup looking like it did something. `wrap` sets
+       the mode and resets the style to auto, which is the greedy wrap this
+       heading wants. */
+    text-wrap: wrap;
+  }
+
   p {
     text-wrap: pretty;
   }
@@ -99,20 +127,25 @@
 @layer components {
   /* The house graphic device: the logo's node graph, scaled up as a faint
      background texture. It is the only decoration the brand owns. */
+  /* Every scheme-dependent block in this file is written DARK ON THE BARE
+     SELECTOR with light as the media override, matching the role block in
+     tokens.css. The two have to agree: a browser that answers neither light
+     nor dark would otherwise get dark surfaces wearing the light theme's pale
+     washes, which is not a theme, it is a haze. */
   .node-field {
     /* The dot colour has to flip with the scheme, not just the background it
        sits on: viridian-200 is a pale sage that reads as near-white on ink and
        turns a subtle texture into a loud grid. */
-    --node-dot: var(--kc-viridian-200);
+    --node-dot: var(--kc-viridian-800);
     background-image: radial-gradient(circle at center, var(--node-dot) 1.5px, transparent 1.6px);
     background-size: 28px 28px;
     mask-image: linear-gradient(to bottom, black, transparent);
     -webkit-mask-image: linear-gradient(to bottom, black, transparent);
   }
 
-  @media (prefers-color-scheme: dark) {
+  @media (prefers-color-scheme: light) {
     .node-field {
-      --node-dot: var(--kc-viridian-800);
+      --node-dot: var(--kc-viridian-200);
     }
   }
 
@@ -130,14 +163,14 @@
      the scale — at background strength an empty slot reads as a failed image
      rather than as a panel waiting for one. */
   .node-field-fill {
-    --node-dot: var(--kc-viridian-300);
+    --node-dot: var(--kc-viridian-800);
     background-image: radial-gradient(circle at center, var(--node-dot) 2px, transparent 2.1px);
     background-size: 32px 32px;
   }
 
-  @media (prefers-color-scheme: dark) {
+  @media (prefers-color-scheme: light) {
     .node-field-fill {
-      --node-dot: var(--kc-viridian-800);
+      --node-dot: var(--kc-viridian-300);
     }
   }
 
@@ -191,11 +224,63 @@
     box-shadow: 0 10px 30px -18px var(--kc-glass-cast);
   }
 
+  /* ---------------------------------------------------------------------
+     .nav-scrim — the strip the capsule floats ON.
+
+     The capsule is 69px tall and sits 8px down from the viewport edge inside a
+     transparent full-width bar, so at most scroll positions the page is
+     visible in the 8px above it and in the full width either side of it. What
+     that looks like is a sliced line of a heading hanging next to the pill:
+     the 26 August audit caught it at two scroll positions and read it as a
+     rendering fault rather than as a floating object, which is exactly what it
+     looks like.
+
+     The audit's own prescription was a gradient from the surface colour to
+     transparent. That cannot work here and it is worth saying why, because it
+     is the obvious fix: this page is FRAMED IN INK. The capsule crosses a dark
+     hero, three paper sections and a dark closing slab on the way down, so any
+     single colour is wrong for two thirds of the journey — a page-coloured
+     scrim would put a pale band across the top of the hero in the light theme.
+
+     So the scrim carries no colour at all. It is a blur, which composites
+     whatever is actually behind it and is therefore right on every ground by
+     construction, masked to fade out over its own height so it has no edge of
+     its own. Text sliding under it smears instead of being sliced.
+
+     It is a SIBLING of the capsule and never a parent: two nested backdrop
+     filters sample each other, which is the thing the .glass-nav note spends a
+     paragraph banning. Stacked as siblings the capsule samples the scrim's
+     output, which is one extra blur under an element that is already blurred
+     and costs nothing visible.
+     --------------------------------------------------------------------- */
+  .nav-scrim {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 5.5rem;
+    pointer-events: none;
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    mask-image: linear-gradient(to bottom, black 0, black 42%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0, black 42%, transparent 100%);
+  }
+
   /* No sheen layer. The capsule used to carry a diagonal specular gradient and
      two rim glints; on the dark theme the lit corner read as an inconsistency
      — a header that looked different from everything else on the page — and it
      was the kind of decoration that makes a site feel generated. Fill, border,
      blur and one shadow are the whole material now. */
+
+  /* The drawer is the capsule's material at a different opacity, and the
+     difference is what makes it a MODE rather than a card that happens to be
+     on top. At the capsule's 0.86 the hero headline behind it was plainly
+     readable through the menu items — „Software, mit der Ihr Betrieb
+     tatsächlich arbeitet" straight through „Leistungen" — which is the one
+     thing a navigation drawer must not do, because a reader cannot tell which
+     layer they are looking at. Opaque, and the blur stays only for the 1px of
+     the page that shows past its rounded corners. */
+  .glass-nav-solid {
+    background: var(--kc-surface);
+  }
 
   /* ---------------------------------------------------------------------
      .panel — the material everything that carries content is made of.
@@ -248,9 +333,10 @@
        while the identical class on an untinted one produced a visible wash. A
        device that does two different things depending on where it lands is not
        a device. */
-    --aurora-1: var(--kc-viridian-200);
-    --aurora-2: var(--kc-viridian-300);
-    --aurora-3: var(--kc-viridian-100);
+    --aurora-strength: 0.5;
+    --aurora-1: var(--kc-viridian-900);
+    --aurora-2: var(--kc-viridian-800);
+    --aurora-3: var(--kc-stone-900);
     opacity: var(--aurora-strength, 0.45);
     background:
       /* follows the section's top boundary, full width */
@@ -261,12 +347,12 @@
         linear-gradient(to top, var(--aurora-3), transparent 34%);
   }
 
-  @media (prefers-color-scheme: dark) {
+  @media (prefers-color-scheme: light) {
     .aurora {
-      --aurora-strength: 0.5;
-      --aurora-1: var(--kc-viridian-900);
-      --aurora-2: var(--kc-viridian-800);
-      --aurora-3: var(--kc-stone-900);
+      --aurora-strength: 0.45;
+      --aurora-1: var(--kc-viridian-200);
+      --aurora-2: var(--kc-viridian-300);
+      --aurora-3: var(--kc-viridian-100);
     }
   }
 
@@ -288,6 +374,84 @@
      turns brand-green on hover, fast (120ms). No background pill, no fill,
      no movement. Anything that visibly animates shape or surface on a hover
      reads as dated; a colour change reads as a state. */
+
+  /* ---------------------------------------------------------------------
+     .shot — the frame a product screenshot is shown in.
+
+     The site had no imagery at all: at 390px the homepage was 6,750px tall and
+     rendered zero pictures, and /projekte described three delivered systems in
+     careful prose and showed none of them. That is not a layout problem, it is
+     an assets problem, and the assets exist now for the one project whose
+     client has released them.
+
+     A screenshot of somebody else's software is the one thing on this page
+     that does NOT belong to the palette — REVENTO is navy and amber and it is
+     supposed to be, because the picture is proof and a recoloured screenshot
+     proves nothing. So the frame does the reconciling: fixed ink roles, dark
+     in both themes, a real chrome bar with the three dots and the address, so
+     the foreign colours read as something being SHOWN rather than as the page
+     changing its mind. The bar also says what kind of thing this is, which a
+     bare rectangle does not.
+     --------------------------------------------------------------------- */
+  .shot {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--kc-radius-lg);
+    border: 1px solid var(--kc-inkBorder);
+    background: var(--kc-inkSurface);
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.3),
+      0 24px 60px -32px rgb(0 0 0 / 0.65);
+  }
+
+  .shot-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--kc-inkBorder);
+    /* Not the ink surface itself: the bar has to read as chrome sitting on the
+       frame rather than as the frame's own top edge, and one step of lift is
+       the whole difference. */
+    background: color-mix(in oklab, var(--kc-stone-50) 6%, var(--kc-inkSurface));
+  }
+
+  .shot-dots {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .shot-dots > i {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: var(--kc-radius-full);
+    background: var(--kc-inkBorder);
+  }
+
+  /* A window TITLE, centred, and not an address bar. The site names no client
+     without written release and a plausible-looking domain nobody owns is a
+     small lie in the one place on the page whose job is being checkable. The
+     dots are offset out of the centring so the title sits over the frame
+     rather than over what is left of it. */
+  .shot-title {
+    flex: 1;
+    min-width: 0;
+    margin-right: 2.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    color: var(--kc-inkTextFaint);
+  }
+
+  .shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
 
   /* -------------------------------------------------------------------
      Clear glass, where it can actually refract: ON INK ONLY.
@@ -457,10 +621,14 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* --kc-inkSurface, not --kc-stone-950. The veil's whole job is to end in the
+     scene's own background, and the scene's background is the section's, which
+     is the ink role: the raw scale value was right by coincidence in the light
+     scheme and 8.5 CIE L* out in the dark one. See Handle.setGround. */
   background: linear-gradient(
     to right,
-    var(--kc-stone-950) 0,
-    var(--kc-stone-950) var(--crossroads-gutter, 0px),
+    var(--kc-inkSurface) 0,
+    var(--kc-inkSurface) var(--crossroads-gutter, 0px),
     transparent var(--crossroads-reserve, 0px)
   );
 }
@@ -488,6 +656,39 @@
   -webkit-backdrop-filter: blur(16px) saturate(1.1);
   box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.7);
   padding: 1.5rem;
+  /* Pulled left by exactly its own padding, so the EYEBROW lands on the page's
+     spine and not the panel's edge.
+
+     This is the third of the homepage's four left edges and the only one
+     nobody chose: the panel sat on the container's left edge, so its first
+     line of type started 24px further in than every other eyebrow on the page
+     and the 26 August audit measured the section at 189px against a spine of
+     176. The bleed is the fix rather than removing the padding, because the
+     padding is what stops the type touching the glass. What it costs is that
+     the panel reaches 24px past the container, which at the 1024 mount floor
+     puts its left edge exactly on the viewport edge — the widest the section
+     ever needs to be, on the narrowest screen that gets the scene.
+
+     The camera does not have to be told: scene.ts measures the panel's box
+     every resize and composes into what is left of the canvas, and the veil
+     reads its stops from the same measurement. */
+  margin-left: -1.5rem;
+}
+
+/* The one thing the board never said: that the rows do anything.
+
+   The camera follows the row under the pointer, which is the whole device, and
+   there was nothing on the page suggesting it — no caption, no hint, and the
+   rows' own hover fill only arrives after the pointer is already on one. So
+   almost nobody saw the shots the section exists for. One line, in the
+   enhanced state only, because in the fallback it would be a promise the page
+   cannot keep. */
+.crossroads-hint {
+  display: none;
+}
+
+[data-enhanced='true'] .crossroads-hint {
+  display: flex;
 }
 
 /* --- the board -----------------------------------------------------------
@@ -557,7 +758,18 @@
      Rahmenvertrag möglich" is two lines at this size, which is the height
      the audience line beside it takes anyway. */
   max-width: 9rem;
-  text-align: right;
+  /* LEFT, under a right-aligned price, and the asymmetry is the point.
+
+     Right alignment produces a ragged LEFT edge, which is the harder of the
+     two to read and the one that looks accidental rather than set. The comment
+     that used to sit here defended the two-line case and it was right about
+     it; the three-line case was never anticipated, and „pro Tag ·
+     Rahmenvertrag möglich" is three lines, each starting at a different
+     x — the worst-looking row in the section. The price above it stays right
+     aligned because it is a number in a column of numbers, and the note is
+     prose. */
+  text-align: left;
+  justify-self: end;
 }
 
 /* The row the camera is on. A fill and nothing else: the other three stay at
@@ -566,6 +778,19 @@
    AA and passed, and is not needed once nothing is being disclosed. */
 .crossroads-ways li[data-focus='true'] .crossroads-way {
   background: color-mix(in oklab, var(--kc-inkText) 7%, transparent);
+  /* And an accent bar on its leading edge. The fill alone was the state and it
+     was too quiet to be the affordance as well: a 7% wash tells a reader who
+     has already found the row that they are on it, and tells a reader who has
+     not that there is nothing here. The bar is the same viridian the label at
+     the object switches to, so the two ends of the bond light together. */
+  box-shadow: inset 2px 0 0 var(--kc-inkAccent);
+}
+
+/* Says out loud that this is a pointer target. A link gets this from the UA,
+   and it is written down because the board is the one place on the site where
+   the cursor is carrying design work rather than a default. */
+.crossroads-way {
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: no-preference) {
