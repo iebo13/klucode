@@ -33,9 +33,14 @@ const spacing = {
   0: '0',
   px: '1px',
   ...Object.fromEntries(
-    Object.entries(space).filter(([k]) => !k.startsWith('$') && k !== 'section'),
+    Object.entries(space).filter(
+      ([k]) => !k.startsWith('$') && k !== 'section' && k !== 'sectionLg',
+    ),
   ),
   section: space.section,
+  // The bookend rhythm. See the note on `space` in tokens.json: one padding
+  // value framed a 645px closing ask exactly like a 1,102px project grid.
+  'section-lg': space.sectionLg,
 };
 
 export default {
@@ -66,6 +71,15 @@ export default {
         // the page border: composited over the ink footer, stone-300 drops to
         // 1.32:1 against the capsule and the boundary disappears.
         'nav-line': 'var(--kc-navBorder)',
+        // Form controls, and they are NOT `surface-raised` and `line` under
+        // another name. WCAG 1.4.11 asks 3:1 of a control's boundary and 1.4:1
+        // is all a panel edge owes, so the two cannot share a token: the
+        // contact form was shipping fields at 1.26:1 against the page with a
+        // border 1.41:1 against their own fill, which is four boxes with no
+        // edges, and raising `line` to fix it would have outlined every card
+        // on the site in mid-grey. check_contrast.py holds these to CONTROL.
+        field: 'var(--kc-fieldSurface)',
+        'field-line': 'var(--kc-fieldBorder)',
         body: 'var(--kc-text)',
         muted: 'var(--kc-textMuted)',
         brand: 'var(--kc-brand)',
@@ -108,6 +122,8 @@ export default {
       },
       maxWidth: {
         measure: layout.measure,
+        // The short measure, for a lead that sits beside a display headline.
+        'measure-tight': layout.measureTight,
         container: layout.container,
         narrow: layout.containerNarrow,
       },

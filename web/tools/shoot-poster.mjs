@@ -15,13 +15,25 @@
  *     python3 -m http.server 4173 --bind 127.0.0.1 --directory out &
  *     node tools/shoot-poster.mjs
  *
- * Writes public/crossroads.webp. Commit the result.
+ * Writes public/crossroads.webp and public/crossroads-phone.webp. Commit both.
  */
 import { chromium } from '@playwright/test';
 import sharp from 'sharp';
 
 const BASE = process.env.SHOOT_BASE ?? 'http://127.0.0.1:4173';
 const OUT = 'public/crossroads.webp';
+/**
+ * The phone's copy, and it is a different CROP rather than a smaller file.
+ *
+ * The wide strip is 1600x505 and it was hidden below the `sm` breakpoint,
+ * correctly: at 327px it renders 103px tall and nothing in it is identifiable,
+ * so it reads as a dark banner, which is worse than no picture. But hiding it
+ * left the services section with no image at all on the device most visitors
+ * use, on a homepage that rendered zero images end to end. So the phone gets
+ * the middle of the same render at an upright aspect: three objects instead of
+ * four, each about three times the width it had in the strip.
+ */
+const OUT_PHONE = 'public/crossroads-phone.webp';
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
@@ -75,3 +87,19 @@ const info = await sharp(shot)
   .toFile(OUT);
 
 console.log(`${OUT}: ${info.width}x${info.height}, ${(info.size / 1024).toFixed(1)} kB`);
+
+// The upright crop: the left half of the fan, which is the landing page, the
+// dashboard and the database. Those are the three objects the audit found
+// credible, and they are the ones worth showing at 327px.
+const phone = await sharp(shot)
+  .extract({
+    left: Math.round(width * 0.03),
+    top: Math.round(height * 0.1),
+    width: Math.round(width * 0.46),
+    height: Math.round(height * 0.66),
+  })
+  .resize(880)
+  .webp({ quality: 78 })
+  .toFile(OUT_PHONE);
+
+console.log(`${OUT_PHONE}: ${phone.width}x${phone.height}, ${(phone.size / 1024).toFixed(1)} kB`);

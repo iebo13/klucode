@@ -64,6 +64,12 @@ export function Header({
   // anchor jump clears it too.
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-4 pt-2 md:px-6">
+      {/* The strip the capsule floats on. Full width, no colour of its own,
+          and the whole of what it does is blur what passes underneath so a
+          heading sliding under the viewport edge smears rather than arriving
+          as a sliced line of type beside the pill. See .nav-scrim. */}
+      <div aria-hidden="true" className="nav-scrim" />
+
       {/* A floating capsule rather than a full-width bar: the chrome is an
           object sitting on the page, with content visibly flowing underneath
           it. This is the ONLY element on the site that carries .glass-nav —
@@ -121,10 +127,17 @@ export function Header({
             one action a business site exists for — ahead of the menu. Most
             first visits from local owners are on a phone; contact must not be
             a tap deeper than the menu. */}
+        {/* whitespace-nowrap on both, because `hyphens: auto` is set on <html>
+            and these are the two elements it must never touch. It is right for
+            German body copy and absurd on a 7-character control: at 390px with
+            the drawer open the two labels shrank and broke as „Kon-takt" and
+            „Schlie-ßen", two lines each, inside a capsule that had room for
+            neither. The rule wins over the flex shrink that let them get
+            narrow enough to need it. */}
         <div className="flex items-center gap-1 lg:hidden">
           <Link
             href={pathFor('contact', lang)}
-            className="inline-flex min-h-[2.75rem] items-center rounded-full bg-brand-action px-4 py-2 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
+            className="inline-flex min-h-[2.75rem] items-center whitespace-nowrap rounded-full bg-brand-action px-4 py-2 text-small font-medium text-on-brand transition-colors duration-base hover:bg-viridian-700"
           >
             {nav.contact}
           </Link>
@@ -134,7 +147,7 @@ export function Header({
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-nav"
-            className="inline-flex min-h-[2.75rem] items-center rounded-full border border-line px-4 py-2 text-small transition-colors duration-base hover:border-brand-action"
+            className="inline-flex min-h-[2.75rem] items-center whitespace-nowrap rounded-full border border-line px-4 py-2 text-small transition-colors duration-base hover:border-brand-action"
           >
             {open ? ui.close : ui.menu}
           </button>
@@ -170,8 +183,10 @@ export function Header({
         // The drawer is part of the navigation layer, so it shares the
         // capsule's glass. This is NOT glass-under-glass: the drawer is a
         // sibling of the capsule, not nested inside it, so each samples the
-        // page exactly once.
-        className="glass-nav mx-auto mt-3 max-w-container rounded-lg px-6 py-6 lg:hidden"
+        // page exactly once. It takes the material OPAQUE, though — see
+        // .glass-nav-solid: at the capsule's own fill the hero headline read
+        // straight through the menu items.
+        className="glass-nav glass-nav-solid mx-auto mt-3 max-w-container rounded-lg px-6 py-6 lg:hidden"
       >
         <ul className="flex flex-col gap-1">
           {[
@@ -198,6 +213,11 @@ export function Header({
           <p className="text-small text-muted">
             {ui.availablePrefix} {availableFrom(lang)}
           </p>
+          {/* Both controls carry their name. They were a labelled text link
+              beside an unlabelled sun in a circle: two controls of the same
+              rank, presented two different ways, and the icon was the one a
+              first-time reader could not name. The icon keeps its own
+              aria-label for the laptop capsule, where it stands alone. */}
           <div className="mt-3 flex items-center justify-between gap-4">
             <Link
               href={alternatePath(current, lang)}
@@ -206,7 +226,10 @@ export function Header({
             >
               {ui.switchLangLabel}
             </Link>
-            <ThemeToggle labels={themeLabels} />
+            <span className="flex items-center gap-3 text-small text-muted">
+              {ui.themeLabel}
+              <ThemeToggle labels={themeLabels} />
+            </span>
           </div>
         </div>
       </nav>

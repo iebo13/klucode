@@ -199,8 +199,43 @@ const laneTarget = (turn: number, dist: number, aimY: number): Vector3 =>
  * the whole top half was flat unlit background. At 15° down the floor and its
  * four lit lanes carry 67% of the height and the objects sit on them rather
  * than floating in the dark.
+ *
+ * THE 26 AUGUST PASS, and what it could and could not do.
+ *
+ * The audit's finding was that this is the section's emptiest shot and nearly
+ * every desktop reader sees only it: four objects in a band with about 250px
+ * of dark above and 400px below. Its prescription was to move the camera in
+ * until the objects fill the vertical middle. That is not available, and the
+ * arithmetic is worth recording so nobody spends another afternoon on it.
+ *
+ * Projected against every solid at all three canvases, the four objects occupy
+ * 18.2% of the composed half-frame vertically at the old shot. A sweep of 240
+ * camera positions and lenses that keep every object inside the frame tops out
+ * at 19.1%, because the vertical field of view here is not set by fitV at all:
+ * the free region is a portrait column, so fovFor() takes the HORIZONTAL
+ * requirement every time, and the horizontal requirement is the width of the
+ * fan. Zooming in past that crops the outer lanes.
+ *
+ * Which leaves shortening the lanes, and that was measured too. Bringing dist
+ * from 17 to 10 does lift the fill to 28.9% — and it destroys the close-ups,
+ * which are the shots the audit praises: the neighbouring object's share of a
+ * close-up goes from 0.9% to 41%, and crossroads-framing.spec.ts caps it at 1%
+ * for the good reason that a reader grades a scene by its weakest object. 17
+ * is not a round number somebody liked, it is the shortest lane that keeps the
+ * neighbours out of frame.
+ *
+ * So this shot buys what is actually on the table: the band is CENTRED rather
+ * than enlarged. Its middle sat 18.7% of the half-frame above centre, which is
+ * the 250-above/400-below the audit measured; standing further back with the
+ * aim point lifted to 1.6 puts it at 8.6%, and the slightly tighter lens takes
+ * the objects from 87.4% of the composed width to 89.2%. Reach 0.893, so there
+ * is still 11% of headroom before anything crops.
+ *
+ * The rest of that finding is answered by the affordance rather than by the
+ * lens: nothing on the page said the rows did anything, so almost nobody
+ * reached the close-ups. See .crossroads-hint and the focus bar in globals.css.
  */
-const WIDE_FIT_H = 35.9;
+const WIDE_FIT_H = 32.8;
 const WIDE_FIT_V = 15.2;
 
 /**
@@ -216,7 +251,7 @@ const WIDE_FIT_V = 15.2;
 export const SHOTS: Shot[] = [
   // The junction. The establishing shot, and the only place all four are in
   // frame with nothing yet decided.
-  { focus: -1, pos: [0, 6, 13], look: [0, 0, -10], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
+  { focus: -1, pos: [0, 5, 15], look: [0, 1.6, -10], fitH: WIDE_FIT_H, fitV: WIDE_FIT_V },
   ...LANES.map((geom, i) => {
     const target = laneTarget(geom.angle, geom.dist, geom.aimY);
     return {
@@ -272,7 +307,9 @@ export function boot(
   labels: SceneLabels,
   options: BootOptions = {},
 ): Handle {
-  const { panel = null, onFrame } = options;
+  // `ground` is destructured under another name because this file already has
+  // a `ground`: the floor mesh, 150 lines down. Same word, two things.
+  const { panel = null, onFrame, ground: groundHex } = options;
 
   // The floor is laid out for exactly four. A fifth service would need its own
   // angle, its own lane length, its own standoff and its own object, so the
@@ -328,13 +365,33 @@ export function boot(
   renderer.shadowMap.type = PCFShadowMap;
 
   const scene = new Scene();
-  scene.background = new Color(PALETTE.background);
+  /**
+   * The ground the world stands in, and it is a PROP with a default rather
+   * than the constant it used to be.
+   *
+   * The scene is full bleed and the ink hero sits directly on top of it, so
+   * the background and --kc-inkSurface are the same surface as far as a reader
+   * is concerned: the canvas runs to the viewport edges and the slab above it
+   * ends at the canvas's first pixel. They agreed by coincidence, because
+   * light-mode inkSurface happens to be stone.950, and disagreed by 8.5 CIE L*
+   * in the dark scheme, which drew a hard line across the page at the section
+   * boundary. Now the component hands over whatever the section's own
+   * background computes to, and setGround() below follows a theme switch.
+   *
+   * PALETTE.background stays the default and stays checked against stone.950
+   * by check-scene-palette.mjs: it is what every shot was lit and fogged
+   * against, and it is what a boot with no ground has to fall back to.
+   */
+  const groundColour = new Color(groundHex ?? PALETTE.background);
+  scene.background = groundColour;
   // 0.014, and it was 0.022. The wide shot stands 34 units off the far lanes
   // so it can hold all four without a lens wide enough to bend them, and at
   // 0.022 that distance washed 47% of the contrast out of the two outer
   // objects. At 0.014 it costs 20%, which still reads as depth, and the
   // floor's far edge is still 51% gone by the time it arrives.
-  scene.fog = new FogExp2(PALETTE.background, 0.014);
+  const fog = new FogExp2(PALETTE.background, 0.014);
+  fog.color.copy(groundColour);
+  scene.fog = fog;
 
   // The 50 is a placeholder. Every field of view in this scene is computed in
   // apply() from the shot's half-angles and the canvas aspect, and apply()
@@ -769,6 +826,15 @@ export function boot(
     // with one way finished and another half done, which is a count of nothing
     // and made data-built a name for something the DOM did not hold.
     built: () => lanes.filter((l) => l.built >= 1).length,
+    setGround(colour) {
+      // One Color object, mutated, and the fog shares it by copy rather than
+      // by reference: scene.background and FogExp2.color are two Colors and
+      // three.js reads both every frame. Setting one and not the other leaves
+      // the far end of the floor fading to the previous theme's dark.
+      groundColour.set(colour);
+      fog.color.copy(groundColour);
+      invalidate();
+    },
     stop() {
       // Works whether the loop is running or parked: raf is 0 when parked, and
       // clearing alive keeps invalidate() from restarting it if a late call

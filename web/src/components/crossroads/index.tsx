@@ -61,6 +61,18 @@ const inOrder = (ways: readonly Way[]): Way[] =>
 const ROOM = '(min-width: 64rem)';
 
 /**
+ * Where the poster stops being a strip and becomes the upright crop.
+ *
+ * 40rem is Tailwind's `sm`, and it is written once here and once in the
+ * <source media> below it, which is the one duplication this file cannot
+ * remove: a media attribute takes a string and cannot read a constant. The two
+ * describe the same boundary, so they have to move together — the crops show
+ * DIFFERENT objects, so a mismatch would leave the alt text describing four
+ * things next to a picture of two.
+ */
+const STRIP = '(min-width: 40rem)';
+
+/**
  * How much clear space a label needs on every side before it is shown at all.
  *
  * A chip touching the panel's edge or the top of the canvas reads as a
@@ -69,6 +81,21 @@ const ROOM = '(min-width: 64rem)';
  * is what makes it look placed rather than trapped.
  */
 const MARK_GAP = 12;
+
+/**
+ * The section's resolved background colour, for the scene to stand in.
+ *
+ * Read off the ELEMENT rather than off the custom property. getComputedStyle
+ * returns a custom property as the token it was written as, so asking for
+ * --kc-inkSurface hands back the literal string `var(--kc-stone-975)`, which
+ * THREE.Color parses as black. Asking for `background-color` on something that
+ * uses it returns the resolved `rgb(...)`.
+ */
+function groundOf(section: HTMLElement | null): string | undefined {
+  if (!section) return undefined;
+  const colour = getComputedStyle(section).backgroundColor;
+  return colour && colour !== 'rgba(0, 0, 0, 0)' ? colour : undefined;
+}
 
 /**
  * Whether this visitor gets the scene at all.
@@ -96,9 +123,11 @@ export function Crossroads({
   title,
   lead,
   link,
+  hint,
   servicesPath,
   fromLabel,
   sceneAlt,
+  scenePhoneAlt,
   ways,
 }: {
   lang: Lang;
@@ -106,10 +135,18 @@ export function Crossroads({
   title: string;
   lead: string;
   link: { href: string; label: string };
+  /**
+   * That the rows do anything. Rendered only where the scene mounts, because
+   * in the fallback there is nothing to hover towards and the line would be a
+   * promise the page cannot keep.
+   */
+  hint: string;
   /** The services page, so every row can link to its own card there. */
   servicesPath: string;
   fromLabel: string;
   sceneAlt: string;
+  /** The upright crop, for widths where the strip is a dark banner. */
+  scenePhoneAlt: string;
   ways: readonly Way[];
 }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -136,6 +173,14 @@ export function Crossroads({
   const seenRef = useRef(false);
 
   const [enhanced, setEnhanced] = useState(false);
+  /**
+   * Whether the poster is showing the upright crop rather than the strip.
+   *
+   * Only the alt text depends on it: <picture> picks the file on its own, and
+   * it cannot pick an alt. Starts false so the first render matches the static
+   * HTML, and is corrected in an effect — the same shape as `enhanced`.
+   */
+  const [phoneCrop, setPhoneCrop] = useState(false);
   /** The row under the pointer or holding keyboard focus, or -1 for none. */
   const [focus, setFocus] = useState(-1);
   // How many of the four have finished building, as an integer. Reflected onto
@@ -154,10 +199,18 @@ export function Crossroads({
   // cannot be given different numbers.
   useEffect(() => {
     const room = window.matchMedia(ROOM);
-    const decide = () => setEnhanced(canMount());
+    const strip = window.matchMedia(STRIP);
+    const decide = () => {
+      setEnhanced(canMount());
+      setPhoneCrop(!strip.matches);
+    };
     decide();
     room.addEventListener('change', decide);
-    return () => room.removeEventListener('change', decide);
+    strip.addEventListener('change', decide);
+    return () => {
+      room.removeEventListener('change', decide);
+      strip.removeEventListener('change', decide);
+    };
   }, []);
 
   /**
@@ -287,6 +340,13 @@ export function Crossroads({
           // The copy panel is standing on the left of the canvas, and the
           // camera composes into what is left.
           panel: copyRef.current,
+          // The section's OWN background, resolved. The scene is full bleed
+          // and the ink hero lands directly on its first pixel, so the world's
+          // ground and --kc-inkSurface have to be the same colour or the page
+          // gets a hard line across it at the boundary. Read off the element
+          // rather than off the custom property, because a custom property
+          // hands back the unresolved `var(--kc-stone-975)` it was written as.
+          ground: groundOf(sectionRef.current),
           // Read from the frame that was just drawn, not from a second
           // measurement, so the labels and the camera can never disagree
           // about where the objects are.
@@ -315,6 +375,34 @@ export function Crossroads({
       handleRef.current = null;
     };
   }, [enhanced, ordered, lang]);
+
+  /**
+   * A theme switch repaints the world.
+   *
+   * The toggle writes data-theme onto <html>, which is a CSS-only change
+   * everywhere else on the site and cannot be one here: three.js holds its own
+   * copy of the background and the fog. Without this the scene keeps the
+   * ground it booted with and the seam under the hero comes back the moment a
+   * reader presses the control in the header.
+   */
+  useEffect(() => {
+    if (!enhanced) return;
+    const root = document.documentElement;
+    const repaint = () => {
+      const colour = groundOf(sectionRef.current);
+      if (colour) handleRef.current?.setGround(colour);
+    };
+    const observer = new MutationObserver(repaint);
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    // And the OS, for a reader who has never touched the toggle: the roles
+    // follow prefers-color-scheme, and nothing writes data-theme in that case.
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    media.addEventListener('change', repaint);
+    return () => {
+      observer.disconnect();
+      media.removeEventListener('change', repaint);
+    };
+  }, [enhanced, built]);
 
   /**
    * The reveal: the four drawings become the four objects, once, when the
@@ -409,15 +497,30 @@ export function Crossroads({
                 that size. It reads as a dark banner, which is worse than no
                 picture. */}
             {enhanced ? null : (
-              <img
-                src={asset('/crossroads.webp')}
-                alt={sceneAlt}
-                width={1600}
-                height={481}
-                loading="lazy"
-                decoding="async"
-                className="mt-6 hidden w-full rounded-md border border-ink-line sm:block"
-              />
+              <picture>
+                {/* Two crops of one render, chosen by width. The strip is
+                    1600x481 and at 327px it is 98px tall, where nothing in it
+                    is identifiable and it reads as a dark banner — which is why
+                    it used to be hidden below `sm`, and why the services
+                    section then had no picture at all on the device most
+                    visitors use. The upright crop holds the landing page and
+                    the dashboard at about three times that width.
+
+                    <source> rather than two <img>s, so the browser fetches one
+                    file and not both, and the alt text belongs to the <img>
+                    because the two crops show different things — four ways in
+                    one, two in the other. */}
+                <source media="(min-width: 40rem)" srcSet={asset('/crossroads.webp')} />
+                <img
+                  src={asset('/crossroads-phone.webp')}
+                  alt={phoneCrop ? scenePhoneAlt : sceneAlt}
+                  width={880}
+                  height={643}
+                  loading="lazy"
+                  decoding="async"
+                  className="mt-6 w-full rounded-md border border-ink-line"
+                />
+              </picture>
             )}
 
             {/* Four rows, every detail open, every row a link.
@@ -481,6 +584,18 @@ export function Crossroads({
                 </li>
               ))}
             </ol>
+
+            {/* The affordance, and it is one line because one line is what was
+                missing. The camera follows the row under the pointer, every
+                row is a link, and nothing on the page said so: no caption, no
+                cursor note, and a hover fill that only arrives once the
+                pointer is already on a row. So the shot the whole section
+                exists for was one almost nobody saw. .crossroads-hint hides it
+                wherever the scene does not mount. */}
+            <p className="crossroads-hint mt-6 items-center gap-2 text-small text-ink-faint">
+              <span aria-hidden="true">↖</span>
+              {hint}
+            </p>
 
             <div className="mt-6">
               <ArrowLink onInk href={link.href}>

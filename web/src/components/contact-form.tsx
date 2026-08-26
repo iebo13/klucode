@@ -25,8 +25,17 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Flat, like every other content surface. A form field is the last place that
 // should gamble its legibility on what happens to be behind it.
+//
+// `field` and `field-line`, not `surface-raised` and `line`. Measured in the
+// dark theme, the old pair gave a fill 1.26:1 against the page and a border
+// 1.41:1 against that fill: WCAG 1.4.11 asks 3:1 of a control's boundary, so
+// this page was shipping four boxes with no edges, and the textarea only read
+// as a field because it is tall and has a resize grip. Raising the shared
+// `line` token would have fixed it by outlining every card on the site in mid
+// grey, so the control roles were split out instead — see the note in
+// tailwind.config.ts and the CONTROL tier in check_contrast.py.
 const field =
-  'w-full rounded-md border border-line bg-surface-raised px-4 py-3 text-body outline-none transition-colors duration-base placeholder:text-muted/70 focus:border-brand-action';
+  'w-full rounded-md border border-field-line bg-field px-4 py-3 text-body outline-none transition-colors duration-base placeholder:text-muted/70 focus:border-brand-action';
 
 /**
  * On a static site there is no server to post to. Rather than quietly routing
@@ -196,7 +205,11 @@ export function ContactForm({ t, siteName }: { t: Content['contact']; siteName: 
             name="consent"
             required
             aria-required="true"
-            className="mt-1 h-4 w-4 shrink-0 accent-[--kc-brandAction]"
+            // 24px, not 16. It is the one control that gates submission and it
+            // was the smallest thing on the page. The audit asked for 20 and
+            // the token scale runs 16, 24: an off-scale 20 produces no CSS at
+            // all here, because tailwind.config.ts REPLACES theme.spacing.
+            className="mt-1 h-6 w-6 shrink-0 accent-[--kc-brandAction]"
             aria-invalid={!!errors.consent}
             aria-describedby={errors.consent ? 'consent-error' : undefined}
           />

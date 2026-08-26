@@ -38,21 +38,45 @@ HERE = Path(__file__).resolve().parent
 # The system
 # --------------------------------------------------------------------------
 
-STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
+# THE THREE HALF STEPS AT THE DARK END — 875, 925, 975 — and why a scale that
+# was deliberately eleven steps long is now fourteen.
+#
+# The dark scheme needs FOUR distinct grounds and the ladder only offered two
+# below L* 30. It was asked for a page, a raised panel, an alternating tint and
+# the ink slab the page is framed in, and it had stone.900 and stone.950 to
+# build them out of. So three roles shared two values: `surfaceAlt` landed 0.4
+# CIE L* from the page (the alternation device did nothing at all in dark), and
+# `inkSurface` and `surfaceRaised` both resolved to stone.900 — which is one
+# step LIGHTER than the page, so the slab the page is supposed to be framed in
+# was a pale band and a card was the same colour as the hero.
+#
+# Half steps rather than a re-spaced ladder, because every existing step is
+# referenced by name from tokens.json, tailwind.config.ts, palette.ts and two
+# scripts: moving 900 to make room would repaint the site sideways to fix a
+# hole at the bottom. The lightness deltas are exact halves of their
+# neighbours' (0.043, 0.036, 0.036), so the names mean what they say, and the
+# chroma and torsion are interpolated on the same curves rather than picked.
+STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 875, 900, 925, 950, 975]
 
 # Perceptual lightness ladder. Even-ish by design, with slightly finer steps
 # at the light end where the eye is more sensitive to surface differences.
-LIGHTNESS = [0.975, 0.945, 0.888, 0.820, 0.742, 0.658, 0.572, 0.484, 0.396, 0.310, 0.238]
+LIGHTNESS = [
+    0.975, 0.945, 0.888, 0.820, 0.742, 0.658, 0.572, 0.484,
+    0.396, 0.353, 0.310, 0.274, 0.238, 0.202,
+]  # fmt: skip
 
 # Chroma curve: peaks at 500/600 and tapers at both ends. Tapering matters —
 # a tint that keeps full chroma turns pastel-garish, and a shade that keeps it
 # turns to sludge.
-CHROMA = [0.012, 0.028, 0.052, 0.074, 0.092, 0.102, 0.099, 0.085, 0.069, 0.052, 0.041]
+CHROMA = [
+    0.012, 0.028, 0.052, 0.074, 0.092, 0.102, 0.099, 0.085,
+    0.069, 0.0605, 0.052, 0.0465, 0.041, 0.0355,
+]  # fmt: skip
 
 # Hue torsion. Real pigments shift hue with tint and shade; holding one hue
 # flat across a scale is what makes generated palettes look synthetic. Lighter
 # steps run cooler (toward teal), darker steps deepen toward forest.
-HUE_TORSION = [+6, +5, +4, +3, +1.5, 0, -1.5, -3, -4, -5, -6]
+HUE_TORSION = [+6, +5, +4, +3, +1.5, 0, -1.5, -3, -4, -4.5, -5, -5.5, -6, -6.5]
 
 # The brand hue. 152° is a deep forest green — rotated 14° warmer than a true
 # blue-green viridian. Chosen over the cooler, more saturated option because it
@@ -65,7 +89,10 @@ BRAND_HUE = 152.0
 # is the change that stops the whole page reading as one muddy hue: the eye
 # needs somewhere to rest.
 NEUTRAL_HUE = 150.0
-NEUTRAL_CHROMA = [0.004, 0.005, 0.006, 0.007, 0.008, 0.008, 0.008, 0.008, 0.009, 0.010, 0.010]
+NEUTRAL_CHROMA = [
+    0.004, 0.005, 0.006, 0.007, 0.008, 0.008, 0.008, 0.008,
+    0.009, 0.0095, 0.010, 0.010, 0.010, 0.010,
+]  # fmt: skip
 
 # The one warm counterpoint, and it is deliberately tiny.
 #

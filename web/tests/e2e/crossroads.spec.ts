@@ -73,20 +73,41 @@ test.describe('the four ways are readable however the visitor arrives', () => {
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
     await expect(page.locator(`${section} canvas`)).toHaveCount(0);
     await expect(page.locator(`${section} li[data-key="care"]`)).toContainText('90');
-    // The poster is a 1600x378 strip. At 327px wide it is 78px tall and reads
-    // as a dark banner, so a phone does not get it at all.
-    await expect(page.locator(`${section} img`)).toBeHidden();
+    // A phone gets a picture, and it gets the UPRIGHT CROP.
+    //
+    // It used to get nothing: the poster is a 1600px strip, at 327px wide it is
+    // about 100px tall, and at that size nothing in it is identifiable, so it
+    // was hidden below `sm` and the section had no image at all on the device
+    // most visitors use. The upright crop is the same render cut down to the
+    // landing page and the dashboard, at about three times that width. The
+    // currentSrc assertion is the load-bearing half: <picture> chooses the file
+    // and `src` on the <img> would report the fallback whichever one won.
+    const poster = page.locator(`${section} img`);
+    await expect(poster).toBeVisible();
+    await expect(poster).toHaveJSProperty(
+      'currentSrc',
+      `${new URL('/crossroads-phone.webp', page.url()).href}`,
+    );
+    // Two crops, two alts: this one shows two of the four ways and must not
+    // claim four.
+    await expect(poster).toHaveAttribute('alt', /Zwei der vier Wege/);
   });
 
   // 800 wide is too narrow for the panel to stand beside the world, so no
-  // scene, and wide enough for the poster to be a picture, so the poster.
+  // scene, and wide enough for the strip to be a picture, so the strip.
   test('on a narrow laptop, too narrow for the panel and the world', async ({ page }) => {
     await page.setViewportSize({ width: 800, height: 900 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
     await expect(page.locator(`${section} canvas`)).toHaveCount(0);
     await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
-    await expect(page.locator(`${section} img`)).toBeVisible();
+    const poster = page.locator(`${section} img`);
+    await expect(poster).toBeVisible();
+    await expect(poster).toHaveJSProperty(
+      'currentSrc',
+      `${new URL('/crossroads.webp', page.url()).href}`,
+    );
+    await expect(poster).toHaveAttribute('alt', /vier Wege/);
   });
 
   // The most common Windows laptop viewport. It used to get the fallback,

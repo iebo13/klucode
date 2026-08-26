@@ -77,9 +77,11 @@ const en = {
     switchLangLabel: 'Auf Deutsch ansehen',
     themeToDark: 'Dark theme',
     themeToLight: 'Light theme',
+    themeLabel: 'Theme',
     footerNavLabel: 'Pages',
     footerLegalLabel: 'Legal',
     footerSocialLabel: 'Profiles',
+    footerContactLabel: 'Contact',
     backHome: 'Back to the homepage',
     stack: 'Stack',
     before: 'Before',
@@ -96,12 +98,28 @@ const en = {
     heroTitleAccent: 'Front end to server.',
     heroLead:
       'React, Next.js, TypeScript, Node.js. I take a defined slice of your product and ship it, or slot into your team as capacity that does not need managing. Day rate or fixed price, agreed before anything starts.',
+    // The client has released images of this system. The other two case
+    // studies wait on written approval and keep their diagram until it comes.
+    // The frame's title names the system and not the customer, which is the
+    // same rule the case study itself follows.
+    heroShot: {
+      src: '/revento-tarifrechner.webp',
+      alt: 'A live tariff comparison: 113 tariffs found, each row showing the unit rate, the standing charge, the annual cost and the saving against the incumbent supplier.',
+      label: 'Comparison portal · tariff run',
+      width: 1200,
+      height: 730,
+    },
+    heroShotCaption:
+      'Shipped and in daily use: the comparison portal from the largest of the three systems.',
     servicesEyebrow: 'Services',
     servicesTitle: 'Four ways to work together.',
     servicesLead: 'The price is fixed before the first line is written.',
     servicesLink: 'All services and prices',
+    servicesHint: 'Point at a row to look down that way.',
     sceneAlt:
       'The four ways as a place: a website on a monitor, a web application with a database and a server behind it, an office with one free desk, a server rack wired to a cloud.',
+    scenePhoneAlt:
+      'Two of the four ways as a place: a website on one monitor and, beside it, a web application with its database and server.',
 
     workEyebrow: 'Work',
     workTitle: 'Three systems, running daily.',
@@ -299,6 +317,13 @@ const en = {
         result:
           'Monthly settlement runs automatically. No file travels by email, and there is no second version nobody can vouch for.',
         stack: ['React', 'Node.js', 'Express', 'PostgreSQL', 'Plesk'],
+        shot: {
+          src: '/revento-start.webp',
+          alt: 'The portal front page: a headline about brokering energy contracts, two buttons, and below them three figures, 500,000+ contracts brokered, 200+ active partners and 52+ energy suppliers.',
+          label: 'Comparison portal · front page',
+          width: 1200,
+          height: 672,
+        },
         offer: { label: 'The matching service: Custom web application', service: 'app' },
         diagram: {
           sources: ['CRM', 'Commission billing', 'Comparison portal'],

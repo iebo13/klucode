@@ -100,17 +100,28 @@ for name, v in tokens["motion"].items():
     if not name.startswith("$"):
         lines.append(f"  --kc-motion-{name}: {v};")
 
-lines += ["", "  /* --- semantic roles: light (default) ---------------------------- */"]
-lines += role_vars("light")
+lines += [
+    "",
+    "  /* --- semantic roles: DARK, which is the fallback ----------------- */",
+    "  /* Dark sits on bare :root and light is the media override, rather than",
+    "     the other way round, because dark is this site's declared default:",
+    "     whatever the browser cannot tell us, it gets. In practice every",
+    "     current browser answers prefers-color-scheme with a concrete light or",
+    "     dark and never with neither, so this decides the rendering only where",
+    "     media queries do not reach — a UA that does not support them, and the",
+    "     colour-scheme hint the UA paints its own widgets and scrollbars with",
+    "     before it knows anything else. Owner's call, 2026-08-26. */",
+]
+lines += role_vars("dark")
 lines += ["}", ""]
 
 lines += [
-    "/* Dark mode follows the OS by default, and can be forced with",
-    "   <html data-theme=\"dark\"> for a preview or a screenshot. */",
-    "@media (prefers-color-scheme: dark) {",
+    "/* Light mode follows the OS, and can be forced with",
+    "   <html data-theme=\"light\"> for a preview or a screenshot. */",
+    "@media (prefers-color-scheme: light) {",
     "  :root {",
 ]
-lines += ["  " + v for v in role_vars("dark")]
+lines += ["  " + v for v in role_vars("light")]
 lines += ["  }", "}", ""]
 lines += ['[data-theme="dark"] {']
 lines += role_vars("dark")
