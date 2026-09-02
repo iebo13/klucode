@@ -36,7 +36,7 @@ def arg(name, default):
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = arg("--out", os.path.join(HERE, "renders"))
-SHOTS_WANTED = arg("--shots", "junction,website,app,capacity,care").split(",")
+SHOTS_WANTED = arg("--shots", "junction" if arg("--frame", "free") == "poster" else "junction,website,app,capacity,care").split(",")
 SCALE = float(arg("--scale", "1"))
 SAMPLES = int(arg("--samples", "128"))
 DOF = arg("--dof", "1") == "1"
@@ -57,10 +57,20 @@ MIST_DEPTH = float(arg("--mist", "20"))
 
 os.makedirs(OUT, exist_ok=True)
 
-# The stage at the 1440x900 viewport: the copy panel covers the left 632 px and
-# the scene is framed in the 808 px beside it.
-W, H, RESERVE = 1440, 998, 632
+# The frame. `free` is the still the page ships: the 808x998 region beside the
+# copy panel at the 1440x900 viewport, with the principal point in its middle.
+# `full` is the whole 1440x998 stage with the panel's 632 px reserve, which is
+# what the spike rendered. `poster` is the junction in a wide frame for the
+# phone and fallback picture.
+FRAME = arg("--frame", "free")
+if FRAME == "full":
+    W, H, RESERVE = 1440, 998, 632
+elif FRAME == "poster":
+    W, H, RESERVE = 1600, 1000, 0
+else:
+    W, H, RESERVE = 808, 998, 0
 FREE = W - RESERVE
+MASK = arg("--mask", "0" if FRAME == "poster" else "1") == "1"
 
 # ------------------------------------------------------------------ palette
 
@@ -506,7 +516,39 @@ tree.links.new(rl.outputs["Image"], mix.inputs[1])
 premul = tree.nodes.new("CompositorNodeSetAlpha")
 premul.mode = "APPLY"
 tree.links.new(mix.outputs["Image"], premul.inputs["Image"])
-tree.links.new(rl.outputs["Alpha"], premul.inputs["Alpha"])
+# The edges fade to nothing: a soft box multiplies the alpha, so the near
+# floor and the sides of the still end in the page's ink wherever the still
+# is placed, at any stage size. The objects and the light pool sit well
+# inside the box. Its width is set per shot below (the junction's fan reaches
+# further out than a close-up).
+# In Blender 4.5 the box's place and size are input sockets. Measured on a
+# 404x499 frame: Position is a fraction of each axis (y from the bottom), Size
+# is a fraction of the image WIDTH on both axes, and the node's own `width`
+# and `height` are its box on the editor canvas, which is a trap this script
+# fell into once. So a height of 1.05 on the 808x998 still is 848 px, from
+# 55 px under the top to 95 px above the bottom before the blur.
+MASK_HEIGHT = 1.05
+box_mask = tree.nodes.new("CompositorNodeBoxMask")
+box_mask.inputs["Position"].default_value = (0.5, 0.52)
+box_mask.inputs["Size"].default_value = (0.92, MASK_HEIGHT)
+# Measured at half scale: a size of 120 turned the box's hard edge into a
+# soft zone about 80 px wide on each side, so the number is not a radius.
+# Scaled with the render, so the fade is the same fraction of the still at
+# 1x and 2x.
+mask_blur = tree.nodes.new("CompositorNodeBlur")
+mask_blur.filter_type = "FAST_GAUSS"
+mask_blur.use_relative = False
+mask_blur.size_x = int(200 * SCALE)
+mask_blur.size_y = int(200 * SCALE)
+tree.links.new(box_mask.outputs["Mask"], mask_blur.inputs["Image"])
+alpha_mul = tree.nodes.new("CompositorNodeMath")
+alpha_mul.operation = "MULTIPLY"
+tree.links.new(rl.outputs["Alpha"], alpha_mul.inputs[0])
+if MASK:
+    tree.links.new(mask_blur.outputs["Image"], alpha_mul.inputs[1])
+else:
+    alpha_mul.inputs[1].default_value = 1.0
+tree.links.new(alpha_mul.outputs["Value"], premul.inputs["Alpha"])
 tree.links.new(premul.outputs["Image"], glare.inputs["Image"])
 if PREVIEW:
     over = tree.nodes.new("CompositorNodeAlphaOver")
@@ -558,6 +600,7 @@ for name in SHOTS_WANTED:
     bpy.context.view_layer.update()
     aspect = FREE / H
     cam_data.angle_y = math.radians(fov_for(shot["fit"][0], shot["fit"][1], aspect))
+    box_mask.inputs["Size"].default_value = (0.98 if name == "junction" else 0.9, MASK_HEIGHT)
     cam_data.dof.use_dof = DOF
     cam_data.dof.focus_distance = (look - pos).length
     cam_data.dof.aperture_fstop = shot["fstop"]
@@ -604,7 +647,7 @@ for name in SHOTS_WANTED:
     for k, anchor in anchors.items():
         v = world_to_camera_view(scene, cam, anchor)
         marks[k] = [round(v.x * W), round((1 - v.y) * H), round(v.z, 2)]
-    report[name] = {"camera": list(pos), "look": list(look), "fov_y": round(math.degrees(cam_data.angle_y), 2), "shift_x": round(cam_data.shift_x, 4), "marks": marks}
+    report[name] = {"frame": FRAME, "width": W, "height": H, "scale": SCALE, "camera": list(pos), "look": list(look), "fov_y": round(math.degrees(cam_data.angle_y), 2), "shift_x": round(cam_data.shift_x, 4), "marks": marks}
     print(f"rendered {name}: {report[name]}")
 
 with open(os.path.join(OUT, "anchors.json"), "w") as f:
