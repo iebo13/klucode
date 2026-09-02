@@ -230,9 +230,11 @@ test('the hub looks down its stroke, with the way it is flying at in front of th
  * Measured over the five stops, five hands and three canvases the test walks,
  * 75 frames in all: no neighbour appears anywhere, at rest or at any hand
  * extreme, so the worst share is 0.000% in both columns. That is the K paying
- * off. Its arms leave the hub 46.57 degrees apart where the old fan's lanes
- * were 30, and a stand stands ON its own stroke looking down it, so the rest
- * of the letter is behind the shoulder rather than off to one side.
+ * off. Each arm leaves the stem by 46.55 degrees, which is the 0.812419
+ * radians between LAYOUT.lanes website at 0.3 and app at -0.512419 in
+ * scene-manifest.ts, where the old fan's neighbouring lanes sat 30 apart. And
+ * a stand stands ON its own stroke looking down it, so the rest of the letter
+ * is behind the shoulder rather than off to one side.
  *
  * A quarter more than nothing is still nothing, so the cap is the measurement
  * plus a pixel instead: one part in a million of the composed region, which is
@@ -281,9 +283,10 @@ test('no stand has a neighbour standing in its shot', () => {
  * points either side of the camera passes close to it, and the closer it
  * passes the faster the camera spins. At the limit it passes through the
  * camera and the view flips. The K makes that a live risk, because two of its
- * strokes leave the hub 86.87 degrees apart (the app arm at -0.5127 radians
- * and the capacity arm at -2.0289) and the transit between them crosses the
- * middle of the letter.
+ * strokes leave the hub 86.90 degrees apart, which is the 1.516755 radians
+ * between LAYOUT.lanes app at -0.512419 and capacity at -2.029174 in
+ * scene-manifest.ts, and the transit between them crosses the middle of the
+ * letter.
  */
 test('the flight never swings faster than this scene already does', () => {
   const flight = buildFlight(
@@ -346,7 +349,7 @@ test('the flight never swings faster than this scene already does', () => {
    * whole yaw each band travels is 3.6, 50.1, 92.1 and 48.9 degrees: the two
    * fast halves are the two that leave a stand, and the fastest band is the
    * one crossing the K from the app arm to the capacity arm, whose strokes
-   * leave the hub 86.87 degrees apart.
+   * leave the hub 86.90 degrees apart.
    *
    * Why a peak four times its own band's average: the look point is
    * interpolated, not the angle, and it sets off across 35 units of floor
