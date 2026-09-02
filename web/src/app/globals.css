@@ -585,16 +585,45 @@
   height: 100svh;
 }
 
-/* The pinned stage is one viewport tall, so the panel has to fit inside it:
-   the section's own padding drops to 1rem and the rows' to 0.5rem. The PIN
-   query in index.tsx is set from the panel's height under these paddings,
-   measured at 1440 wide. */
+/* The pinned stage is one viewport tall, and two things have to fit inside it:
+   the panel, and the site's fixed header capsule standing over the top of it.
+
+   The header is why the top padding is 5.5rem rather than 1rem. It is the same
+   number as the root's own scroll-padding-top, because it is the same
+   clearance: the capsule occupies no layout space, so every anchor on the site
+   already jumps 5.5rem short of its target to clear it. Unpinned, the panel
+   scrolls under the capsule like every other section and is past it in a
+   second. Pinned, it stands still there for a viewport and a half, and the
+   first build spent the whole ride with the eyebrow behind the glass.
+
+   Everything else here is the panel making room for that: its own padding, the
+   rows' and the two top margins under them all come down, which is what buys
+   the header its band without pushing the pin floor up a size. See the PIN
+   comment in index.tsx for the panel this leaves and the floor it sets. */
 [data-pinned='true'] .crossroads-layout {
-  padding-block: 1rem;
+  padding-top: 5.5rem;
+  padding-bottom: 1rem;
+}
+
+[data-pinned='true'] .crossroads-copy {
+  padding: 1.25rem;
+  /* Still exactly its own padding, so the eyebrow stays on the page's spine.
+     The two are one decision written twice: see the note on the unpinned rule
+     above, where the bleed is 1.5rem because the padding is. */
+  margin-left: -1.25rem;
 }
 
 [data-pinned='true'] .crossroads-way {
-  padding-block: 0.5rem;
+  padding-block: 0.25rem;
+}
+
+/* The affordance line and the link under the board, whose 1.5rem top margins
+   are Tailwind's mt-6 in index.tsx. Pinned they are the cheapest 16px there
+   is: nothing about the board changes, the two lines simply sit closer to what
+   they belong to. */
+[data-pinned='true'] .crossroads-hint,
+[data-pinned='true'] .crossroads-more {
+  margin-top: 1rem;
 }
 
 .crossroads-stop {
@@ -630,7 +659,16 @@ html:has(#services[data-pinned='true']) {
 
    The box is 808x998 because that is the size the stills were rendered at, and
    the images stretch over it, so all five share one transform and a crossfade
-   can never be two pictures at two different scales. */
+   can never be two pictures at two different scales.
+
+   No fade of the page's own, and there was one for a day: the junction was
+   rendered with an alpha box the width of the frame, so its first column of
+   pixels was left at half alpha and the letterboxed edge stepped visibly onto
+   the ink. The render answers it now, with a box narrower than the frame on
+   every still (spec section 3.2), so the fade completes inside the picture and
+   there is nothing at the boundary to hide. Scanned across both edges at
+   1440x900 and 1920x1080 on the new junction: no step, only the floor's own
+   gradient. */
 .crossroads-stills {
   position: absolute;
   top: 0;
@@ -640,25 +678,6 @@ html:has(#services[data-pinned='true']) {
   transform-origin: 0 0;
   pointer-events: none;
   opacity: 0;
-  /* The sides feather into the ink, and this is the one part of the render's
-     own edge treatment the page has to finish itself.
-
-     The render fades its top, its near floor and, on a close-up, its sides to
-     nothing, so a still can sit anywhere on the ink with no boundary. The
-     junction is masked at full width, so its side fade is centred on the frame
-     edge and the first column of pixels is still at about half alpha. That did
-     not show while the still filled the free region exactly. Pinned it does:
-     the stage is one viewport tall, the height binds, and the picture is
-     letterboxed, which puts both frame edges out on bare ink. Measured at
-     1440x900 the near floor is 9 levels of 255 darker than the section's ink
-     and the step at the edge was plainly visible.
-
-     4% of 808 is 32 pixels, which is about half the blur the render's own mask
-     uses and well clear of the outermost object: at 1440x900 the fade covers
-     29 screen pixels and the nearest thing in the picture, the landing page's
-     monitor, does not start for another 22. */
-  mask-image: linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
 }
 
 /* The reveal, and it is the whole of what is left of one. The world fades up
@@ -985,18 +1004,18 @@ html:has(#services[data-pinned='true']) {
   background: color-mix(in oklab, var(--kc-inkSurface) 92%, transparent);
 }
 
-/* The chips are live on the junction: pointing at one is pointing at a row, and
-   clicking one is clicking the row. It is the thing all four objects being on
-   screen at once finally makes possible.
+/* The chips are live on the junction: pointing at one lights its row and
+   itself, clicking one opens the row. It is the thing all four objects being
+   on screen at once finally makes possible.
 
-   And the chosen one stays live wherever the picture takes it. Without the
-   second selector a chip could not be clicked at all: pointing at it changes
-   the still, the still is no longer the junction, the chip loses its pointer
-   events under the pointer that is on it, and the click on its way to the row
-   lands on nothing. The three that are not chosen are chrome on a close-up,
-   which is what they were on the canvas. */
-[data-still='junction'] .crossroads-mark-box,
-.crossroads-mark-box[data-focus='true'] {
+   Pointing does NOT change the picture, and that is a ruling rather than an
+   oversight. It did for a day, and a chip that crossfades the picture away
+   from under the pointer that touched it moves itself 100 to 200px in the same
+   moment: a control that leaves is a surprise, and the rows beside it already
+   reach every close-up. So a chip on a close-up needs no pointer events of its
+   own either, because the junction is the only place a chip is ever under a
+   pointer. */
+[data-still='junction'] .crossroads-mark-box {
   pointer-events: auto;
   cursor: pointer;
 }

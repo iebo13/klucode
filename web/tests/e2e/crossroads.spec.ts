@@ -223,20 +223,21 @@ test('the view follows the pointer, and the keyboard is the same input', async (
 
 test('the chips on the junction are live', async ({ page }) => {
   // The thing four objects on one picture finally makes possible: the name
-  // standing at the object IS the row. Pointing at it selects that way and
-  // clicking it opens the same card the row opens.
+  // standing at the object IS the row. Pointing at it lights the row and the
+  // chip, and clicking it opens the same card the row opens.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
   await arrive(page);
 
   await mark(page, 1).hover();
-  await expect(page.locator(section)).toHaveAttribute('data-still', 'app');
   await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute('data-focus', 'true');
+  await expect(mark(page, 1)).toHaveAttribute('data-focus', 'true');
+  // And the picture stays where it was. A chip that crossfaded to its own
+  // close-up moved itself out from under the pointer that touched it, which
+  // is a control that leaves rather than a control.
+  await expect(page.locator(section)).toHaveAttribute('data-still', 'junction');
+  await expect(page.locator(shown)).toHaveAttribute('data-key', 'junction');
 
-  // And it is still clickable where it has moved to, which is the whole reason
-  // a chosen chip keeps its pointer events: the picture changes under the
-  // pointer, so a chip that went dead on the way to its own click would be a
-  // trap rather than a control.
   await mark(page, 1).click();
   await expect(page).toHaveURL(/\/de\/leistungen\/#app$/);
 });
@@ -389,6 +390,20 @@ test('pinned, the track walks the four routes, a hover overrides, and the end re
   await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
   await expect(page.locator(`${section} .crossroads-stop`)).toHaveCount(5);
 
+  // The panel stands under the header capsule and inside the viewport, which
+  // is what the pinned paddings and the PIN floor are for. The first build
+  // parked the panel at 16px with the fixed capsule sitting on its eyebrow for
+  // the whole ride: 5.5rem is the clearance the root already uses for anchors,
+  // and the floor is the panel plus that plus the padding under it.
+  const panel = await page.evaluate(() => {
+    const box = document.querySelector('.crossroads-copy')!.getBoundingClientRect();
+    return { top: box.top, bottom: box.bottom, height: box.height };
+  });
+  expect(panel.top, 'the panel is under the fixed header capsule').toBeGreaterThanOrEqual(88);
+  expect(panel.bottom, 'the panel runs past the bottom of the pinned stage').toBeLessThanOrEqual(
+    900,
+  );
+
   const top = await page.evaluate(() => {
     const sec = document.querySelector('#services') as HTMLElement;
     return sec.getBoundingClientRect().top + window.scrollY;
@@ -441,6 +456,18 @@ for (const lang of ['de', 'en'] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/${lang}/`);
     await arrive(page);
+
+    // The junction's four chips, in THIS language. A chip's width is a font
+    // metric, so the lift that separates 01 and 02 is a different sum in each
+    // one: measured at 1440, the four are 208, 245, 183 and 170 pixels wide in
+    // German and 208, 208, 199 and 223 in English. Both need the lift and only
+    // German was ever checked for a clash.
+    const named = await labels(page);
+    expect(named.on, `wrong labels at the junction in ${lang}`).toEqual([0, 1, 2, 3]);
+    expect(named.clashes, `labels overlap at the junction in ${lang}`).toEqual([]);
+    expect(named.hidden, `a label is behind the panel in ${lang}`).toBe(0);
+    expect(named.outside, `a label is off the stage in ${lang}`).toBe(0);
+
     // The same four keys in the same order in both languages, because the
     // component sorts by ORDER before anything reads the ways. en.ts lists
     // them differently and this is the test that says so on purpose.

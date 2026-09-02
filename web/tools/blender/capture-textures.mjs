@@ -15,7 +15,9 @@ await page.addInitScript(() => {
 });
 await page.goto('http://127.0.0.1:4173/de/');
 await page.waitForSelector('#services canvas[data-scene="kc-crossroads"]');
-await page.evaluate(() => document.querySelector('#services').scrollIntoView({ block: 'start', behavior: 'instant' }));
+await page.evaluate(() =>
+  document.querySelector('#services').scrollIntoView({ block: 'start', behavior: 'instant' }),
+);
 await page.waitForSelector('#services[data-built="4"]', { timeout: 15000 });
 await page.waitForTimeout(1500);
 const shots = await page.evaluate(() =>

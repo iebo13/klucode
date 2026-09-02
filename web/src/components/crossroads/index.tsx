@@ -49,18 +49,25 @@ const ROOM = '(min-width: 64rem)';
 
 /**
  * The room the TRACK needs, on top of ROOM: a viewport tall enough for the
- * copy panel to stand inside a pinned stage.
+ * copy panel to stand inside a pinned stage, under the fixed header.
  *
- * Measured against the build at 1440 wide with the pinned paddings, the German
- * panel is 816px tall and the English one 788, and globals.css gives the
- * layout 1rem above and below it, so the shorter viewport this may run on is
- * 848px: 53rem. That pins 1440x900 and 1536x864 and leaves 1366x768 unpinned,
+ * Measured rather than chosen, and the arithmetic is the whole of it. At 1440
+ * wide with the pinned paddings the German panel is 768px tall (English 740),
+ * globals.css clears the header capsule with 5.5rem above it and leaves 1rem
+ * below, so a pinned stage needs 768 + 88 + 16 = 872px. The smallest whole rem
+ * that holds that is 55 (880px), which leaves 8px of slack for a copy change
+ * to eat before anything is clipped.
+ *
+ * That pins 1440x900 and 1920x1080 and leaves 1536x864 and 1366x768 unpinned,
  * where the section is its own height and behaves exactly as it did before the
- * track. The plan said 51rem, which is the panel itself with no room for the
- * padding around it, so a 1500x820 window would have pinned and clipped the
- * last row.
+ * track: hover-driven, no stops, no scroll cost. Two earlier numbers were
+ * wrong in the same way and are worth naming, because the mistake is easy to
+ * repeat: 51rem was the panel with no room for anything around it, and 53rem
+ * was the panel plus its paddings with no room for the header standing over
+ * it. A floor that does not hold its own contents pins the one viewport that
+ * cannot show them.
  */
-const PIN = '(min-width: 64rem) and (min-height: 53rem)';
+const PIN = '(min-width: 64rem) and (min-height: 55rem)';
 
 /**
  * Where the poster stops being a strip and becomes the upright crop.
@@ -196,6 +203,18 @@ export function Crossroads({
   const [phoneCrop, setPhoneCrop] = useState(false);
   /** The row under the pointer or holding keyboard focus, or -1 for none. */
   const [focus, setFocus] = useState(-1);
+  /**
+   * The chip under the pointer, or -1 for none. Called `hinted` and not `hint`
+   * because the prop of that name is the affordance line under the board.
+   *
+   * A second, weaker input than `focus`, and the difference is the whole of
+   * what a chip does on the way in: it lights its own row and itself, and it
+   * leaves the picture alone. Pointing at a chip used to set the aim, which
+   * crossfaded to that way's close-up, where the chip's own object is
+   * somewhere else entirely: the control moved out from under the pointer that
+   * touched it. Clicking still opens the row, which is what a chip is for.
+   */
+  const [hinted, setHinted] = useState(-1);
   /** Whether the track is running: ROOM and a viewport tall enough for PIN. */
   const [pinned, setPinned] = useState(false);
   /** The way the track has scrolled to, or -1 for the junction. */
@@ -338,21 +357,31 @@ export function Crossroads({
      * from a little further up. The lift also passes the drop test below by
      * construction, which only refuses a chip that has been pushed DOWN and
      * away from its object.
+     *
+     * Two lifts and no more, because the third would be so far above the
+     * object that it names nothing. A chip that is still overlapping after
+     * them is dropped instead: a missing label is a label a reader can live
+     * without, and two labels on top of each other is the failure this whole
+     * pass exists to prevent. It should never happen, one lift clears every
+     * viewport measured, and the browser suite's clash test is the alarm if a
+     * longer name in some future language makes it happen anyway.
      */
+    const clashes = (chip: (typeof chips)[number], before: number) =>
+      chips.some(
+        (other, j) =>
+          j < before &&
+          other.on &&
+          Math.abs(chip.x - other.x) < chip.w + other.w &&
+          Math.abs(chip.y - other.y) < tall,
+      );
+
     for (let i = 0; i < chips.length; i += 1) {
       const chip = chips[i];
       if (!chip || !chip.on) continue;
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        const clash = chips.some(
-          (other, j) =>
-            j < i &&
-            other.on &&
-            Math.abs(chip.x - other.x) < chip.w + other.w &&
-            Math.abs(chip.y - other.y) < tall,
-        );
-        if (!clash) break;
+      for (let attempt = 0; attempt < 2 && clashes(chip, i); attempt += 1) {
         chip.y = Math.max(chip.y - (tall + 4), MARK_GAP + tall);
       }
+      if (clashes(chip, i)) chip.on = false;
     }
 
     for (let i = 0; i < chips.length; i += 1) {
@@ -402,9 +431,10 @@ export function Crossroads({
         tall: boxes[0]?.height ?? 0,
       };
       // Published to CSS as well, so the gutter veil can fade out exactly where
-      // the panel begins. The container is 72rem capped and centred, so that
-      // edge is 24px in at 1024 and 416px in at 1920: a percentage gradient
-      // would be right at one viewport and wrong at the other two.
+      // the panel begins. The container is 72rem capped and centred and the
+      // panel is bled left by its own padding, so measured off the built page
+      // that edge is 8px in at 1024 and 392px in at 1920: a percentage
+      // gradient would be right at one viewport and wrong at the other two.
       stage.style.setProperty('--crossroads-gutter', `${Math.round(panel.left - box.left)}px`);
       stage.style.setProperty('--crossroads-reserve', `${Math.round(panel.right - box.left)}px`);
       // One transform for all five stills, because all five are the same
@@ -652,7 +682,7 @@ export function Crossroads({
                 }}
               >
                 {ordered.map((way, i) => (
-                  <li key={way.key} data-key={way.key} data-focus={aim === i}>
+                  <li key={way.key} data-key={way.key} data-focus={aim === i || hinted === i}>
                     <Link
                       href={`${servicesPath}#${way.key}`}
                       className="crossroads-way"
@@ -708,7 +738,11 @@ export function Crossroads({
                 {hint}
               </p>
 
-              <div className="mt-6">
+              {/* crossroads-more so the pinned rule can reach this margin:
+                  globals.css takes both this and the hint's down to 1rem
+                  inside a pinned stage, where the panel is fitting under the
+                  header capsule. */}
+              <div className="crossroads-more mt-6">
                 <ArrowLink onInk href={link.href}>
                   {link.label}
                 </ArrowLink>
@@ -725,11 +759,12 @@ export function Crossroads({
 
               On the junction the chips are live, which is what all four
               objects being on screen at once finally allows: pointing at a
-              name is pointing at the object and clicking it opens that way's
-              row, through the row's own link rather than a second one. The
-              three that are not chosen go back to being chrome on a close-up,
-              and globals.css is where a chip gets its pointer events or does
-              not. */}
+              name lights that row and the chip itself, and clicking it opens
+              the row, through the row's own link rather than a second one.
+              Pointing leaves the picture alone, on the ruling of 2 September:
+              see the note on `hinted` above. On a close-up the one chip
+              showing is chrome, and globals.css hands out the pointer events
+              on the junction only. */}
           {enhanced ? (
             <div aria-hidden="true" className="crossroads-marks">
               {ordered.map((way, i) => (
@@ -743,8 +778,9 @@ export function Crossroads({
                 >
                   <span
                     className="crossroads-mark-box"
-                    data-focus={aim === i}
-                    onMouseEnter={() => setFocus(i)}
+                    data-focus={aim === i || hinted === i}
+                    onMouseEnter={() => setHinted(i)}
+                    onMouseLeave={() => setHinted(-1)}
                     onClick={() => rowRefs.current[i]?.click()}
                   >
                     <span className="crossroads-mark-no">{String(i + 1).padStart(2, '0')}</span>
