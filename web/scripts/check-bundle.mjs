@@ -32,10 +32,15 @@ const EAGER_SLACK = 2 * 1024;
  * Re-measure it after a re-render rather than raising it by reflex, and move
  * section 3.6 of the design spec with it.
  */
-// Measured 2 September 2026 after the final render (transparent far floor,
-// the screens in their own faces, WebP quality 80): 710.5 kB over the twelve
-// files, of which a visitor loads at most five, 202 kB at 1x or 432 kB at 2x.
-const STILLS_CAP = 768 * 1024;
+// Measured 2 September 2026 after the K re-render (the floor plan is the
+// mark's own graph now, and the wide poster is the whole 1600x1000 frame
+// rather than a band across it, because the four objects stand at the four
+// ends of the letter): 753.3 kB over the twelve files, of which a visitor
+// loads at most five, 216.9 kB at 1x or 454.2 kB at 2x. It was 710.5 kB on
+// the fan, and the 43 kB is almost all the wide poster growing from 516 to
+// 1000 rows. So the cap is that plus 46.7 kB of room, one more still's worth
+// at 1x, on the same reasoning as before.
+const STILLS_CAP = 800 * 1024;
 
 /**
  * What would prove three.js is back.

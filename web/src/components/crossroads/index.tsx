@@ -621,23 +621,25 @@ export function Crossroads({
 
                   Rendered from the same Blender scene as the five stills by
                   tools/blender/emit-stills.mjs rather than drawn, so it cannot
-                  end up describing a world the site stopped having, and 16 kB
-                  of WebP for the upright crop or 21 for the strip against the
-                  198 kB the five stills weigh at 1x.
+                  end up describing a world the site stopped having, and 29 kB
+                  of WebP for the upright crop or 53 for the wide one against
+                  the 217 kB the five stills weigh at 1x.
                   Rendered only in the fallback, so a laptop that gets the real
-                  thing never fetches it, and not on a phone at all: a 1600x516
-                  strip at 327px wide is 105px tall, and nothing in it is
-                  identifiable at that size. It reads as a dark banner, which is
-                  worse than no picture. */}
+                  thing never fetches it. The wide picture used to be a 1600x516
+                  band across the fan, which at 327px wide was 105px tall and
+                  read as a dark banner rather than a place. On the K the four
+                  objects stand at the ends of the letter and span the whole
+                  1000px frame, so the wide picture is the whole render, 1.6 to
+                  1, and at 327px it is 204px tall. */}
               {enhanced ? null : (
                 <picture>
-                  {/* Two crops of one render, chosen by width. The strip is
-                      1600x516 and at 327px it is 105px tall, where nothing in
-                      it is identifiable and it reads as a dark banner, which is
-                      why it used to be hidden below `sm`, and why the services
-                      section then had no picture at all on the device most
-                      visitors use. The upright crop holds the landing page and
-                      the dashboard at about three times that width.
+                  {/* One render in two shapes, chosen by width. The wide one
+                      is the whole 1600x1000 frame, the letter with a way at
+                      each of its four ends. The upright crop is 880x657 of the
+                      same frame, the two monitors at the top of the K, which
+                      is what a phone can still make anything of: the same
+                      objects arrive about three times as wide there as they do
+                      in the picture beside the copy.
 
                       <source> rather than two <img>s, so the browser fetches one
                       file and not both, and the alt text belongs to the <img>
