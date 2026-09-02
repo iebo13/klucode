@@ -37,7 +37,7 @@ Five shots: `junction`, `website`, `app`, `capacity`, `care`.
 
 ### 3.2 Edges
 
-The sky is transparent (film transparent), the far floor is misted to the page ink `#1c201c` exactly, and the still's alpha is multiplied by a soft box so the near floor and the sides fade to nothing over the outer part of the frame. The box is narrower than the frame on every still, the junction's included (0.94 of the width, the close-ups 0.9), so the fade completes inside the frame and no column of pixels is left at half alpha; the page adds no fade of its own. The objects and the light pool stay at full alpha. That is what lets a still sit anywhere on the ink with no visible edge at any stage size.
+The sky is transparent (film transparent), the far floor fades to transparent with distance (the mist pass multiplied into the alpha, never a colour mixed in), and the still's alpha is multiplied by a soft box so the near floor and the sides fade to nothing over the outer part of the frame. Nothing in a still is the page's ink, so the section's own background shows through in both themes; the first build misted the floor to the light theme's ink `#1c201c` and the dark theme, which paints `#141814`, showed a lighter plane with a horizon on it. The box is narrower than the frame on every still: the junction's is 0.92 of the width with a tight blur (measured at 1x: alpha 17 of 255 at the frame, 128 at 32 px, 252 at 80 px), the close-ups' 0.9 with a wide one, so the fade completes inside the frame and no column of pixels is left at half alpha. The page adds no fade of its own. The objects and the light pool stay at full alpha. That is what lets a still sit anywhere on the ink with no visible edge at any stage size.
 
 Colour management is Standard (no filmic curve), so the screens show the texture's own colours and the ink is the ink.
 
@@ -57,7 +57,7 @@ The phone and fallback poster is rendered by the same script in a wide framing (
 
 ### 3.6 Budget
 
-Five stills at 1x and 2x as WebP with alpha: under 400 kB in total, lazily loaded, only where the section mounts. The eager page chunk shrinks: no scene boot, no three.js, no deferred chunk at all. `scripts/check-bundle.mjs` changes from "the deferred scene chunk is under its cap" to "no chunk carries three.js and the eager chunk is within its baseline".
+Five stills at 1x and 2x as WebP with alpha, plus the two poster crops. Measured after the final render (2 September, transparent far floor, the screens in their own faces, WebP quality 80): 710.5 kB over the twelve files, of which a visitor loads at most five, 202 kB at 1x or 432 kB at 2x, lazily and only where the section mounts. (The first draft of this section guessed "under 400 kB" before anything was rendered; the guess was wrong and the number above is the measurement.) `scripts/check-bundle.mjs` caps the twelve files at 768 kB and re-measures after every re-render rather than raising the cap by reflex. The eager page chunk shrinks: no scene boot, no three.js, no deferred chunk at all; the gate holds the eager chunk to its baseline and refuses any chunk carrying three.js.
 
 ## 4. The component
 

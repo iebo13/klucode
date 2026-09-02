@@ -32,7 +32,10 @@ const EAGER_SLACK = 2 * 1024;
  * Re-measure it after a re-render rather than raising it by reflex, and move
  * section 3.6 of the design spec with it.
  */
-const STILLS_CAP = 640 * 1024;
+// Measured 2 September 2026 after the final render (transparent far floor,
+// the screens in their own faces, WebP quality 80): 710.5 kB over the twelve
+// files, of which a visitor loads at most five, 202 kB at 1x or 432 kB at 2x.
+const STILLS_CAP = 768 * 1024;
 
 /**
  * What would prove three.js is back.

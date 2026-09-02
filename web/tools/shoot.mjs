@@ -11,7 +11,8 @@
  *     python3 -m http.server 4173 --bind 127.0.0.1 --directory out &
  *     node tools/shoot.mjs
  *
- * Writes shots/<viewport>-<index>-<name>.png. The directory is gitignored.
+ * Writes shots/<viewport>-<index>-<name>.png, with a `dark-` prefix under
+ * `--dark`. The directory is gitignored.
  *
  * The panel line it prints is the one the PIN query in index.tsx is set from:
  * pinned, the whole panel has to stand inside 100svh, so re-run this after a
@@ -21,6 +22,10 @@ import { mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 
 const BASE = process.env.SHOOT_BASE ?? 'http://127.0.0.1:4173';
+// `--dark` shoots the dark theme, which the stills have to sit on as well as
+// on the light one: nothing in a still is the page's ink, so the section's
+// own background shows through in both, and this is how that is checked.
+const DARK = process.argv.includes('--dark');
 const LANG = process.env.SHOOT_LANG ?? 'de';
 
 const VIEWPORTS = [
@@ -36,7 +41,7 @@ mkdirSync('shots', { recursive: true });
 
 const browser = await chromium.launch();
 for (const viewport of VIEWPORTS) {
-  const page = await browser.newPage({ viewport });
+  const page = await browser.newPage({ viewport, colorScheme: DARK ? 'dark' : 'light' });
   await page.goto(`${BASE}/${LANG}/`);
   await page.waitForSelector('#services img.crossroads-still[data-on="true"]');
   // The section's top ON the viewport's top, which is the head of the track.
@@ -108,7 +113,7 @@ for (const viewport of VIEWPORTS) {
         clashes,
       };
     });
-    const file = `shots/${viewport.name}-${String(i).padStart(2, '0')}-${name}.png`;
+    const file = `shots/${DARK ? 'dark-' : ''}${viewport.name}-${String(i).padStart(2, '0')}-${name}.png`;
     // The VIEWPORT, not the section element. Pinned, the section is two and a
     // half viewports of which one and a half is the track's runway, so a shot
     // of the element is mostly empty ink and shows nothing a reader ever sees

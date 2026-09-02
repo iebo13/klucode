@@ -80,11 +80,11 @@ for (const shot of ORDER) {
     );
 
   const two = await sharp(png)
-    .webp({ quality: 84, alphaQuality: 90 })
+    .webp({ quality: 80, alphaQuality: 88 })
     .toFile(path.join(OUT, `${shot}@2x.webp`));
   const one = await sharp(png)
     .resize(width, height, { kernel: 'lanczos3' })
-    .webp({ quality: 84, alphaQuality: 90 })
+    .webp({ quality: 80, alphaQuality: 88 })
     .toFile(path.join(OUT, `${shot}.webp`));
   total += two.size + one.size;
   console.log(

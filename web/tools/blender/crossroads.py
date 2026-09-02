@@ -1,10 +1,15 @@
 """
-The crossroads, rebuilt in Blender and rendered with Cycles.
+The crossroads, built and rendered in Blender with Cycles.
 
-Spike, 2 September 2026. The question it answers: does the same composition
-(four ways on lanes from a junction, the same objects, the same shots) read as
-professional once it is lit and rendered properly, instead of drawn from code
-primitives in three.js?
+The homepage's services section shows five stills of this scene, junction and
+four ways, plus a poster for the fallback. This script builds the same lanes,
+objects and shots the live three.js scene used to draw, from the screen
+textures `capture-textures.mjs` writes, and renders each shot as a transparent
+PNG with the label anchors it was rendered with. `emit-stills.mjs` turns the
+renders into the WebPs and the generated `stills.ts` the page reads.
+
+It began as the 2 September 2026 spike that answered whether the composition
+reads as professional once it is lit and rendered properly. It did.
 
 Coordinates: the page's scene is three.js, y up, the camera looking down -z.
 Blender is z up. Every three.js point (x, y, z) becomes the Blender point
@@ -497,58 +502,76 @@ if LINES:
     ls.linestyle.alpha = 0.35
     ls.linestyle.thickness = 1.2
 
-# Compositor: mist to the page's ink (so the far floor fades to exactly what the
-# CSS paints around the canvas), then a bloom on what is brighter than white.
+# Compositor. Two things make a still sit on the page's own ink at any stage
+# size and in either theme: the far floor fades to NOTHING with distance, and
+# the near floor and the sides fade to nothing at the frame. Both are done to
+# the alpha, never by mixing in a colour: the first build misted the floor to
+# the light theme's ink and the dark theme, which paints a darker ink, showed
+# a lighter plane with a horizon on it. Then a bloom on what is brighter than
+# white.
+#
+# Cycles hands the compositor premultiplied colour, so the fade factor is
+# multiplied into the colour and the alpha alike, and the alpha is replaced
+# rather than applied a second time (applying would square it on antialiased
+# silhouettes and darken every edge).
 scene.use_nodes = True
 tree = scene.node_tree
 tree.nodes.clear()
 rl = tree.nodes.new("CompositorNodeRLayers")
-mix = tree.nodes.new("CompositorNodeMixRGB")
-mix.blend_type = "MIX"
-mix.inputs[2].default_value = lin(PALETTE["background"])
 glare = tree.nodes.new("CompositorNodeGlare")
 comp = tree.nodes.new("CompositorNodeComposite")
-tree.links.new(rl.outputs["Mist"], mix.inputs["Fac"])
-tree.links.new(rl.outputs["Image"], mix.inputs[1])
-# Cycles hands the compositor premultiplied colour. The mix above paints the
-# sky ink at alpha 0, which is not premultiplied any more; re-apply the alpha
-# so the sky is (0, 0, 0, 0) again and an alpha-over adds the ink once.
-premul = tree.nodes.new("CompositorNodeSetAlpha")
-premul.mode = "APPLY"
-tree.links.new(mix.outputs["Image"], premul.inputs["Image"])
-# The edges fade to nothing: a soft box multiplies the alpha, so the near
-# floor and the sides of the still end in the page's ink wherever the still
-# is placed, at any stage size. The objects and the light pool sit well
-# inside the box. Its width is set per shot below (the junction's fan reaches
-# further out than a close-up).
-# In Blender 4.5 the box's place and size are input sockets. Measured on a
-# 404x499 frame: Position is a fraction of each axis (y from the bottom), Size
-# is a fraction of the image WIDTH on both axes, and the node's own `width`
-# and `height` are its box on the editor canvas, which is a trap this script
-# fell into once. So a height of 1.05 on the 808x998 still is 848 px, from
-# 55 px under the top to 95 px above the bottom before the blur.
+
+# The distance fade: 1 - mist.
+far = tree.nodes.new("CompositorNodeMath")
+far.operation = "SUBTRACT"
+far.inputs[0].default_value = 1.0
+tree.links.new(rl.outputs["Mist"], far.inputs[1])
+
+# The frame fade: a soft box. In Blender 4.5 the box's place and size are
+# input sockets. Measured on a 404x499 frame: Position is a fraction of each
+# axis (y from the bottom), Size is a fraction of the image WIDTH on both
+# axes, and the node's own `width` and `height` are its box on the editor
+# canvas, which is a trap this script fell into once. So a height of 1.05 on
+# the 808x998 still is 848 px, from 55 px under the top to 95 px above the
+# bottom before the blur.
 MASK_HEIGHT = 1.05
 box_mask = tree.nodes.new("CompositorNodeBoxMask")
 box_mask.inputs["Position"].default_value = (0.5, 0.52)
 box_mask.inputs["Size"].default_value = (0.92, MASK_HEIGHT)
-# Measured at half scale: a size of 120 turned the box's hard edge into a
-# soft zone about 80 px wide on each side, so the number is not a radius.
-# Scaled with the render, so the fade is the same fraction of the still at
-# 1x and 2x.
+# The blur's size is not a radius. Measured on the finished 1x junction with
+# the box at 0.92 (32 px in) and a size of 64 at 1x: alpha 17 of 255 at the
+# frame, 128 at 32 px, 252 at 80 px. The close-ups use 200, a soft zone a few
+# times wider, because nothing stands near their edges. Both scale with the
+# render so the fade is the same fraction of the still at 1x and 2x; the
+# per-shot values are set in the render loop below.
 mask_blur = tree.nodes.new("CompositorNodeBlur")
 mask_blur.filter_type = "FAST_GAUSS"
 mask_blur.use_relative = False
-mask_blur.size_x = int(200 * SCALE)
-mask_blur.size_y = int(200 * SCALE)
 tree.links.new(box_mask.outputs["Mask"], mask_blur.inputs["Image"])
-alpha_mul = tree.nodes.new("CompositorNodeMath")
-alpha_mul.operation = "MULTIPLY"
-tree.links.new(rl.outputs["Alpha"], alpha_mul.inputs[0])
+
+# fade = (1 - mist) * mask, or just (1 - mist) for the poster, which is
+# shown whole inside a bordered picture and needs no frame fade.
+fade = tree.nodes.new("CompositorNodeMath")
+fade.operation = "MULTIPLY"
+tree.links.new(far.outputs["Value"], fade.inputs[0])
 if MASK:
-    tree.links.new(mask_blur.outputs["Image"], alpha_mul.inputs[1])
+    tree.links.new(mask_blur.outputs["Image"], fade.inputs[1])
 else:
-    alpha_mul.inputs[1].default_value = 1.0
-tree.links.new(alpha_mul.outputs["Value"], premul.inputs["Alpha"])
+    fade.inputs[1].default_value = 1.0
+
+faded_rgb = tree.nodes.new("CompositorNodeMixRGB")
+faded_rgb.blend_type = "MULTIPLY"
+faded_rgb.inputs["Fac"].default_value = 1.0
+tree.links.new(rl.outputs["Image"], faded_rgb.inputs[1])
+tree.links.new(fade.outputs["Value"], faded_rgb.inputs[2])
+faded_alpha = tree.nodes.new("CompositorNodeMath")
+faded_alpha.operation = "MULTIPLY"
+tree.links.new(rl.outputs["Alpha"], faded_alpha.inputs[0])
+tree.links.new(fade.outputs["Value"], faded_alpha.inputs[1])
+premul = tree.nodes.new("CompositorNodeSetAlpha")
+premul.mode = "REPLACE_ALPHA"
+tree.links.new(faded_rgb.outputs["Image"], premul.inputs["Image"])
+tree.links.new(faded_alpha.outputs["Value"], premul.inputs["Alpha"])
 tree.links.new(premul.outputs["Image"], glare.inputs["Image"])
 if PREVIEW:
     over = tree.nodes.new("CompositorNodeAlphaOver")
@@ -601,12 +624,9 @@ for name in SHOTS_WANTED:
     aspect = FREE / H
     cam_data.angle_y = math.radians(fov_for(shot["fit"][0], shot["fit"][1], aspect))
     # The junction's fan reaches within 48 px of the still's left edge, so its
-    # box is wider than a close-up's and its fade is tighter: measured at 1x,
-    # the box at 0.94 with the wide blur left the first column at alpha 92 of
-    # 255, because the blur's soft zone is about 200 px wide and the box edge
-    # was 24 px in. A box at 0.92 (32 px in) with a blur of 64 fades from
-    # nothing at the frame to full about 64 px in, and the landing page's
-    # monitor starts at 48 px, so only its outermost strip is touched.
+    # box is wider than a close-up's and its fade is tighter (see the blur's
+    # comment above for the measured profile). The landing page's monitor
+    # starts at 48 px, so only its outermost strip is touched.
     if name == "junction":
         box_mask.inputs["Size"].default_value = (0.92, MASK_HEIGHT)
         mask_blur.size_x = mask_blur.size_y = int(64 * SCALE)
