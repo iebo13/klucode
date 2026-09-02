@@ -68,3 +68,51 @@ export type SceneLabels = {
     rows: readonly (readonly [string, string])[];
   };
 };
+
+/**
+ * What boot() resolves to.
+ *
+ * The whole of what the component may do to the scene, and the whole of what
+ * it may ask it. Nothing else in the section imports three.js, so this is the
+ * seam: everything above it is DOM and everything below it is a renderer.
+ */
+export type Handle = {
+  /** Glide to way `way`'s pose, or back to the track's position for -1. The same way twice is a no-op. */
+  aim(way: number): void;
+  /** The track's position: 0 the map, k stop k, fractions between. The camera settles onto the flight there. */
+  scroll(t: number): void;
+  /** The section has come into view. Called once; later calls do nothing. */
+  reveal(): void;
+  /**
+   * The pointer is at (x, y) in CSS pixels inside the view. Returns the way
+   * under it, or -1. Also aims the parallax and the cursor light.
+   */
+  pointer(x: number, y: number): number;
+  /** The pointer has left the stage. Parallax and light ease to rest. */
+  pointerLeave(): void;
+  /** Where each way's label belongs this frame, in the order the ways were handed over. Rewritten in place. */
+  marks(): readonly Mark[];
+  /** The ink the world stands in: anything THREE.Color accepts, in practice the section's computed background. */
+  setBackground(css: string): void;
+  /** True while the loop is parked: nothing moving, no frame scheduled. */
+  parked(): boolean;
+  /** Frames drawn since boot. The browser suite reads it through the component. */
+  frames(): number;
+  /** Cancels the loop, drops listeners, disposes every GPU resource. */
+  stop(): void;
+};
+
+export type BootOptions = {
+  /** The copy panel, so the camera composes into what is left of the view. */
+  panel: HTMLElement | null;
+  ways: readonly Way[];
+  labels: SceneLabels;
+  /** The section's computed background. */
+  background: string;
+  /** prefers-reduced-motion: the camera cuts between stops, no glide, no parallax, no light. */
+  reduced: boolean;
+  /** `asset` from lib/base-path. */
+  url: (path: string) => string;
+  /** After every drawn frame, and once more when the loop parks. */
+  onFrame: () => void;
+};
