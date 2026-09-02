@@ -90,12 +90,26 @@ reads its colours from it, so nothing can drift.
 python3 brand/tokens/check_contrast.py    # every colour pair against its tier
 ```
 
-The site's own images are generated too, and all three scripts run from `web/`:
+The site's own images are generated too, and both scripts run from `web/`:
 
 ```bash
 node tools/grade-portrait.mjs   # public/founder.webp, cropped and duotoned
 node tools/shoot-revento.mjs    # public/revento-*.webp, needs the app on :5173
-node tools/shoot-poster.mjs     # public/crossroads*.webp, needs a built site
+```
+
+The crossroads section's five stills and its poster are a Blender pipeline
+instead, three scripts run from `web/` in order (see
+`docs/superpowers/specs/2026-09-02-crossroads-stills-design.md` section 3 for
+why they are pre-rendered rather than drawn live):
+
+```bash
+node tools/blender/capture-textures.mjs tools/blender/textures
+#   the three screen textures crossroads.py loads (needs a built, served site)
+blender -b -P tools/blender/crossroads.py -- --out renders --samples 128 --scale 2
+blender -b -P tools/blender/crossroads.py -- --out renders-poster --frame poster --samples 128
+#   the five free-frame stills and the wide poster frame, each with anchors.json
+node tools/blender/emit-stills.mjs --renders renders --poster renders-poster
+#   public/crossroads/*.webp, public/crossroads*.webp, src/components/crossroads/stills.ts
 ```
 
 ---

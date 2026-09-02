@@ -6,6 +6,12 @@
  * localise.
  *
  * House copy rule applies here as everywhere: no em dash, no semicolon.
+ *
+ * Not imported by the site any more: the homepage shows five pre-rendered
+ * Blender stills, and these strings are drawn once, offline, onto the screen
+ * textures those stills bake in. `tools/blender/capture-textures.mjs` reads
+ * this module (compiled with `tsc`) to draw them; `tools/blender/crossroads.py`
+ * reads the PNGs it produces. Nothing here ships to a visitor's browser.
  */
 import type { Lang } from '@/lib/routes';
 

@@ -2,10 +2,11 @@
 
 The KluCode website. Next.js 15 (App Router) exported to static files —
 no server, no database, no runtime dependencies. The browser downloads no
-JavaScript it does not need: the homepage's 3D services section is a
-separate chunk, fetched only when the section actually mounts, and never on
-a phone, never under reduced motion, and never without WebGL. `npm run
-check:bundle` fails the build if that stops being true.
+JavaScript it does not need: the homepage's services section is five
+pre-rendered Blender stills, `<img>` tags with nothing to boot, so there is
+no scene chunk to fetch and no WebGL requirement to gate on. `npm run
+check:bundle` fails the build if the eager script weight creeps up, or if
+three.js ever reappears in a built chunk.
 
 ```bash
 # from this directory (web/) — or from the repo root, whose package.json
@@ -137,7 +138,7 @@ scripts/
   check-meta.mjs           title / description uniqueness and length budget
   check-copy.mjs           copy that has to fit a narrow slot still fits it
   check-profile.mjs        the go-live gate: no «placeholders» left in out/
-  check-bundle.mjs         the JS budget gate: eager stays flat, the deferred scene chunk stays capped
+  check-bundle.mjs         the JS budget gate: eager stays flat, three.js never comes back to a built chunk
   check-scene-palette.mjs  crossroads objects draw only from the token palette, never a literal colour
 tests/
   unit/                    the pure suite (test:unit): no browser, no build, fast enough to run on every save

@@ -1,7 +1,9 @@
 /**
- * The 3D scene cannot use CSS custom properties, because three.js wants
- * numbers. So palette.ts carries hex literals, and this asserts they are still
- * the tokens they claim to be.
+ * palette.ts carries the crossroads scene's colours as hex literals, not CSS
+ * custom properties, because a render pipeline wants numbers: it fed a
+ * three.js scene once and now feeds tools/blender/crossroads.py's own copy of
+ * these colours. This asserts palette.ts's numbers are still the tokens they
+ * claim to be.
  *
  * Drift here is invisible on screen: a scene painted in slightly wrong greens
  * still looks like a scene. That is exactly the class of bug worth a tripwire.

@@ -711,42 +711,6 @@ html:has(#services[data-pinned='true']) {
   }
 }
 
-/* --- the gutter ----------------------------------------------------------
-   The strip between the viewport edge and the panel's left edge: measured off
-   the built page, 152px of it at 1440 and 392px at 1920.
-
-   It was the one thing full bleed cost. A live shot was composed inside the
-   part of the canvas the panel was not standing on, and the frustum that
-   produced it was far wider than that, so the neighbouring lane's object stood
-   in the gutter at full brightness with nothing to be done about it: the
-   subject's own fit forced the width. The gutter faded to the scene's ink
-   instead, and this is that fade.
-
-   The stills answer it by construction. The contain transform places a still
-   inside the free region and never left of the panel's right edge, so nothing
-   of the render reaches the gutter at all and this gradient now paints the
-   section's ink over the section's ink. It stays because it is the guarantee
-   rather than the fix: the stops are written by the component from the panel's
-   own measured box, so anything that ever does end up out there ends in the
-   ink exactly where the panel begins, at every viewport rather than at a
-   percentage that is right at one of them. */
-[data-enhanced='true'] .crossroads-veil {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  /* --kc-inkSurface, not --kc-stone-950. The veil's whole job is to end in the
-     section's own background, which is the ink role: the raw scale value was
-     right by coincidence in the light scheme and 8.5 CIE L* out in the dark
-     one. The stills need no such bookkeeping, because they are transparent
-     wherever there is no light and the ink they stand in is the section's. */
-  background: linear-gradient(
-    to right,
-    var(--kc-inkSurface) 0,
-    var(--kc-inkSurface) var(--crossroads-gutter, 0px),
-    transparent var(--crossroads-reserve, 0px)
-  );
-}
-
 /* The panel, and its fill is the number that matters.
 
    0.88 of inkSurface, not the 0.07 of .glass-chip. A chip on the hero has a
@@ -789,8 +753,8 @@ html:has(#services[data-pinned='true']) {
      ever needs to be, on the narrowest screen that gets the world.
 
      The stills do not have to be told: index.tsx measures the panel's box
-     every resize and fits the render into what is left of the stage, and the
-     veil reads its stops from the same measurement. */
+     every resize and fits the render into what is left of the stage, never
+     under this margin's -1.5rem pull. */
   margin-left: -1.5rem;
 }
 
@@ -920,7 +884,7 @@ html:has(#services[data-pinned='true']) {
 
 /* --- the names, at the things they name ----------------------------------
    The one change to the spec's „no signposts, no floating names" rule, and it
-   changes one word of it: BESIDE the canvas becomes AT the object. Everything
+   changes one word of it: BESIDE the render becomes AT the object. Everything
    the rule was protecting survives, because these are DOM text like the rest.
    They are indexed once, read once by a screen reader (the layer is
    aria-hidden and the row beside it carries the same string), they localise

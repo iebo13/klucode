@@ -1,65 +1,33 @@
 /**
- * Two budgets.
+ * The eager JS budget, and the guarantee that three.js does not come back.
  *
- * EAGER is what a visitor downloads before scrolling anywhere: every script
- * out/de/index.html references directly. three.js must never appear here. The
- * day a stray import drags it into the eager graph, this number jumps and the
- * build fails, which is the only reliable way to notice.
- *
- * DEFERRED is the crossroads chunk, fetched only when the scene mounts. It is
- * allowed to be large. It is not allowed to be unbounded, and what makes it
- * unbounded is one careless import pulling in a three.js loader or control.
- *
- * Those chunks are found by matching three.js itself, because comments do not
- * survive minification and file names are hashed. See THREE_MARKER below for
- * why the scene's own DOM marker is the wrong thing to match on.
+ * The homepage's services section used to boot a three.js scene: a client
+ * component wrote a canvas, a deferred chunk carried the renderer, and this
+ * script's job was to cap that chunk. The section is five pre-rendered
+ * Blender stills now, `<img>` tags with no scene to boot, so there is no
+ * deferred chunk to measure and nothing left to cap. What is left to guard is
+ * two things: that the page a visitor downloads before scrolling anywhere
+ * does not creep past what it costs today, and that three.js never quietly
+ * reappears in a built chunk, which is the one way this budget could stop
+ * meaning what it says without the number moving at all.
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const BASE = JSON.parse(readFileSync('scripts/bundle-baseline.json', 'utf8'));
 const EAGER_SLACK = 2 * 1024;
-const DEFERRED_CAP = 155 * 1024;
 
 /**
- * What identifies a deferred chunk.
+ * What would prove three.js is back.
  *
- * NOT the scene's own `kc-crossroads` marker. That is a DOM attribute written
- * by index.tsx, which is a client component and therefore lives in the EAGER
- * page chunk. Matching on it measured 2 kB of component and reported it as the
- * deferred budget: a gate that could not fail, which is worse than no gate.
- *
- * three.js is what this budget exists to bound, so match three.js. The class
- * name survives minification as a `.type` string. Chunks the eager HTML already
- * references are excluded, because three.js appearing there is a First Load JS
- * leak and belongs to the other gate, not quietly counted here.
+ * The class name survives minification as a `.type` string property, which is
+ * how the old deferred-chunk gate found three.js chunks in the first place.
+ * Nothing in this codebase has any reason to define a class called
+ * BufferGeometry, so its presence in ANY built chunk, eager or not, is the
+ * renderer having crept back in through a stray import.
  */
 const THREE_MARKER = 'BufferGeometry';
-
-/**
- * What identifies the scene's OWN deferred chunk, as against three.js.
- *
- * Added because the deferred budget was measuring three.js and nothing else.
- * Next splits the crossroads modules into a chunk of their own, separate from
- * the two vendor chunks, and that chunk contains no three.js class name at all:
- * it imports them. So every line of scene.ts, objects.ts and textures.ts was
- * outside the budget that exists to bound them. Measured on
- * claude/crossroads-dead-ends, where it was found, the uncounted chunk was
- * 4.9 kB and the reported deferred total was 5.0 kB short of the truth.
- *
- * That is the same failure the note above THREE_MARKER records for the DOM
- * marker, in the other direction: a gate that measures the wrong thing reports
- * a number nobody should trust. The budget is what the scene costs, so it
- * counts what the scene ships.
- *
- * `lightAmbient` is a key on the PALETTE object in palette.ts. Property names
- * survive minification, this one exists nowhere else in the repo, and
- * palette.ts is imported by every module in the scene, so the chunk carrying
- * any of them carries this. An `expectSceneChunk` build that stops finding it
- * fails loudly rather than quietly measuring less.
- */
-const SCENE_MARKER = 'lightAmbient';
 
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
 const gz = (path) => gzipSync(readFileSync(path)).length;
@@ -118,22 +86,27 @@ const walk = (dir) => {
 };
 walk('out/_next/static/chunks');
 
-const eagerSet = new Set(eagerPaths);
-const deferredChunks = chunks.filter((p) => !eagerSet.has(p));
-const bodies = new Map(deferredChunks.map((p) => [p, readFileSync(p, 'utf8')]));
-const vendorChunks = deferredChunks.filter((p) => bodies.get(p)?.includes(THREE_MARKER));
-const ownChunks = deferredChunks.filter(
-  (p) => !vendorChunks.includes(p) && bodies.get(p)?.includes(SCENE_MARKER),
-);
-const sceneChunks = [...vendorChunks, ...ownChunks];
-const deferred = sceneChunks.reduce((n, p) => n + gz(p), 0);
+const threeChunks = chunks.filter((p) => readFileSync(p, 'utf8').includes(THREE_MARKER));
+
+// The stills' own weight, printed rather than gated: WebP with alpha, lazily
+// loaded, never part of the eager script graph this gate bounds. Section 3.6
+// of the design spec puts the five stills at 1x and 2x under 400 kB in total;
+// this line is what a future change to the render would be checked against.
+const crossroadsDir = 'public/crossroads';
+const stillFiles = existsSync(crossroadsDir)
+  ? readdirSync(crossroadsDir)
+      .filter((f) => f.endsWith('.webp'))
+      .map((f) => join(crossroadsDir, f))
+  : [];
+const posterFiles = ['public/crossroads.webp', 'public/crossroads-phone.webp'].filter(existsSync);
+const stillBytes = [...stillFiles, ...posterFiles].reduce((n, p) => n + statSync(p).size, 0);
 
 console.log(
   `eager    ${kb(eager)} over ${eagerPaths.length} scripts (baseline ${kb(BASE.eagerGzipBytes)})`,
 );
 console.log(
-  `deferred ${kb(deferred)} over ${sceneChunks.length} chunks (cap ${kb(DEFERRED_CAP)}), ` +
-    `of which ${kb(ownChunks.reduce((n, p) => n + gz(p), 0))} is the scene's own code`,
+  `stills   ${kb(stillBytes)} over ${stillFiles.length + posterFiles.length} files ` +
+    `(${stillFiles.length} stills, ${posterFiles.length} posters), not part of the eager budget`,
 );
 
 let failed = false;
@@ -146,25 +119,12 @@ if (eager > BASE.eagerGzipBytes + EAGER_SLACK) {
   failed = true;
 }
 
-if (BASE.expectSceneChunk && vendorChunks.length === 0) {
+if (threeChunks.length > 0) {
   console.error(
-    `::error::no deferred chunk contains "${THREE_MARKER}", so the deferred budget measured nothing. ` +
-      'Either three.js stopped emitting that name, or it is no longer being code split.',
+    `::error::${threeChunks.length} built chunk(s) contain "${THREE_MARKER}": ` +
+      `${threeChunks.join(', ')}. three.js left this site in the switch to pre-rendered stills ` +
+      '(see docs/superpowers/specs/2026-09-02-crossroads-stills-design.md) and must not come back.',
   );
-  failed = true;
-}
-
-if (BASE.expectSceneChunk && ownChunks.length === 0) {
-  console.error(
-    `::error::no deferred chunk contains "${SCENE_MARKER}", so the budget is measuring three.js and ` +
-      "not the scene built on it. Either palette.ts stopped carrying that key, or the scene's own " +
-      'modules have been folded into a chunk this script already counts as eager.',
-  );
-  failed = true;
-}
-
-if (deferred > DEFERRED_CAP) {
-  console.error(`::error::the crossroads chunk is ${kb(deferred)}, cap is ${kb(DEFERRED_CAP)}`);
   failed = true;
 }
 

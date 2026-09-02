@@ -1,5 +1,4 @@
 {
-  "$comment": "Gzipped bytes of every script out/de/index.html references directly, last captured with the crossroads section in place, three.js excluded. Moving this number is a deliberate act: say why in the commit message. expectSceneChunk turns on once the scene is actually mounted, so the deferred budget cannot silently measure nothing.",
-  "eagerGzipBytes": 154217,
-  "expectSceneChunk": true
+  "$comment": "Gzipped bytes of every script out/de/index.html references directly, last captured after the crossroads section stopped booting a scene and became five pre-rendered stills. Moving this number is a deliberate act: say why in the commit message.",
+  "eagerGzipBytes": 152731
 }

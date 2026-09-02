@@ -57,10 +57,11 @@ export type Cta = { title: string; lead: string };
 /**
  * The four services, as a closed set.
  *
- * Declared here because the content files own these keys. The homepage's 3D
- * section keys its objects off this union, so adding a service is a compile
- * error in the scene until it has something to stand at the end of its lane,
- * which is the correct order of events.
+ * Declared here because the content files own these keys. The homepage's
+ * crossroads section keys the stills' anchors off this union
+ * (`Record<ServiceKey, Anchor>` in stills.ts), so adding a service is a
+ * compile error there until the render has an object at the end of a lane for
+ * it to point at, which is the correct order of events.
  */
 export type ServiceKey = 'website' | 'app' | 'capacity' | 'care';
 
@@ -266,10 +267,10 @@ export type Content = {
      *
      * The homepage had no imagery at all: on a 390px phone it was 6,750px tall
      * and rendered zero images, because the only picture in the section order
-     * was a poster hidden below the `sm` breakpoint and a 3D scene that needs
-     * 1024px to mount. This is a real screenshot of a delivered system, it is
-     * shown at the container's full width so the figures on it are legible,
-     * and it renders on every device the site reaches.
+     * was a poster hidden below the `sm` breakpoint and the crossroads world,
+     * which needs 1024px to mount. This is a real screenshot of a delivered
+     * system, it is shown at the container's full width so the figures on it
+     * are legible, and it renders on every device the site reaches.
      *
      * The caption is not decoration. An unlabelled screenshot in a hero is a
      * stock image as far as a reader is concerned, and the whole point of this
@@ -301,12 +302,16 @@ export type Content = {
     /**
      * What the crossroads looks like, for everyone who never sees it move.
      *
-     * Most visitors: every phone, every tablet held upright, every
-     * reduced-motion request, every browser without WebGL. The fallback is
-     * honest and complete without it and it never told them the place existed.
-     * A 13 kB still of the closing shot does, and it is rendered FROM the
-     * scene by tools/shoot-poster.mjs rather than drawn, so it cannot describe
-     * a world the site stopped having.
+     * Most visitors now means every phone and every tablet held upright: the
+     * mount floor in index.tsx is width alone, 1024px. Reduced motion and a
+     * browser without WebGL used to fall back here as well, when the section
+     * was a live scene; stills need neither a moving camera nor a graphics
+     * context, so both now see the section itself like everyone above the
+     * floor. The fallback is honest and complete without a picture and it
+     * never told a narrow viewport the place existed. A 20.2 kB still of the
+     * junction does, cropped by tools/blender/emit-stills.mjs from the same
+     * Blender pass that renders the five enhanced stills, rather than drawn,
+     * so it cannot describe a world the site stopped having.
      *
      * The alt text is the same information again for a reader who gets neither
      * the scene nor the image, which is why it names the four objects rather

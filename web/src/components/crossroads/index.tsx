@@ -407,9 +407,8 @@ export function Crossroads({
    *
    * It reaches the labels through a ref rather than depending on `place`
    * directly: `place` is rebuilt whenever the shown still changes, which is
-   * every hover, and this effect owns the resize listener and the two custom
-   * properties the veil reads. Tearing that down and building it again to
-   * follow a pointer would be churn for nothing.
+   * every hover, and this effect owns the resize listener. Tearing that down
+   * and building it again to follow a pointer would be churn for nothing.
    */
   const placeRef = useRef(place);
 
@@ -430,13 +429,6 @@ export function Crossroads({
         half: boxes.map((b) => (b?.width ?? 0) / 2),
         tall: boxes[0]?.height ?? 0,
       };
-      // Published to CSS as well, so the gutter veil can fade out exactly where
-      // the panel begins. The container is 72rem capped and centred and the
-      // panel is bled left by its own padding, so measured off the built page
-      // that edge is 8px in at 1024 and 392px in at 1920: a percentage
-      // gradient would be right at one viewport and wrong at the other two.
-      stage.style.setProperty('--crossroads-gutter', `${Math.round(panel.left - box.left)}px`);
-      stage.style.setProperty('--crossroads-reserve', `${Math.round(panel.right - box.left)}px`);
       // One transform for all five stills, because all five are the same
       // camera at the same size: the stack is a fixed 808x998 box with the
       // pictures stretched over it, so placing the box places every frame of
@@ -455,11 +447,7 @@ export function Crossroads({
     // label is a fallback-face width and every one of them is wrong.
     document.fonts?.ready.then(measure).catch(() => undefined);
     window.addEventListener('resize', measure, { passive: true });
-    return () => {
-      window.removeEventListener('resize', measure);
-      stage.style.removeProperty('--crossroads-gutter');
-      stage.style.removeProperty('--crossroads-reserve');
-    };
+    return () => window.removeEventListener('resize', measure);
     // `pinned` is in here because pinning changes the stage from the section's
     // own height to 100svh, and `lang` and `ordered` because the names in the
     // chips are what `half` and `tall` measure.
@@ -599,12 +587,6 @@ export function Crossroads({
               ))}
             </div>
           ) : null}
-
-          {/* The gutter, faded to the section's own ink. See the note above
-              .crossroads-veil: it is the strip between the viewport edge and
-              the panel, and it is the one part of a full-bleed frame that the
-              render never reaches. */}
-          {enhanced ? <div aria-hidden="true" className="crossroads-veil" /> : null}
 
           {/* py-16 rather than the section rhythm, because this section's height
               is what the panel has to fit inside a laptop viewport with, and the

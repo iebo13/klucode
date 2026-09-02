@@ -1,6 +1,20 @@
 import type { SceneLabels } from './types';
 
 /**
+ * The two mock interfaces, drawn on a 2D canvas.
+ *
+ * The site no longer imports this file: the homepage shows five pre-rendered
+ * Blender stills, not a live scene, so nothing here ships to a visitor.
+ * `tools/blender/capture-textures.mjs` compiles this module and calls
+ * `drawLanding`, `drawDashboard` and `drawWorkScreen` on the built page (where
+ * the site's own fonts are loaded) to produce the three PNGs
+ * `tools/blender/crossroads.py` loads as screen textures when it renders the
+ * stills. The drawing code stays here rather than moving into the capture
+ * tool because it is still exercised by `tests/unit/crossroads-textures.spec.ts`,
+ * which is what proves every word on a screen came from labels.ts.
+ */
+
+/**
  * The slice of a 2D canvas context the builders use.
  *
  * Declared here rather than taken from the DOM type so the unit suite can hand
