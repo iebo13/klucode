@@ -129,6 +129,38 @@ type ScreenKind = 'landing' | 'dashboard' | 'work';
 const tagOf = (o: Object3D): string => String(o.userData.kc ?? o.parent?.userData.kc ?? 'body');
 
 /**
+ * Bodies clip at white. They never glow.
+ *
+ * Cycles wrote these bakes through its Standard view transform, which clips a
+ * surface at white and puts no halo around it, and the look this scene owes
+ * the page is the render's. Left alone the bloom's high pass at 1.05 finds
+ * every body the key hits: measured on the care pair before this clamp, the
+ * block around the status lamp read 214.8 in display luminance against the
+ * Cycles render's 137.8, and on the hub pair the monitor bezel, lit at 0.13
+ * units from an emissive screen, ringed the whole screen in white where the
+ * render has nothing. After it the same lamp block reads 150.9 against that
+ * 137.8 and the ring is gone, and what is left over the render is the lamp
+ * itself: the block over the lit LEDs went 87.3 to 73.7 against the render's
+ * 48.8, which is an emitter glowing, and is the point.
+ *
+ * The emitters carry the only light in this scene that is meant to bloom, at
+ * 2.5 over white (EMITTER_GAIN). They are MeshBasicMaterial, and so are the
+ * screens, so neither is touched by this: it runs on the bodies alone.
+ *
+ * `opaque_fragment` is the chunk that writes gl_FragColor, checked against
+ * node_modules/three for r185, and `outgoingLight` is the value it writes.
+ * The chunk was called `output_fragment` before r154, so a three upgrade that
+ * renames it again silently stops clamping. What would show is the halo
+ * coming back on the hub pair.
+ */
+const clipAtWhite = (shader: { fragmentShader: string }): void => {
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <opaque_fragment>',
+    'outgoingLight = min( outgoingLight, vec3( 1.0 ) );\n#include <opaque_fragment>',
+  );
+};
+
+/**
  * The alpha the floor fades out with, as a picture.
  *
  * The far floor has to end in whatever ink the section paints, in either
@@ -288,6 +320,9 @@ export async function loadScene(opts: LoadOptions): Promise<Loaded> {
         o.material.lightMapIntensity = way.lightScale * LAMBERT;
         o.material.envMap = opts.environment;
         o.material.envMapIntensity = ENVIRONMENT_INTENSITY;
+        // One function for every body in the scene, not one closure each, so
+        // three.js sees one program cache key and compiles the clamp once.
+        o.material.onBeforeCompile = clipAtWhite;
         o.material.needsUpdate = true;
       }
     });

@@ -80,14 +80,24 @@ export const BLOOM_SCALE = 0.5;
  * else. `gain` sets what an f-stop is worth here, and `maxblur` caps the disc
  * so an object far behind the plane of focus does not smear across the frame.
  *
- * A gain of 0.006 is not a lens. On the four stands it lands close to the
- * render, but the map is a 44.6 unit shot across a floor 40 units deep, and
- * at f/11 the aperture is 0.006 / 11 = 5.45e-4, so a point 20 units off the
- * plane of focus blurs by 20 * 5.45e-4 = 0.0109 of the frame, which is 11 px
- * at 998 and visible: the junction pair has the live letter softer than the
- * Cycles one, which is sharp from the hub to every node. Raising the f-stop
- * for the map or lowering the gain are the two ways out, and both are the
- * owner's call rather than this file's.
+ * The f-stop alone cannot do it, which is what the first six pairs showed.
+ * BokehPass blurs by (focus - depth) * aperture, so an aperture of gain over
+ * f-stop is a blur per unit of depth that does not know how far off the shot
+ * is standing. At the map, a 44.6 unit shot across a floor 40 units deep,
+ * f/11 gave 0.006 / 11 = 5.45e-4 per unit, so a point 20 units off the plane
+ * of focus blurred by 0.0109 of the frame, 16 px at 1440, and the live letter
+ * came out softer than a Cycles frame that is sharp from the hub to every
+ * node.
+ *
+ * So the distance divides it too: aperture = gain / (fstop * distance). A
+ * lens does the same thing, from the other end, since depth of field grows
+ * with the square of the subject distance. Measured at the two extremes with
+ * gain 0.006: the map stands 44.6 units off at f/11, which is 1.22e-5 per
+ * unit, so 20 units off the plane of focus is 2.4e-4 of the frame, 0.35 px at
+ * 1440, and the letter is sharp. The website stand is 9.1 units off at f/0.8,
+ * which is 8.24e-4 per unit: the object's own 2 units of depth blur by 1.2 px
+ * and the floor 20 units behind it reaches maxblur, 17 px, which is the soft
+ * near and far floor the render has at f/0.8.
  */
 export const DOF = { gain: 0.006, maxblur: 0.012 } as const;
 
@@ -116,8 +126,11 @@ export function createPost(renderer: WebGLRenderer, scene: Scene, camera: Perspe
   });
   const composer = new EffectComposer(renderer, target);
   const bokeh = new BokehPass(scene, camera, {
+    // A pose is applied before the first frame, so these three are only ever
+    // the values the pass is built with. They are the map's, at the map's own
+    // distance, so a frame drawn before setFocus would still be a sane one.
     focus: 10,
-    aperture: DOF.gain / 11,
+    aperture: DOF.gain / (11 * 10),
     maxblur: DOF.maxblur,
   });
   const bloom = new UnrealBloomPass(
@@ -142,19 +155,27 @@ export function createPost(renderer: WebGLRenderer, scene: Scene, camera: Perspe
   return {
     render: () => composer.render(),
     setSize(width, height) {
-      // The composer sizes every pass to the full canvas. The bloom and the
-      // bokeh are then told their own sizes, so the order of these lines
-      // matters.
+      // Read here, not the `ratio` the targets were built with: a window
+      // dragged from a 1x screen onto a 2x one changes what the renderer
+      // reports, and everything between the scene and the canvas would
+      // otherwise stay at the size the first screen wanted. The composer
+      // keeps a ratio of its own for the two buffers it owns, so it is told
+      // as well as asked.
+      const live = renderer.getPixelRatio();
+      composer.setPixelRatio(live);
+      // The composer sizes every pass to the full device resolution. The
+      // bloom and the bokeh are then told their own sizes, so the order of
+      // these lines matters.
       composer.setSize(width, height);
       bloom.setSize(
-        atLeastOne(width * ratio * BLOOM_SCALE),
-        atLeastOne(height * ratio * BLOOM_SCALE),
+        atLeastOne(width * live * BLOOM_SCALE),
+        atLeastOne(height * live * BLOOM_SCALE),
       );
-      bokeh.setSize(atLeastOne(width * ratio), atLeastOne(height * ratio));
+      bokeh.setSize(atLeastOne(width * live), atLeastOne(height * live));
     },
     setFocus(distance, fstop) {
       dof.focus.value = distance;
-      dof.aperture.value = DOF.gain / fstop;
+      dof.aperture.value = DOF.gain / (fstop * distance);
     },
     dispose() {
       // composer.dispose() frees its own targets and copy pass, not the passes
