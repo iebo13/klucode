@@ -21,7 +21,7 @@ Nothing about the section's contract changes for the reader:
 What changes:
 
 - The change of view is a crossfade between two stills (500 ms), not a camera glide. Reduced motion gets a cut.
-- The chips on the junction are live: pointing at one selects its way, clicking one opens the row's link.
+- The chips on the junction are live: pointing at one lights its row and itself, clicking one opens the row's link. Pointing does not change the picture. (Amended 2 September after the first build: a chip that crossfaded the picture away from under the pointer that touched it was a surprise, and the rows already give every close-up.)
 - Pinned track (section 6): on a tall enough viewport the section holds for five snapping stops, junction then the four ways, and releases at the end. The owner asked for this on 2 September; it reverses the 25 August unpin.
 - No WebGL is needed, so a browser without it is no longer a refusal. Reduced motion is no longer a refusal either: stills do not move.
 
@@ -37,7 +37,7 @@ Five shots: `junction`, `website`, `app`, `capacity`, `care`.
 
 ### 3.2 Edges
 
-The sky is transparent (film transparent), the far floor is misted to the page ink `#1c201c` exactly, and the still's alpha is multiplied by a soft rounded box so the near floor and the sides fade to nothing over the outer part of the frame. The objects and the light pool stay at full alpha. That is what lets a still sit anywhere on the ink with no visible edge at any stage size.
+The sky is transparent (film transparent), the far floor is misted to the page ink `#1c201c` exactly, and the still's alpha is multiplied by a soft box so the near floor and the sides fade to nothing over the outer part of the frame. The box is narrower than the frame on every still, the junction's included (0.94 of the width, the close-ups 0.9), so the fade completes inside the frame and no column of pixels is left at half alpha; the page adds no fade of its own. The objects and the light pool stay at full alpha. That is what lets a still sit anywhere on the ink with no visible edge at any stage size.
 
 Colour management is Standard (no filmic curve), so the screens show the texture's own colours and the ink is the ink.
 
@@ -85,8 +85,10 @@ What stays: `textures.ts`, `labels.ts`, `palette.ts`, `types.ts` (`SceneLabels`,
 
 Unchanged from `2026-09-02-crossroads-depth-and-hand-design.md` section 12, restated so this document stands alone.
 
-- Pinned when `(min-width: 64rem) and (min-height: 51rem)` holds. Below that the section is its own height and behaves as it did.
-- Pinned, the section is a track of `100svh + 5 * 30svh`; the stage is sticky at the top, 100svh tall, with the panel inside it (paddings reduced).
+- Pinned when `(min-width: 64rem)` and a height floor hold. The floor is measured, not chosen: the pinned panel's height plus the header clearance plus the bottom padding, rounded up to the rem. Measured after the first build the panel is 816 px in German at 1440 wide with 0.5rem row padding; with the tightened pinned paddings of section 6a it is expected near 760 px, so the floor is expected at 55rem (880 px), which pins 1440x900 and 1920x1080 and leaves 1536x864 and 1366x768 unpinned, where the section is its own height and behaves as it did.
+- Pinned, the section is a track of `100svh + 5 * 30svh`; the stage is sticky at the top, 100svh tall, with the panel inside it.
+- 6a. Pinned, the layout clears the site's fixed header: `padding-top` equal to the root's `scroll-padding-top` (5.5rem), `padding-bottom` 1rem, and the panel tightens so it fits under the header at the floor: panel padding 1.25rem, row padding 0.25rem, the hint's and the link's top margins 1rem. (Amended 2 September: the first build measured the header capsule covering the panel's eyebrow for the whole ride.)
+- At 1440x900 the pinned stage is 900 px tall, so the still is placed at scale 0.902 rather than the render's own 1.0; the fade at its edges is what makes that invisible. The render's aspect is the lever if the exact render is ever wanted back on the pinned page.
 - Five stops one band apart, `scroll-snap-align: start`, and `html:has(#services[data-pinned='true']) { scroll-snap-type: y proximity }`.
 - `scrollWay(y, band)` in a new `track.ts` with no imports: band 0 is the junction, band k is way k-1, clamped to the last way.
 - A hovered or focused row overrides the track; letting go returns to the track's way, not the junction.

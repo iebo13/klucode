@@ -600,7 +600,11 @@ for name in SHOTS_WANTED:
     bpy.context.view_layer.update()
     aspect = FREE / H
     cam_data.angle_y = math.radians(fov_for(shot["fit"][0], shot["fit"][1], aspect))
-    box_mask.inputs["Size"].default_value = (0.98 if name == "junction" else 0.9, MASK_HEIGHT)
+    # The junction's fan reaches within 48 px of the still's left edge, so its
+    # box is wider than a close-up's, but not the full width: at 0.98 the
+    # fade sat on the frame edge and the first column of pixels was at half
+    # alpha, a visible step once the still is letterboxed on a pinned stage.
+    box_mask.inputs["Size"].default_value = (0.94 if name == "junction" else 0.9, MASK_HEIGHT)
     cam_data.dof.use_dof = DOF
     cam_data.dof.focus_distance = (look - pos).length
     cam_data.dof.aperture_fstop = shot["fstop"]
