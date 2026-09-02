@@ -11,6 +11,17 @@ renders into the WebPs and the generated `stills.ts` the page reads.
 It began as the 2 September 2026 spike that answered whether the composition
 reads as professional once it is lit and rendered properly. It did.
 
+The floor plan defaults to the K, the mark's own graph: a stem through the
+hub and two arms, four terminal nodes, drawn into the floor material's
+emission rather than as separate glow planes, lit by one static rig so the
+map and every stand share the same baked light. `--layout fan` keeps the
+earlier five-lane spread reachable for comparison. The palette comes from
+`src/components/crossroads/palette.ts`, read by the pattern
+`check-scene-palette.mjs` already holds it to, so the two files cannot drift.
+For the K layout the script also writes `layout.json` beside the renders: the
+lanes, the poses and the anchors in three.js coordinates, which Task 2's bake
+and the runtime both read.
+
 Coordinates: the page's scene is three.js, y up, the camera looking down -z.
 Blender is z up. Every three.js point (x, y, z) becomes the Blender point
 (x, -z, y); that mapping is a rotation, so an angle about three's y axis is
@@ -23,10 +34,12 @@ Run headless:
 import json
 import math
 import os
+import re
 import sys
 
 import bmesh
 import bpy
+import numpy as np
 from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 
@@ -41,7 +54,24 @@ def arg(name, default):
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = arg("--out", os.path.join(HERE, "renders"))
-SHOTS_WANTED = arg("--shots", "junction" if arg("--frame", "free") == "poster" else "junction,website,app,capacity,care").split(",")
+# `--layout k` lays the four routes out as the mark's own graph: a stem
+# through the hub and two arms, four terminal nodes, the K itself, and is the
+# default now that the section's floor plan is the mark. `--layout fan` keeps
+# the earlier five-lane spread reachable for comparison. `--k-rotate` turns
+# the K on the floor (radians, 0 puts the stem's top node straight away from
+# the camera). `--cam x,y,z` and `--look x,y,z` (three.js coordinates)
+# override the junction shot, which a K needs raised so the letter reads.
+LAYOUT = arg("--layout", "k")
+K_ROTATE = float(arg("--k-rotate", "0.3"))
+CAM_OVERRIDE = arg("--cam", "")
+LOOK_OVERRIDE = arg("--look", "")
+if arg("--frame", "free") == "poster":
+    DEFAULT_SHOTS = "junction"
+elif LAYOUT == "k":
+    DEFAULT_SHOTS = "junction,hub,website,app,capacity,care"
+else:
+    DEFAULT_SHOTS = "junction,website,app,capacity,care"
+SHOTS_WANTED = arg("--shots", DEFAULT_SHOTS).split(",")
 SCALE = float(arg("--scale", "1"))
 SAMPLES = int(arg("--samples", "128"))
 DOF = arg("--dof", "1") == "1"
@@ -53,16 +83,8 @@ FILL_W = float(arg("--fill", "450"))
 RIM_W = float(arg("--rim", "500"))
 SCREEN = float(arg("--screen", "1.0"))
 FLOOR_ROUGH = float(arg("--floor-rough", "0.45"))
+GLOW = float(arg("--glow", "0.3"))
 VIEW = arg("--view", "Standard")
-# `--layout k` lays the four routes out as the mark's own graph: a stem through
-# the hub and two arms, four terminal nodes; `--k-rotate` turns the K on the
-# floor (radians, 0 puts the stem's top node straight away from the camera).
-# `--cam x,y,z` and `--look x,y,z` (three.js coordinates) override the
-# junction shot, which a K needs raised so the letter reads.
-LAYOUT = arg("--layout", "fan")
-K_ROTATE = float(arg("--k-rotate", "0.35"))
-CAM_OVERRIDE = arg("--cam", "")
-LOOK_OVERRIDE = arg("--look", "")
 PREVIEW = arg("--preview", "0") == "1"
 LANE_FSTOP = float(arg("--fstop", "0.8"))
 SPREAD = float(arg("--spread", "80"))
@@ -88,23 +110,37 @@ MASK = arg("--mask", "0" if FRAME == "poster" else "1") == "1"
 
 # ------------------------------------------------------------------ palette
 
-PALETTE = {
-    "background": "1c201c",
-    "floor": "444844",
-    "accent": "5ea472",
-    "accentLight": "9ed3af",
-    "blueprint": "5cc2f0",
-    "metal": "a8ada9",
-    "screen": "ffffff",
-    "metalMid": "757975",
-    "metalDark": "5c605c",
-    "wood": "8a6440",
-    "cloud": "64748c",
-    "status": "76e39b",
-    "lightAmbient": "44546c",
-    "lightKey": "ffd9a4",
-    "lightFill": "7fa8d0",
-}
+PALETTE_TS = os.path.normpath(os.path.join(HERE, "..", "..", "src", "components", "crossroads", "palette.ts"))
+
+
+def read_palette(path):
+    """
+    The scene's colours, read from the one file that records them.
+
+    palette.ts is what scripts/check-scene-palette.mjs holds to the brand
+    tokens, and the pattern below is that script's DECL: a line that does not
+    read `name: 0xRRGGBB, // token.path` is not a colour there either. This
+    script used to carry a second copy of the sixteen values, which the gate
+    could not see and which drifted the day one of them moved. Sixteen is the
+    gate's EXPECTED, and refusing on any other count is the same tripwire.
+
+    One ruling against the spec's letter, recorded here because this is where
+    it bites: section 6 asks for a JSON emitted from palette.ts, and this
+    reads palette.ts itself with the gate's own pattern instead, which is one
+    file fewer to keep in step and the same guarantee.
+    """
+    palette = {}
+    with open(path) as f:
+        for line in f:
+            m = re.match(r"^\s*(\w+):\s*0x([0-9a-fA-F]{6}),\s*//\s*[\w.]+\s*$", line)
+            if m:
+                palette[m.group(1)] = m.group(2).lower()
+    if len(palette) != 16:
+        raise SystemExit(f"crossroads.py: read {len(palette)} colours from {path}, expected 16")
+    return palette
+
+
+PALETTE = read_palette(PALETTE_TS)
 
 
 def lin(hexstr):
@@ -238,8 +274,15 @@ def sphere(name, r, parent, pos, mat, squash=None):
     return finish(name, bm, mat, parent, pos, scale=scale, smooth=True)
 
 
-def screen(name, w, h, parent, pos, mat):
-    """A plane facing the viewer (three +z, Blender -y), textured upright."""
+def screen(name, w, h, parent, pos, mat, kind=None):
+    """
+    A plane facing the viewer (three +z, Blender -y), textured upright.
+
+    `kind` tags the object `screen:<kind>` (landing, dashboard, work) so
+    Task 2's bake and export, and the runtime, can swap its material without
+    parsing the name. The office's off screen passes no kind and stays a
+    plain body, like everything else this tag is not asked for.
+    """
     me = bpy.data.meshes.new(name)
     v0 = (-w / 2, 0, -h / 2)
     v1 = (-w / 2, 0, h / 2)
@@ -254,6 +297,8 @@ def screen(name, w, h, parent, pos, mat):
     ob.data.materials.append(mat)
     ob.location = P(*pos)
     ob.parent = parent
+    if kind is not None:
+        ob["kc"] = f"screen:{kind}"
     return link(ob)
 
 
@@ -294,7 +339,7 @@ def build_website(lane, z):
     box("web.frame", 5.4, 3.5, 0.22, 0.05, lane, (0, 2.9, z), frame)
     box("web.neck", 0.3, 1.1, 0.3, 0.04, lane, (0, 0.6, z), frame)
     box("web.base", 2.1, 0.14, 1.2, 0.04, lane, (0, 0.06, z), frame)
-    screen("web.screen", 5, 3.13, lane, (0, 2.9, z + 0.13), emission("landing", None, SCREEN, images["landing"]))
+    screen("web.screen", 5, 3.13, lane, (0, 2.9, z + 0.13), emission("landing", None, SCREEN, images["landing"]), kind="landing")
 
 
 def build_app(lane, z):
@@ -302,7 +347,7 @@ def build_app(lane, z):
     box("app.frame", 6, 3.6, 0.22, 0.05, lane, (0, 3.4, z), frame)
     box("app.neck", 0.32, 1.5, 0.32, 0.04, lane, (0, 0.85, z), frame)
     box("app.base", 2.3, 0.14, 1.2, 0.04, lane, (0, 0.06, z), frame)
-    screen("app.screen", 5.6, 3.15, lane, (0, 3.4, z + 0.13), emission("dashboard", None, SCREEN, images["dashboard"]))
+    screen("app.screen", 5.6, 3.15, lane, (0, 3.4, z + 0.13), emission("dashboard", None, SCREEN, images["dashboard"]), kind="dashboard")
     db = material("db", PALETTE["metalMid"], 0.55, 0.3)
     cylinder("app.db", 0.95, 1.4, 48, lane, (-2.5, 0.72, z + 0.9), db)
     cylinder("app.db.ring1", 0.97, 0.1, 48, lane, (-2.5, 1.45, z + 0.9), db)
@@ -334,7 +379,7 @@ def build_capacity(lane, z):
         if free:
             screen(f"desk{k}.screen", 1.24, 0.76, lane, (x, 1.42, dz - 0.235), off)
         else:
-            screen(f"desk{k}.screen", 1.24, 0.76, lane, (x, 1.42, dz - 0.235), work)
+            screen(f"desk{k}.screen", 1.24, 0.76, lane, (x, 1.42, dz - 0.235), work, kind="work")
         chair = empty(f"chair{k}", lane, (x, 0, dz + (1.5 if free else 1.05)), 0.4 if free else 0.0)
         box(f"chair{k}.seat", 0.6, 0.1, 0.6, 0.03, chair, (0, 0.52, 0), metal)
         box(f"chair{k}.back", 0.6, 0.66, 0.09, 0.03, chair, (0, 0.86, 0.28), metal)
@@ -354,8 +399,10 @@ def build_care(lane, z):
     for k in range(5):
         y = 0.45 + k * 0.5
         box(f"bay{k}", 1.55, 0.36, 0.1, 0.015, lane, (0, y, z + 0.62), bays)
-        sphere(f"bay{k}.led1", 0.035, lane, (0.55, y + 0.08, z + 0.68), lit)
-        sphere(f"bay{k}.led2", 0.035, lane, (0.64, y + 0.08, z + 0.68), lit)
+        led1 = sphere(f"bay{k}.led1", 0.035, lane, (0.55, y + 0.08, z + 0.68), lit)
+        led1["kc"] = "emitter"
+        led2 = sphere(f"bay{k}.led2", 0.035, lane, (0.64, y + 0.08, z + 0.68), lit)
+        led2["kc"] = "emitter"
         sphere(f"bay{k}.led0", 0.035, lane, (0.46, y + 0.08, z + 0.68), dark)
     cloud = material("cloud", PALETTE["cloud"], 0.95)
     for i, (px, py, pz, r) in enumerate([(0, 4.85, 0, 1.25), (-1, 4.7, 0.15, 0.9), (1, 4.75, -0.15, 0.95), (0.05, 5.15, 0, 0.72)]):
@@ -364,26 +411,130 @@ def build_care(lane, z):
     for k in range(5):
         w = 0.22 + k * 0.11
         box(f"rung{k}", w, 0.07, w, 0.02, lane, (0, 3.22 + k * 0.24, z), rung)
-    sphere("status.lamp", 0.1, lane, (0.7, 2.7, z + 0.66), emission("status", PALETTE["status"], 10.0))
+    status_lamp = sphere("status.lamp", 0.1, lane, (0.7, 2.7, z + 0.66), emission("status", PALETTE["status"], 10.0))
+    status_lamp["kc"] = "emitter"
 
 
 BUILDERS = {"website": build_website, "app": build_app, "capacity": build_capacity, "care": build_care}
 
-# The floor, the hub and the strips.
-floor_mat = material("floor", PALETTE["floor"], FLOOR_ROUGH, 0.0)
-floor_mat.node_tree.nodes["Principled BSDF"].inputs["Specular IOR Level"].default_value = 0.6
-bm = bmesh.new()
-bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=150)
-finish("floor", bm, floor_mat, None, (0, 0, 0))
+# The K's floor material: the strokes, the hub and the node discs are painted
+# into a mask and fed to the floor's emission strength, so the Cycles render,
+# Task 2's floor bake and the runtime all draw the same picture instead of
+# three separate copies of it. 2048 is high enough that a stroke 2.1 units
+# wide on a 100 wide floor crosses about 43 texels, softened one texel at
+# each edge so the bake does not alias it. The mark's hub is its largest
+# element (radius 6 against strokes of 4.6 and nodes of 4.2 in the identity's
+# own drawing), so on strokes 2.1 units wide the hub disc scales to 2.7 and
+# each node disc to 1.9, and HUB_GAIN lifts the hub over both in brightness.
+FLOOR_SIZE = 100
+MASK_PX = 2048
+STROKE_W = 2.1
+HUB_R = 2.7
+NODE_R = 1.9
+HUB_GAIN = 1.4
+# Where the floor's texture fades from full alpha to nothing, a radius from
+# the hub, so the far floor sits on either theme's ink. This script fades the
+# render through the compositor's own mist instead (see the render loop
+# below); this pair is only carried into layout.json for Task 2's bake and
+# the runtime, which both apply it to the floor texture itself.
+FLOOR_FADE = (34.0, 48.0)
+
+
+def k_mask(px, size, lanes, stroke, hub, node, hub_gain):
+    """
+    The letter as a picture on the floor's UV square.
+
+    1 on a stroke or a node disc, `hub_gain` on the hub, 0 elsewhere, and every
+    edge one texel soft so the bake does not alias it. Rows run in Blender's
+    image order, bottom up: row 0 is v = 0, the floor's near edge (three.js
+    +z), because image.pixels is filled in that order and the floor's UVs put
+    v = 0 there (see floor_k below).
+    """
+    half = size / 2
+    texel = size / px
+    xs = (np.arange(px) + 0.5) / px * size - half
+    zs = half - (np.arange(px) + 0.5) / px * size
+    X, Z = np.meshgrid(xs, zs)
+    m = np.zeros((px, px), dtype=np.float32)
+
+    def disc(cx, cz, r, value):
+        d = np.hypot(X - cx, Z - cz)
+        np.maximum(m, value * np.clip((r - d) / texel + 0.5, 0, 1), out=m)
+
+    def segment(ax, az, bx, bz, w):
+        vx, vz = bx - ax, bz - az
+        u = np.clip(((X - ax) * vx + (Z - az) * vz) / (vx * vx + vz * vz), 0, 1)
+        d = np.hypot(X - (ax + u * vx), Z - (az + u * vz))
+        np.maximum(m, np.clip((w / 2 - d) / texel + 0.5, 0, 1), out=m)
+
+    for lane in lanes:
+        nx = -lane["dist"] * math.sin(lane["angle"])
+        nz = -lane["dist"] * math.cos(lane["angle"])
+        segment(0, 0, nx, nz, stroke)
+        disc(nx, nz, node, 1.0)
+    disc(0, 0, hub, hub_gain)
+    return m
+
+
+def mask_image(name, m):
+    px = m.shape[0]
+    img = bpy.data.images.new(name, px, px, alpha=False, float_buffer=True)
+    img.colorspace_settings.name = "Non-Color"
+    rgba = np.dstack([m, m, m, np.ones_like(m)]).ravel()
+    img.pixels.foreach_set(rgba)
+    return img
+
+
+def floor_k(mask):
+    """
+    The floor with the letter in it. Principled for the light to fall on, and
+    the mask as emission strength, so the strokes glow the accent at GLOW and
+    the hub at GLOW times HUB_GAIN. The plane carries UVs from (0, 0) at the
+    near left corner to (1, 1) at the far right, which is the mapping k_mask
+    and Task 2's floor bake both assume.
+    """
+    mat = bpy.data.materials.new("floor.k")
+    mat.use_nodes = True
+    nodes, links = mat.node_tree.nodes, mat.node_tree.links
+    bsdf = nodes["Principled BSDF"]
+    bsdf.inputs["Base Color"].default_value = lin(PALETTE["floor"])
+    bsdf.inputs["Roughness"].default_value = FLOOR_ROUGH
+    bsdf.inputs["Specular IOR Level"].default_value = 0.6
+    bsdf.inputs["Emission Color"].default_value = lin(PALETTE["accent"])
+    tex = nodes.new("ShaderNodeTexImage")
+    tex.image = mask
+    tex.interpolation = "Linear"
+    tex.extension = "CLIP"
+    gain = nodes.new("ShaderNodeMath")
+    gain.operation = "MULTIPLY"
+    gain.inputs[1].default_value = GLOW
+    links.new(tex.outputs["Color"], gain.inputs[0])
+    links.new(gain.outputs["Value"], bsdf.inputs["Emission Strength"])
+
+    bm = bmesh.new()
+    # bmesh.ops.create_grid's `size` is a half extent in Blender 4.5: measured
+    # on this plane, ob.dimensions came back Vector((100.0, 100.0, 0.0)), so
+    # FLOOR_SIZE / 2 below makes the 100 by 100 floor its name promises.
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=FLOOR_SIZE / 2)
+    uv_layer = bm.loops.layers.uv.new("UVMap")
+    for face in bm.faces:
+        for loop in face.loops:
+            co = loop.vert.co
+            loop[uv_layer].uv = (co.x / FLOOR_SIZE + 0.5, co.y / FLOOR_SIZE + 0.5)
+    ob = finish("floor", bm, mat, None, (0, 0, 0))
+    ob["kc"] = "floor"
+    return ob
+
 
 if LAYOUT == "k":
-    # The mark's hub is its largest element (radius 6 against strokes of 4.6
-    # and nodes of 4.2), so on strips 2.1 wide the hub disc is 2.7 and each
-    # node disc 1.9.
-    bm = bmesh.new()
-    bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=2.7)
-    finish("hub", bm, glow_plane("hub", PALETTE["accent"], 0.2), None, (0, 0.013, 0))
+    floor_ob = floor_k(mask_image("k-mask", k_mask(MASK_PX, FLOOR_SIZE, LANES, STROKE_W, HUB_R, NODE_R, HUB_GAIN)))
 else:
+    # The floor, the hub and the strips, exactly as before the K existed.
+    floor_mat = material("floor", PALETTE["floor"], FLOOR_ROUGH, 0.0)
+    floor_mat.node_tree.nodes["Principled BSDF"].inputs["Specular IOR Level"].default_value = 0.6
+    bm = bmesh.new()
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=150)
+    finish("floor", bm, floor_mat, None, (0, 0, 0))
     bm = bmesh.new()
     bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1.7)
     finish("hub", bm, glow_plane("hub", PALETTE["accent"], 0.16), None, (0, 0.012, 0), rot_z=math.pi / 4)
@@ -391,15 +542,12 @@ else:
 lane_objects = {}
 for geom in LANES:
     lane = empty(f"lane.{geom['key']}", None, (0, 0, 0), geom["angle"])
-    bm = bmesh.new()
-    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=0.5)
-    for v in bm.verts:
-        v.co = Vector((v.co.x * 2.1, v.co.y * geom["dist"], 0))
-    finish(f"strip.{geom['key']}", bm, glow_plane("strip", PALETTE["accent"], 0.14 if LAYOUT == "k" else 0.09), lane, (0, 0.014, -geom["dist"] / 2))
-    if LAYOUT == "k":
+    if LAYOUT != "k":
         bm = bmesh.new()
-        bmesh.ops.create_circle(bm, cap_ends=True, segments=48, radius=1.9)
-        finish(f"node.{geom['key']}", bm, glow_plane("node", PALETTE["accent"], 0.16), lane, (0, 0.013, -geom["dist"]))
+        bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=0.5)
+        for v in bm.verts:
+            v.co = Vector((v.co.x * 2.1, v.co.y * geom["dist"], 0))
+        finish(f"strip.{geom['key']}", bm, glow_plane("strip", PALETTE["accent"], 0.09), lane, (0, 0.014, -geom["dist"] / 2))
     before = set(scene.objects)
     BUILDERS[geom["key"]](lane, -geom["dist"])
     lane_objects[geom["key"]] = [ob for ob in scene.objects if ob not in before and ob.type == "MESH"]
@@ -442,24 +590,70 @@ def light(name, kind, hexstr, power):
     return link(ob)
 
 
-key = light("key", "AREA", KEY_COLOR, KEY_W)
-key.data.shape = "RECTANGLE"
-key.data.size = 6
-key.data.size_y = 4
-fill = light("fill", "POINT", PALETTE["lightFill"], FILL_W)
-fill.data.shadow_soft_size = 1.5
-rim = light("rim", "AREA", PALETTE["lightFill"], RIM_W)
-rim.data.size = 8
-# The lights light; they are not seen in the floor. Their mirror images were
-# warm blobs on the damp floor that read as spills, not as light.
-for lamp in (key, fill, rim):
-    lamp.visible_glossy = False
-    lamp.visible_camera = False
-
-
 def aim(ob, target):
     d = target - ob.location
     ob.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
+
+
+if LAYOUT == "fan":
+    key = light("key", "AREA", KEY_COLOR, KEY_W)
+    key.data.shape = "RECTANGLE"
+    key.data.size = 6
+    key.data.size_y = 4
+    fill = light("fill", "POINT", PALETTE["lightFill"], FILL_W)
+    fill.data.shadow_soft_size = 1.5
+    rim = light("rim", "AREA", PALETTE["lightFill"], RIM_W)
+    rim.data.size = 8
+    # The lights light; they are not seen in the floor. Their mirror images were
+    # warm blobs on the damp floor that read as spills, not as light.
+    for lamp in (key, fill, rim):
+        lamp.visible_glossy = False
+        lamp.visible_camera = False
+
+
+def rig_k():
+    """
+    Thirteen lights, placed once, so that the six poses, the fallback stills
+    and the bake all see the same light.
+
+    The ceiling is today's junction key over the K: 44 by 44, 12 kW, a broad
+    soft light so every node is lit and the graph reads from above. Each node
+    then gets the close-up rig the stills used, fixed at that lane's own
+    geometry: the key above and to the right of the object a little towards
+    the hub, the fill where the standing camera stands, the cool rim behind
+    the object. `forward` is the direction from the hub to the node, which is
+    exactly the direction the standing camera looks, so the numbers are the
+    ones the stills were lit with.
+    """
+    ceiling = light("ceiling", "AREA", KEY_COLOR, JUNCTION_KEY_W * 2)
+    ceiling.data.shape = "SQUARE"
+    ceiling.data.size = 44
+    ceiling.data.spread = math.radians(110)
+    ceiling.location = P(2, 20, 0)
+    aim(ceiling, P(0, 1.5, -2))
+    lamps = [ceiling]
+    for geom in LANES:
+        target = lane_target(geom["angle"], geom["dist"], geom["aimY"])
+        forward = Vector((target.x, 0, target.z)).normalized()
+        right = Vector((-forward.z, 0, forward.x))
+        key = light(f"key.{geom['key']}", "AREA", KEY_COLOR, KEY_W)
+        key.data.shape = "RECTANGLE"
+        key.data.size, key.data.size_y = 6, 4
+        key.data.spread = math.radians(SPREAD)
+        key.location = P(*(target + Vector((0, 7.5, 0)) - forward * 3.0 + right * 4.0))
+        aim(key, P(*target))
+        rim = light(f"rim.{geom['key']}", "AREA", PALETTE["lightFill"], RIM_W)
+        rim.data.size = 8
+        rim.location = P(*(target + forward * 7 + Vector((0, 6, 0)) - right * 3))
+        aim(rim, P(*target))
+        fill = light(f"fill.{geom['key']}", "POINT", PALETTE["lightFill"], FILL_W)
+        fill.data.shadow_soft_size = 1.5
+        fill.location = P(*(stand_off(target, geom["back"]) + Vector((0, 1.0, 0))))
+        lamps += [key, rim, fill]
+    for lamp in lamps:
+        lamp.visible_glossy = False
+        lamp.visible_camera = False
+    return lamps
 
 
 # ----------------------------------------------------------------- camera
@@ -499,15 +693,28 @@ def vec_arg(text, default):
 
 SHOTS = {
     "junction": {
-        "pos": vec_arg(CAM_OVERRIDE, Vector((0, 5, 15))),
-        "look": vec_arg(LOOK_OVERRIDE, Vector((0, 1.6, -10))),
+        "pos": vec_arg(CAM_OVERRIDE, Vector((14, 32, 30)) if LAYOUT == "k" else Vector((0, 5, 15))),
+        "look": vec_arg(LOOK_OVERRIDE, Vector((6, 0, 0)) if LAYOUT == "k" else Vector((0, 1.6, -10))),
         "fit": (WIDE_FIT_H, WIDE_FIT_V),
         "fstop": 11.0,
     }
 }
+if LAYOUT == "k":
+    first = LANES[0]
+    SHOTS["hub"] = {
+        "pos": Vector((0, 6, 0)),
+        "look": lane_target(first["angle"], first["dist"], first["aimY"]),
+        "fit": (LANE_FIT_H, LANE_FIT_V),
+        "fstop": 8.0,
+    }
 for geom in LANES:
     target = lane_target(geom["angle"], geom["dist"], geom["aimY"])
     SHOTS[geom["key"]] = {"pos": stand_off(target, geom["back"]), "look": target, "fit": (LANE_FIT_H, LANE_FIT_V), "fstop": LANE_FSTOP}
+
+# Baked light cannot move per shot, so the K's whole rig goes up once here,
+# now that lane_target and stand_off, which rig_k stands its lights on, exist.
+if LAYOUT == "k":
+    rig_k()
 
 # ----------------------------------------------------------------- render
 
@@ -678,37 +885,38 @@ for name in SHOTS_WANTED:
     cam_data.dof.aperture_fstop = shot["fstop"]
     calibrate_shift(look)
 
-    # Lights ride with the shot, as they do on the page: the key above and to
-    # the right of the subject, a little towards the camera; the fill at the
-    # camera; a cool rim behind the subject to lift it off the dark.
-    forward = (look - pos)
-    forward.z = 0
-    forward.normalize()
-    right = Vector((forward.y, -forward.x, 0))
-    if name == "junction":
-        # One wide soft key over the arc the four objects stand on, so each
-        # of them is lit and casts a shadow, rather than one key over the
-        # empty middle of the floor.
-        key.location = P(2, 20, 0) if LAYOUT == "k" else P(0, 11, -13)
-        # Over the K the key is a broad soft ceiling: the letter is 36 units
-        # tall and 19 wide, and every node has to be lit for the graph to read.
-        key.data.size = 44 if LAYOUT == "k" else 22
-        key.data.size_y = 44 if LAYOUT == "k" else 8
-        key.data.energy = JUNCTION_KEY_W * (2 if LAYOUT == "k" else 1)
-        key.data.spread = math.radians(110)
-        aim(key, P(0, 1.5, -2) if LAYOUT == "k" else P(0, 1.5, -15))
-    else:
-        key.location = look + Vector((0, 0, 7.5)) - forward * 3.0 + right * 4.0
-        key.data.size = 6
-        key.data.size_y = 4
-        key.data.energy = KEY_W
-        # A softbox with a grid: the subject is lit, the floor around it is not
-        # flooded, so the floor keeps its own colour and falls off to the dark.
-        key.data.spread = math.radians(SPREAD)
-        aim(key, look)
-    fill.location = pos + Vector((0, 0, 1.0))
-    rim.location = look + forward * 7 + Vector((0, 0, 6)) - right * 3
-    aim(rim, look)
+    if LAYOUT == "fan":
+        # Lights ride with the shot, as they do on the page: the key above and to
+        # the right of the subject, a little towards the camera; the fill at the
+        # camera; a cool rim behind the subject to lift it off the dark. The K's
+        # light is a single static rig instead (rig_k above), because baked
+        # light cannot move per shot.
+        forward = look - pos
+        forward.z = 0
+        forward.normalize()
+        right = Vector((forward.y, -forward.x, 0))
+        if name == "junction":
+            # One wide soft key over the arc the four objects stand on, so each
+            # of them is lit and casts a shadow, rather than one key over the
+            # empty middle of the floor.
+            key.location = P(0, 11, -13)
+            key.data.size = 22
+            key.data.size_y = 8
+            key.data.energy = JUNCTION_KEY_W
+            key.data.spread = math.radians(110)
+            aim(key, P(0, 1.5, -15))
+        else:
+            key.location = look + Vector((0, 0, 7.5)) - forward * 3.0 + right * 4.0
+            key.data.size = 6
+            key.data.size_y = 4
+            key.data.energy = KEY_W
+            # A softbox with a grid: the subject is lit, the floor around it is not
+            # flooded, so the floor keeps its own colour and falls off to the dark.
+            key.data.spread = math.radians(SPREAD)
+            aim(key, look)
+        fill.location = pos + Vector((0, 0, 1.0))
+        rim.location = look + forward * 7 + Vector((0, 0, 6)) - right * 3
+        aim(rim, look)
 
     dist = (look - pos).length
     world.mist_settings.start = dist + 6
@@ -734,3 +942,64 @@ if os.path.exists(anchors_path):
 merged.update(report)
 with open(anchors_path, "w") as f:
     json.dump(merged, f, indent=2)
+
+
+def layout_report():
+    """
+    The K's layout in three.js coordinates: the shape Task 2's scene.json and
+    the manifest both start from.
+
+    A Blender vector converts to three.js with (v.x, v.z, -v.y), the inverse
+    of P(). A lane's box converts corner by corner rather than as its min and
+    max, because the y to z half of that conversion negates: componentwise on
+    just the two corners would hand back a box whose min z is greater than
+    its max z.
+    """
+
+    def to_three(v):
+        return [round(v.x, 3), round(v.z, 3), round(-v.y, 3)]
+
+    def bounds_three(key):
+        lo, hi = lane_box(key)
+        corners = [to_three(Vector((x, y, z))) for x in (lo.x, hi.x) for y in (lo.y, hi.y) for z in (lo.z, hi.z)]
+        return {
+            "min": [round(min(c[i] for c in corners), 3) for i in range(3)],
+            "max": [round(max(c[i] for c in corners), 3) for i in range(3)],
+        }
+
+    def pose(shot):
+        return {
+            "pos": [round(v, 3) for v in shot["pos"]],
+            "look": [round(v, 3) for v in shot["look"]],
+            "fitH": round(shot["fit"][0], 3),
+            "fitV": round(shot["fit"][1], 3),
+            "fstop": round(shot["fstop"], 3),
+        }
+
+    return {
+        "rotate": round(K_ROTATE, 3),
+        "strokeWidth": round(STROKE_W, 3),
+        "hub": round(HUB_R, 3),
+        "node": round(NODE_R, 3),
+        "floorSize": FLOOR_SIZE,
+        "fade": [round(v, 3) for v in FLOOR_FADE],
+        "lanes": [
+            {
+                "key": geom["key"],
+                "angle": round(geom["angle"], 3),
+                "dist": round(geom["dist"], 3),
+                "node": [round(v, 3) for v in lane_target(geom["angle"], geom["dist"], 0)],
+                "back": round(geom["back"], 3),
+                "aimY": round(geom["aimY"], 3),
+            }
+            for geom in LANES
+        ],
+        "poses": {shot_name: pose(shot) for shot_name, shot in SHOTS.items()},
+        "anchors": {lane_key: to_three(v) for lane_key, v in anchors.items()},
+        "bounds": {lane_key: bounds_three(lane_key) for lane_key in anchors},
+    }
+
+
+if LAYOUT == "k":
+    with open(os.path.join(OUT, "layout.json"), "w") as f:
+        json.dump(layout_report(), f, indent=2)
