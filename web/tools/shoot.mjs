@@ -1,11 +1,11 @@
 /**
  * Screenshots the crossroads at the junction and at every close-up, at every
- * viewport width the scene mounts on, and prints what it measured on the way.
+ * viewport width the stills mount on, and prints what it measured on the way.
  *
  * Not a test and not in CI. It is the thing you run when a change to the frame
  * needs looking at as well as asserting on, and it exists because the
  * alternative is hovering by hand and losing the numbers. The assertions live
- * in tests/unit/crossroads-framing.spec.ts and tests/e2e/crossroads.spec.ts.
+ * in tests/e2e/crossroads.spec.ts.
  *
  *     npm run build
  *     python3 -m http.server 4173 --bind 127.0.0.1 --directory out &
@@ -13,9 +13,9 @@
  *
  * Writes shots/<viewport>-<index>-<name>.png. The directory is gitignored.
  *
- * The stage line it prints is what CANVASES in the framing suite is copied
- * from: the stage is the section's own height, which follows the copy, so
- * re-run this after a copy change to the rows and update the numbers there.
+ * The panel line it prints is the one the PIN query in index.tsx is set from:
+ * pinned, the whole panel has to stand inside 100svh, so re-run this after a
+ * copy change to the rows and check the number against the query.
  */
 import { mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
@@ -38,31 +38,41 @@ const browser = await chromium.launch();
 for (const viewport of VIEWPORTS) {
   const page = await browser.newPage({ viewport });
   await page.goto(`${BASE}/${LANG}/`);
-  await page.waitForSelector('#services canvas[data-scene="kc-crossroads"]');
+  await page.waitForSelector('#services img.crossroads-still[data-on="true"]');
+  // The section's top ON the viewport's top, which is the head of the track.
+  // Not scrollIntoView: html carries scroll-padding-top: 5.5rem for the fixed
+  // header and scrollIntoView honours it, which would leave the pinned stage
+  // hanging 88px down with the last row of the panel below the fold.
   await page.evaluate(() => {
-    document.querySelector('#services').scrollIntoView({ block: 'start', behavior: 'instant' });
+    const el = document.querySelector('#services');
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY, behavior: 'instant' });
   });
-  await page.waitForSelector('#services[data-built="4"]', { timeout: 8000 });
-  // The last object's build plus the label fade.
-  await page.waitForTimeout(400);
+  await page.waitForSelector('#services[data-revealed="true"]', { timeout: 8000 });
+  // The stack's own fade in is 700ms.
+  await page.waitForTimeout(900);
 
   const box = await page.evaluate(() => {
+    const section = document.querySelector('#services');
     const stage = document.querySelector('.crossroads-stage');
     const panel = document.querySelector('.crossroads-copy');
-    const canvas = document.querySelector('.crossroads-stage canvas');
+    const stack = document.querySelector('.crossroads-stills');
     const s = stage.getBoundingClientRect();
     const p = panel.getBoundingClientRect();
+    const k = stack.getBoundingClientRect();
     return {
       stage: [Math.round(s.width), Math.round(s.height)],
-      canvas: [canvas.width, canvas.height],
       panel: [Math.round(p.width), Math.round(p.height)],
+      still: [Math.round(k.width), Math.round(k.height)],
+      scale: (k.width / 808).toFixed(3),
       reserve: Math.round(p.right - s.left),
-      viewports: (s.height / window.innerHeight).toFixed(2),
+      pinned: section.dataset.pinned,
+      viewports: (section.offsetHeight / window.innerHeight).toFixed(2),
     };
   });
   console.log(
-    `${viewport.name}: stage ${box.stage.join('x')} (${box.viewports} viewports), canvas ${box.canvas.join('x')}, ` +
-      `panel ${box.panel.join('x')}, reserve ${box.reserve}px, free ${box.stage[0] - box.reserve}px`,
+    `${viewport.name}: section ${box.viewports} viewports, pinned ${box.pinned}, stage ${box.stage.join('x')}, ` +
+      `panel ${box.panel.join('x')}, reserve ${box.reserve}px, free ${box.stage[0] - box.reserve}px, ` +
+      `still ${box.still.join('x')} at ${box.scale}`,
   );
 
   for (const [i, name] of SHOTS.entries()) {
@@ -71,9 +81,9 @@ for (const viewport of VIEWPORTS) {
     } else {
       await page.hover(`#services li[data-key="${name}"] a`);
     }
-    // The glide is 720ms and the label fade 200ms. Shorter and every
-    // screenshot catches the camera mid-move and reads as a rendering fault.
-    await page.waitForTimeout(1000);
+    // The crossfade is 500ms and the label fade 200ms. Shorter and every
+    // screenshot catches the section mid-change and reads as a fault.
+    await page.waitForTimeout(800);
 
     const seen = await page.evaluate(() => {
       const shown = [...document.querySelectorAll('.crossroads-mark')]
@@ -92,15 +102,21 @@ for (const viewport of VIEWPORTS) {
         }
       }
       return {
+        still: document.querySelector('#services').dataset.still,
         focus: document.querySelector('#services li[data-focus="true"]')?.dataset.key ?? '-',
         marks: shown.map((m) => `${m.n}@${Math.round(m.r.left)},${Math.round(m.r.top)}`),
         clashes,
       };
     });
     const file = `shots/${viewport.name}-${String(i).padStart(2, '0')}-${name}.png`;
-    await page.locator('#services').screenshot({ path: file });
+    // The VIEWPORT, not the section element. Pinned, the section is two and a
+    // half viewports of which one and a half is the track's runway, so a shot
+    // of the element is mostly empty ink and shows nothing a reader ever sees
+    // at once.
+    await page.screenshot({ path: file });
     console.log(
-      `  ${name.padEnd(9)} focus ${seen.focus.padEnd(9)} ${seen.marks.join('  ') || '(no labels)'}` +
+      `  ${name.padEnd(9)} still ${seen.still.padEnd(9)} focus ${seen.focus.padEnd(9)} ` +
+        `${seen.marks.join('  ') || '(no labels)'}` +
         (seen.clashes.length ? `   <-- LABELS OVERLAP ${seen.clashes.join(' ')}` : ''),
     );
   }

@@ -1,39 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowLink, Eyebrow, RHYTHM } from '@/components/ui';
 import { asset } from '@/lib/base-path';
 import type { Lang } from '@/lib/routes';
 
-import type { Handle, Mark, ServiceKey, Way } from './types';
-
-/**
- * The scene's readiness signal, written onto the canvas immediately before
- * boot() and read by the browser suite.
- *
- * Not a bundle marker, whatever it once was. scripts/check-bundle.mjs
- * deliberately does NOT match on this, and says why at length above its
- * THREE_MARKER: it is a DOM attribute written by this file, this file is a
- * client component, so it lives in the EAGER page chunk. Matching on it
- * measured 2 kB of component and reported that as the deferred budget, which
- * is a gate that cannot fail.
- *
- * Its job is timing. Because it is set on the line before boot(), its presence
- * means there is a handle listening for the hover that follows.
- */
-const SCENE_MARKER = 'kc-crossroads';
+import { STILL, STILLS, STILL_ORDER, type StillKey } from './stills';
+import { BAND_SVH, scrollWay } from './track';
+import type { ServiceKey, Way } from './types';
 
 /**
  * The order the four ways stand in, left to right, in every language.
  *
  * The content files do not agree on this: de.ts lists the services in the
  * order they are priced, en.ts leads with developer capacity. That is each
- * language's own editorial call and the services page keeps it. The scene
- * cannot: the fan is tuned as a set, with the outer lanes longer than the
- * inner two and each camera standoff matched to the lane it stands on. Fed a
- * different order it would frame the wrong objects from the wrong distances.
+ * language's own editorial call and the services page keeps it. The stills
+ * cannot: each one was rendered with the four objects on their own lanes, in
+ * this order, and the anchors in stills.ts are the positions those objects
+ * came out at. Fed a different order the rows would point at the wrong
+ * pictures and the labels would stand at somebody else's object.
  *
  * So the crossroads sorts, and the column beside it sorts with it, because
  * the rows, the lanes and the labels are the same four things in the same
@@ -45,20 +32,35 @@ const inOrder = (ways: readonly Way[]): Way[] =>
   ORDER.map((key) => ways.find((w) => w.key === key)).filter((w): w is Way => w !== undefined);
 
 /**
- * The room the scene needs, as one query. Width only.
+ * The room the stills need, as one query. Width only.
  *
  * 64rem is Tailwind's `lg`, which is where the copy becomes a panel standing
  * on the left of the world rather than the whole width of the section. Below
- * it the panel would cover the canvas, so there is no canvas.
+ * it the panel would cover the picture, so there is no picture and the price
+ * board carries the section on its own.
  *
  * There used to be a height half: `(min-height: 46rem)`, because the section
  * was a stage fixed at 100svh with the panel inside it, and on a 1366x768
- * laptop the panel was taller than the stage and clipped a price. The section
- * is its own height now and grows with the panel, so a short laptop gets the
- * scene like any other. That laptop is the most common Windows viewport there
- * is, and it was getting the fallback.
+ * laptop the panel was taller than the stage and clipped a price. Height is
+ * PIN's question now, and it answers it differently: a short laptop gets the
+ * stills like any other, it just does not get the track.
  */
 const ROOM = '(min-width: 64rem)';
+
+/**
+ * The room the TRACK needs, on top of ROOM: a viewport tall enough for the
+ * copy panel to stand inside a pinned stage.
+ *
+ * Measured against the build at 1440 wide with the pinned paddings, the German
+ * panel is 816px tall and the English one 788, and globals.css gives the
+ * layout 1rem above and below it, so the shorter viewport this may run on is
+ * 848px: 53rem. That pins 1440x900 and 1536x864 and leaves 1366x768 unpinned,
+ * where the section is its own height and behaves exactly as it did before the
+ * track. The plan said 51rem, which is the panel itself with no room for the
+ * padding around it, so a 1500x820 window would have pinned and clipped the
+ * last row.
+ */
+const PIN = '(min-width: 64rem) and (min-height: 53rem)';
 
 /**
  * Where the poster stops being a strip and becomes the upright crop.
@@ -66,16 +68,16 @@ const ROOM = '(min-width: 64rem)';
  * 40rem is Tailwind's `sm`, and it is written once here and once in the
  * <source media> below it, which is the one duplication this file cannot
  * remove: a media attribute takes a string and cannot read a constant. The two
- * describe the same boundary, so they have to move together — the crops show
- * DIFFERENT objects, so a mismatch would leave the alt text describing four
- * things next to a picture of two.
+ * describe the same boundary, so they have to move together, because the crops
+ * show DIFFERENT objects and a mismatch would leave the alt text describing
+ * four things next to a picture of two.
  */
 const STRIP = '(min-width: 40rem)';
 
 /**
  * How much clear space a label needs on every side before it is shown at all.
  *
- * A chip touching the panel's edge or the top of the canvas reads as a
+ * A chip touching the panel's edge or the top of the stage reads as a
  * rendering fault rather than as a label, and one that is half under the panel
  * reads as a bug. 12px is a hair more than the chip's own corner radius, which
  * is what makes it look placed rather than trapped.
@@ -83,38 +85,48 @@ const STRIP = '(min-width: 40rem)';
 const MARK_GAP = 12;
 
 /**
- * The section's resolved background colour, for the scene to stand in.
+ * The contain transform of a still inside the free region.
  *
- * Read off the ELEMENT rather than off the custom property. getComputedStyle
- * returns a custom property as the token it was written as, so asking for
- * --kc-inkSurface hands back the literal string `var(--kc-stone-975)`, which
- * THREE.Color parses as black. Asking for `background-color` on something that
- * uses it returns the resolved `rgb(...)`.
+ * `contain` semantics and nothing cleverer: the smaller of the two ratios, so
+ * the whole frame is inside the free region on both axes, centred in the free
+ * region horizontally and in the stage vertically. Measured against the build,
+ * at 1024x736 the section is its own height, the stage is 1024x972, the free
+ * region is 536 wide and the width binds at 0.663; at 1440x900 and 1920x1080
+ * the track pins the stage to one viewport and the height binds, at 0.902 and
+ * 1.082. So the objects keep close to their rendered size on a big screen with
+ * the section's own ink either side, and shrink to fit a narrow column, which
+ * is what the live camera's field of view used to do.
+ *
+ * The render's own 808x998 is the free region beside the panel at 1440x900
+ * with the section standing at its own height, which is what it was framed
+ * for. The pin makes the stage shorter than that, so at both pinned widths the
+ * picture is letterboxed rather than exact.
  */
-function groundOf(section: HTMLElement | null): string | undefined {
-  if (!section) return undefined;
-  const colour = getComputedStyle(section).backgroundColor;
-  return colour && colour !== 'rgba(0, 0, 0, 0)' ? colour : undefined;
+function fit(reserve: number, stageW: number, stageH: number) {
+  const freeW = Math.max(0, stageW - reserve);
+  const s = Math.min(freeW / STILL.width, stageH / STILL.height);
+  return {
+    s,
+    ox: reserve + (freeW - STILL.width * s) / 2,
+    oy: (stageH - STILL.height * s) / 2,
+  };
 }
 
 /**
- * Whether this visitor gets the scene at all.
+ * Whether this visitor gets the stills at all.
  *
- * Three ways to say no, and each is an answer rather than a degradation. A
- * reduced-motion request is honoured by not moving anything. A phone gets the
- * price board instead of 148 kB and a warm GPU, on a site whose pitch is that
- * it loads fast. A browser without WebGL was never going to see it.
+ * One question now, and it is about room. The WebGL probe went with the
+ * renderer: a picture needs no graphics context, so a browser with WebGL
+ * switched off sees the same section as everybody else. The reduced-motion
+ * refusal went with the camera: five stills and a crossfade have nothing that
+ * travels, and the crossfade itself is inside a
+ * `prefers-reduced-motion: no-preference` block in globals.css, so a reader
+ * who asks for no motion gets a cut between two pictures rather than a price
+ * board where every other laptop shows the world.
  */
 function canMount(): boolean {
   if (typeof window === 'undefined') return false;
-  if (!window.matchMedia(ROOM).matches) return false;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-  try {
-    const probe = document.createElement('canvas');
-    return Boolean(probe.getContext('webgl2') ?? probe.getContext('webgl'));
-  } catch {
-    return false;
-  }
+  return window.matchMedia(ROOM).matches;
 }
 
 export function Crossroads({
@@ -136,7 +148,7 @@ export function Crossroads({
   lead: string;
   link: { href: string; label: string };
   /**
-   * That the rows do anything. Rendered only where the scene mounts, because
+   * That the rows do anything. Rendered only where the stills mount, because
    * in the fallback there is nothing to hover towards and the line would be a
    * promise the page cannot keep.
    */
@@ -151,26 +163,27 @@ export function Crossroads({
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  // The canvas fills the stage, so the two are the same box and the renderer
-  // could be sized against either. It is sized against the view, because the
-  // view is the element that owns the canvas and a stage that grows a second
-  // child one day should not silently re-aspect the scene.
-  const viewRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  /** The five stills, as one box that one transform places. */
+  const stackRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLOListElement>(null);
   /**
    * The four labels standing at the four objects.
    *
-   * Held as DOM nodes and never as state. marks() answers on every drawn frame,
-   * and routing four pixel positions through React would re-render this whole
-   * section sixty times a second to move a transform.
+   * Held as DOM nodes and never as state. A label's position is one transform
+   * and nothing else, and routing four pixel positions through React would
+   * re-render this whole section to move a chip.
    */
   const markRefs = useRef<(HTMLDivElement | null)[]>([]);
-  /** The scene, once it has booted. Read by the hover effect and the observer. */
-  const handleRef = useRef<Handle | null>(null);
-  /** Whether the section has been on screen, for a reveal that beats the boot. */
-  const seenRef = useRef(false);
+  /**
+   * The four rows, so a chip can open the one it names.
+   *
+   * A chip is not a second link: two anchors with the same href and the same
+   * text would be two entries in a screen reader's link list for one
+   * destination, and the marks layer is aria-hidden precisely so that does not
+   * happen. Clicking the row is the whole of what a chip does.
+   */
+  const rowRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
   const [enhanced, setEnhanced] = useState(false);
   /**
@@ -178,37 +191,56 @@ export function Crossroads({
    *
    * Only the alt text depends on it: <picture> picks the file on its own, and
    * it cannot pick an alt. Starts false so the first render matches the static
-   * HTML, and is corrected in an effect — the same shape as `enhanced`.
+   * HTML, and is corrected in an effect, the same shape as `enhanced`.
    */
   const [phoneCrop, setPhoneCrop] = useState(false);
   /** The row under the pointer or holding keyboard focus, or -1 for none. */
   const [focus, setFocus] = useState(-1);
-  // How many of the four have finished building, as an integer. Reflected onto
-  // the section so the browser suite can assert on the reveal without a debug
-  // hook shipping to production: it is honest state, it is not announced to a
-  // screen reader, and it costs one integer.
-  const [built, setBuilt] = useState(0);
+  /** Whether the track is running: ROOM and a viewport tall enough for PIN. */
+  const [pinned, setPinned] = useState(false);
+  /** The way the track has scrolled to, or -1 for the junction. */
+  const [scrollWayNow, setScrollWayNow] = useState(-1);
+  /**
+   * Whether the section has been looked at. The stack fades in on the way in,
+   * so a reader arriving sees the world appear rather than already there.
+   */
+  const [revealed, setRevealed] = useState(false);
 
-  // Sorted once, and everything downstream reads this: the scene, the rows,
+  // Sorted once, and everything downstream reads this: the stills, the rows,
   // the labels and the numbering. The prop's own order is never used.
   const ordered = useMemo(() => inOrder(ways), [ways]);
 
-  // Decided on the client and re-decided when ROOM flips, because rotating a
-  // tablet or dragging a window crosses that line in both directions. Watching
-  // ROOM itself rather than a second copy of the query is the point: the two
-  // cannot be given different numbers.
+  /**
+   * Two inputs, one aim. The pointer's or the keyboard's way wins while it is
+   * on one; otherwise the track's. Letting go of a row therefore returns the
+   * picture to the route the scroll is on, not to the junction, and scrolling
+   * walks the highlight down the board.
+   */
+  const aim = focus >= 0 ? focus : scrollWayNow;
+  /** Which of the five renders is showing. The section carries it as data-still. */
+  const still: StillKey = (aim >= 0 ? ORDER[aim] : undefined) ?? 'junction';
+
+  // Decided on the client and re-decided when ROOM or PIN flips, because
+  // rotating a tablet or dragging a window crosses those lines in both
+  // directions. Watching the queries themselves rather than a second copy of
+  // them is the point: the two cannot be given different numbers.
   useEffect(() => {
     const room = window.matchMedia(ROOM);
+    const pin = window.matchMedia(PIN);
     const strip = window.matchMedia(STRIP);
     const decide = () => {
-      setEnhanced(canMount());
+      const mounts = canMount();
+      setEnhanced(mounts);
+      setPinned(mounts && pin.matches);
       setPhoneCrop(!strip.matches);
     };
     decide();
     room.addEventListener('change', decide);
+    pin.addEventListener('change', decide);
     strip.addEventListener('change', decide);
     return () => {
       room.removeEventListener('change', decide);
+      pin.removeEventListener('change', decide);
       strip.removeEventListener('change', decide);
     };
   }, []);
@@ -218,19 +250,139 @@ export function Crossroads({
    * computed: the panel's edges, the stage's box, and how big each of the four
    * labels actually is.
    *
-   * One measurement rather than three, taken on mount and on resize and never
-   * on a drawn frame. Reading a bounding box mid-frame forces a layout, and
-   * this one would do it four times a frame for the whole time the camera is
-   * moving.
+   * One measurement rather than three, taken on mount, once more when the web
+   * fonts have landed, and on resize. Nothing here runs on a hover: the stack's
+   * transform is the same for all five stills, so the picture changing costs
+   * five attributes and four transforms and no layout read at all.
    *
    * The label widths are the part that has to be here. A label is a box of
-   * text and its width is a font metric: „01 Individuelle Web-Anwendung" is
-   * 245px in Schibsted Grotesk at 14px and „04 Betrieb & Wartung" is 170, and
-   * the scene has no way to know either. It tried, with the anchor and a
-   * padding constant, and a chip slid a third of itself under the copy panel
-   * while its anchor was still clear of it.
+   * text and its width is a font metric: measured at 1440 in German,
+   * "02 Individuelle Web-Anwendung" is 245px in Schibsted Grotesk at 14px and
+   * "04 Betrieb & Wartung" is 170, and nothing in the render knows either. The
+   * anchors say where an object is, not how wide its name will be in this
+   * reader's browser.
    */
   const metrics = useRef({ reserve: 0, stageW: 0, stageH: 0, half: [] as number[], tall: 0 });
+
+  /**
+   * Moves the four labels, and nothing else touches their transforms.
+   *
+   * The anchors come from stills.ts, which is written by the render itself, so
+   * a label's position and the picture it stands on can never disagree: both
+   * were produced by the same camera in the same pass. Mapped through the same
+   * contain transform the stack carries, then held to the rules below.
+   *
+   * translate3d rather than left/top, so a label move is a compositor
+   * transform and never a layout pass.
+   */
+  const place = useCallback(() => {
+    const { reserve, stageW, stageH, half, tall } = metrics.current;
+    const { s, ox, oy } = fit(reserve, stageW, stageH);
+    const anchors = STILLS[still].marks;
+    /**
+     * Every chip's box before anything is written to the DOM, because two of
+     * them have to be compared with each other and a box read back out of the
+     * DOM would be a layout read per chip per hover.
+     *
+     * x is the chip's centre and y its bottom, which is where the transform
+     * puts it: the chip is centred on its anchor and rises from it, so it
+     * reaches `w` to either side and `tall` up.
+     */
+    const chips = ORDER.map((key, i) => {
+      const anchor = anchors[key];
+      const at = { x: ox + anchor.x * s, y: oy + anchor.y * s };
+      /**
+       * The chip is nudged into the free region rather than dropped out of
+       * it. At the 1024 floor the free region is 536px wide, the fan fills
+       * it, and "01 Website & Landingpage" is 208px: measured there, the
+       * first chip's own left half reaches 39px past the panel's edge.
+       * Hiding it would cost exactly the shot the labels exist for, which is
+       * the one where all four objects are on screen and the reader is
+       * finding out what they are. A 39px shift on a 208px chip is 19% and
+       * reads as placement.
+       *
+       * Bounded at half the box, because past that the nudge stops meaning
+       * "this label, slightly moved" and starts meaning "this label, over
+       * somebody else's object". Past it the label is dropped.
+       */
+      const w = half[i] ?? 0;
+      const low = reserve + MARK_GAP + w;
+      const high = stageW - MARK_GAP - w;
+      return {
+        at,
+        w,
+        low,
+        high,
+        x: low > high ? at.x : Math.min(Math.max(at.x, low), high),
+        y: Math.max(at.y, MARK_GAP + tall),
+        on: anchor.on,
+      };
+    });
+
+    /**
+     * Two chips at neighbouring objects can want the same pixels, and at the
+     * junction two of them do.
+     *
+     * Measured at 1440x900: the anchors for 01 and 02 are 191 still pixels
+     * apart, which is 172 on screen, and the two chips are 208 and 245 wide.
+     * They overlap by about 50px with their type on the same line, which reads
+     * as one broken label rather than two. The old scene solved it by moving
+     * the objects on their lanes; the objects are baked into the render now,
+     * so the layout has to solve it here.
+     *
+     * A chip is therefore lifted clear of the ones already placed to its left,
+     * by its own height at a time, up to twice. Lifting rather than shifting
+     * sideways, because sideways is the axis that says WHICH object this
+     * names: a chip 50px to the left of its anchor is standing at its
+     * neighbour, while a chip a line higher is standing at the same object
+     * from a little further up. The lift also passes the drop test below by
+     * construction, which only refuses a chip that has been pushed DOWN and
+     * away from its object.
+     */
+    for (let i = 0; i < chips.length; i += 1) {
+      const chip = chips[i];
+      if (!chip || !chip.on) continue;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const clash = chips.some(
+          (other, j) =>
+            j < i &&
+            other.on &&
+            Math.abs(chip.x - other.x) < chip.w + other.w &&
+            Math.abs(chip.y - other.y) < tall,
+        );
+        if (!clash) break;
+        chip.y = Math.max(chip.y - (tall + 4), MARK_GAP + tall);
+      }
+    }
+
+    for (let i = 0; i < chips.length; i += 1) {
+      const el = markRefs.current[i];
+      const chip = chips[i];
+      if (!el || !chip) continue;
+      const { at, w, low, high, x, y, on } = chip;
+      // Rounded, because a label is type and a half pixel of it is a blurred
+      // glyph. The object underneath is free to sit wherever it likes.
+      el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+      el.dataset.on = String(
+        on &&
+          low <= high &&
+          Math.abs(x - at.x) <= w * 0.5 &&
+          y - at.y <= tall * 0.5 &&
+          y <= stageH - MARK_GAP,
+      );
+    }
+  }, [still]);
+
+  /**
+   * The measure, and the one transform it writes.
+   *
+   * It reaches the labels through a ref rather than depending on `place`
+   * directly: `place` is rebuilt whenever the shown still changes, which is
+   * every hover, and this effect owns the resize listener and the two custom
+   * properties the veil reads. Tearing that down and building it again to
+   * follow a pointer would be churn for nothing.
+   */
+  const placeRef = useRef(place);
 
   useEffect(() => {
     if (!enhanced) return;
@@ -255,6 +407,17 @@ export function Crossroads({
       // would be right at one viewport and wrong at the other two.
       stage.style.setProperty('--crossroads-gutter', `${Math.round(panel.left - box.left)}px`);
       stage.style.setProperty('--crossroads-reserve', `${Math.round(panel.right - box.left)}px`);
+      // One transform for all five stills, because all five are the same
+      // camera at the same size: the stack is a fixed 808x998 box with the
+      // pictures stretched over it, so placing the box places every frame of
+      // the crossfade at once and a fade can never be two pictures at two
+      // different scales.
+      const stack = stackRef.current;
+      if (stack) {
+        const { s, ox, oy } = fit(metrics.current.reserve, box.width, box.height);
+        stack.style.transform = `translate3d(${ox}px, ${oy}px, 0) scale(${s})`;
+      }
+      placeRef.current();
     };
 
     measure();
@@ -267,369 +430,347 @@ export function Crossroads({
       stage.style.removeProperty('--crossroads-gutter');
       stage.style.removeProperty('--crossroads-reserve');
     };
-  }, [enhanced, ordered, lang]);
+    // `pinned` is in here because pinning changes the stage from the section's
+    // own height to 100svh, and `lang` and `ordered` because the names in the
+    // chips are what `half` and `tall` measure.
+  }, [enhanced, ordered, lang, pinned]);
 
+  // The labels follow the shown still. Declared after the measure so that on
+  // mount the metrics are filled before the first placement.
   useEffect(() => {
-    if (!enhanced) return;
-    const canvas = canvasRef.current;
+    placeRef.current = place;
+    if (enhanced) place();
+  }, [place, enhanced]);
+
+  /**
+   * The reveal: the world fades up, once, when the section first comes into
+   * view. Not on mount, which can happen four viewports before the reader
+   * arrives. A fifth of the stage on screen is enough to be looking at it.
+   */
+  useEffect(() => {
+    if (!enhanced || revealed) return;
     const stage = stageRef.current;
-    const view = viewRef.current;
-    if (!canvas || !stage || !view) return;
-
-    let cancelled = false;
-
-    /**
-     * Moves the four labels, and nothing else touches their transforms.
-     *
-     * translate3d rather than left/top, so a label move is a compositor
-     * transform and never a layout pass: four of these run on every frame the
-     * camera is moving.
-     */
-    const place = (marks: readonly Mark[]) => {
-      const { reserve, stageW, stageH, half, tall } = metrics.current;
-      for (let i = 0; i < marks.length; i += 1) {
-        const el = markRefs.current[i];
-        const mark = marks[i];
-        if (!el || !mark) continue;
-        /**
-         * The chip is centred on its anchor and rises from it, so it reaches
-         * half its width to either side and its full height up. What has to
-         * clear the panel and the canvas is that box, not the anchor.
-         *
-         * And it is nudged rather than dropped. At the 1024 floor the free
-         * region is narrow, the fan fills it, and „01 Website & Landingpage"
-         * is 205px wide: at the establishing shot the outer two labels
-         * overhang the panel and the right edge by a few pixels. Hiding them
-         * there would cost exactly the shot the labels exist for, which is
-         * the one where all four objects are on screen and the reader is
-         * finding out what they are. A 28px shift on a 205px chip is 14% and
-         * reads as placement.
-         *
-         * Bounded at half the box, because past that the nudge stops meaning
-         * „this label, slightly moved" and starts meaning „this label, over
-         * somebody else's object". Past it the label is dropped.
-         */
-        const w = half[i] ?? 0;
-        const low = reserve + MARK_GAP + w;
-        const high = stageW - MARK_GAP - w;
-        const x = low > high ? mark.x : Math.min(Math.max(mark.x, low), high);
-        const y = Math.max(mark.y, MARK_GAP + tall);
-        // Rounded, because a label is type and a half pixel of it is a blurred
-        // glyph. The object underneath is free to sit wherever it likes.
-        el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
-        el.dataset.on = String(
-          mark.front &&
-            low <= high &&
-            Math.abs(x - mark.x) <= w * 0.5 &&
-            y - mark.y <= tall * 0.5 &&
-            y <= stageH - MARK_GAP,
-        );
-      }
-    };
-
-    // The labels are fetched WITH the scene rather than imported statically.
-    // index.tsx is a client component, so a static import puts the mock landing
-    // page and the mock dashboard, in both languages, into First Load JS for
-    // every visitor: including every phone, which never mounts the scene at
-    // all. Verified by grepping the built chunks for the mock client's name.
-    Promise.all([import('./scene'), import('./labels')])
-      .then(([{ boot }, { LABELS }]) => {
-        if (cancelled) return;
-        canvas.dataset.scene = SCENE_MARKER;
-        const handle = boot(canvas, view, ordered, LABELS[lang], {
-          // The copy panel is standing on the left of the canvas, and the
-          // camera composes into what is left.
-          panel: copyRef.current,
-          // The section's OWN background, resolved. The scene is full bleed
-          // and the ink hero lands directly on its first pixel, so the world's
-          // ground and --kc-inkSurface have to be the same colour or the page
-          // gets a hard line across it at the boundary. Read off the element
-          // rather than off the custom property, because a custom property
-          // hands back the unresolved `var(--kc-stone-975)` it was written as.
-          ground: groundOf(sectionRef.current),
-          // Read from the frame that was just drawn, not from a second
-          // measurement, so the labels and the camera can never disagree
-          // about where the objects are.
-          onFrame: () => {
-            place(handle.marks());
-            setBuilt(handle.built());
-          },
-        });
-        handleRef.current = handle;
-        // Whatever happened while the scene was loading: a reader who was
-        // already looking at the section gets the reveal now rather than
-        // never, and one whose pointer is already on a row gets that way.
-        if (seenRef.current) handle.reveal();
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        // A scene that will not start is not worth telling a visitor about.
-        // The price board is standing and says everything the scene would.
-        console.warn('crossroads: the scene did not start', error);
-        setEnhanced(false);
-      });
-
-    return () => {
-      cancelled = true;
-      handleRef.current?.stop();
-      handleRef.current = null;
-    };
-  }, [enhanced, ordered, lang]);
-
-  /**
-   * A theme switch repaints the world.
-   *
-   * The toggle writes data-theme onto <html>, which is a CSS-only change
-   * everywhere else on the site and cannot be one here: three.js holds its own
-   * copy of the background and the fog. Without this the scene keeps the
-   * ground it booted with and the seam under the hero comes back the moment a
-   * reader presses the control in the header.
-   */
-  useEffect(() => {
-    if (!enhanced) return;
-    const root = document.documentElement;
-    const repaint = () => {
-      const colour = groundOf(sectionRef.current);
-      if (colour) handleRef.current?.setGround(colour);
-    };
-    const observer = new MutationObserver(repaint);
-    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-    // And the OS, for a reader who has never touched the toggle: the roles
-    // follow prefers-color-scheme, and nothing writes data-theme in that case.
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    media.addEventListener('change', repaint);
-    return () => {
-      observer.disconnect();
-      media.removeEventListener('change', repaint);
-    };
-  }, [enhanced, built]);
-
-  /**
-   * The reveal: the four drawings become the four objects, once, when the
-   * section first comes into view. Not on boot, which can happen four
-   * viewports before the reader arrives, and not on scroll position, which is
-   * the coupling this section no longer has. A fifth of the section on screen
-   * is enough to be looking at it.
-   */
-  useEffect(() => {
-    if (!enhanced) return;
-    const section = sectionRef.current;
-    if (!section) return;
+    if (!stage) return;
     const io = new IntersectionObserver(
       (entries) => {
         if (!entries.some((e) => e.isIntersecting)) return;
-        seenRef.current = true;
-        handleRef.current?.reveal();
+        setRevealed(true);
         io.disconnect();
       },
       { threshold: 0.2 },
     );
-    io.observe(section);
+    io.observe(stage);
     return () => io.disconnect();
-  }, [enhanced]);
+  }, [enhanced, revealed]);
 
   /**
-   * The camera follows the row. Hover and keyboard focus are the same input,
-   * which is what makes the enhanced state reachable without a pointer: the
-   * old one disclosed by scroll position, and a keyboard user could not open
-   * a row because rows were not focusable. They are links now.
+   * The track's input. The section's top scrolls above the viewport's top by
+   * `y`; the band it is in selects the way. Read on scroll and on resize,
+   * passive, and only while pinned: unpinned, the track's way stays -1 and the
+   * section behaves as it did before the track, which is hover-driven and its
+   * own height.
    */
   useEffect(() => {
-    handleRef.current?.aim(focus);
-  }, [focus, built]);
+    if (!pinned) {
+      setScrollWayNow(-1);
+      return;
+    }
+    const section = sectionRef.current;
+    if (!section) return;
+    const read = () => {
+      const band = (window.innerHeight * BAND_SVH) / 100;
+      // One pixel of tolerance, and it is load bearing. The section's top is a
+      // fractional page offset (1557.09px at 1440x900 in the German build) and
+      // the browser can only scroll to a whole pixel, so a stop the snap has
+      // just landed on sits a tenth of a pixel short of its own band boundary
+      // and every stop would select the way before it. A pixel either way is
+      // nothing to a reader and is the difference between a stop meaning what
+      // it looks like it means and being one route behind all the way down.
+      setScrollWayNow(scrollWay(1 - section.getBoundingClientRect().top, band));
+    };
+    read();
+    window.addEventListener('scroll', read, { passive: true });
+    window.addEventListener('resize', read, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', read);
+      window.removeEventListener('resize', read);
+    };
+  }, [pinned]);
 
   return (
     <section
       id="services"
       ref={sectionRef}
       data-enhanced={enhanced}
-      data-built={built}
-      className="grain relative isolate overflow-hidden bg-ink text-ink-fg"
+      data-pinned={pinned}
+      data-revealed={revealed}
+      data-still={still}
+      // overflow-CLIP, not the overflow-hidden every other ink section carries.
+      // An element with a hidden overflow is a scroll container, and a sticky
+      // child sticks to the nearest one: the stage would stick to a box that
+      // never scrolls, which is to say it would not stick at all. Measured on
+      // this page by swapping the two classes at the third stop: clipped, the
+      // stage holds at 0; hidden, it is 543px up the viewport and gone, with a
+      // viewport and a half of empty ink where it was. `clip` clips without
+      // making a scroll container, so the pinned stage sticks to the viewport
+      // and the section still keeps its own paint inside itself.
+      className="grain relative isolate overflow-clip bg-ink text-ink-fg"
     >
       {/* The wash and the grain belong to the fallback, where this section is
-          ink carrying text. With the scene up they are the thing that made the
-          canvas read as a video embedded in a slide: a flat fogged rectangle
-          with a different dark either side of it. The scene IS the ink, so it
-          runs to the viewport edges and nothing is layered over it. */}
+          ink carrying text. With the world up they are the thing that made the
+          picture read as a video embedded in a slide: a flat fogged rectangle
+          with a different dark either side of it. The stills ARE the ink, so
+          they run to the viewport edges and nothing is layered over them. */}
       {enhanced ? null : <div aria-hidden="true" className="ink-aurora -z-10" />}
 
-      {/* The stage is the section's own height: the canvas is absolutely
-          positioned behind the layout and the layout is the panel plus the
-          section rhythm. No track, no sticky, no svh. A reader scrolls past
-          this like any other section. */}
-      <div ref={stageRef} className="crossroads-stage">
-        <div ref={viewRef} className="crossroads-view">
-          {enhanced ? <canvas ref={canvasRef} aria-hidden="true" /> : null}
-        </div>
+      {/* The track is the runway and the stage sticks INSIDE it. Unpinned it
+          is an ordinary box of the section's own height and the stops are not
+          rendered at all, so nothing about it costs a reader who never gets
+          the track anything. */}
+      <div className="crossroads-track">
+        <div
+          ref={stageRef}
+          className="crossroads-stage"
+          // Leaving the stage lets go of the row, wherever the pointer left
+          // from: a chip, a row, or the ink between them. The panel and the
+          // chips are both inside the stage, so sweeping from one to the other
+          // does not fire this, and every row and chip sets the focus again on
+          // the way in.
+          onMouseLeave={() => setFocus(-1)}
+        >
+          {/* The world: five renders of the same place, one showing. The stack
+              is a fixed 808x998 box that the measure above scales and moves as
+              a whole, so the pictures need no geometry of their own and a
+              crossfade is two opacities and nothing else.
 
-        {/* The gutter, faded to the scene's own background. See the note
-            above .crossroads-veil: the strip between the viewport edge and
-            the panel is the one part of a full-bleed frame that no camera
-            position can compose, and the neighbouring lane's object stands
-            in it. */}
-        {enhanced ? <div aria-hidden="true" className="crossroads-veil" /> : null}
-
-        {/* py-16 rather than the section rhythm, because this section's height
-            is what the panel has to fit inside a laptop viewport with, and the
-            two columns of rhythm padding were 20% of it. */}
-        <div className="crossroads-layout relative mx-auto max-w-container px-6 py-16 md:px-8">
-          {/* The price board, which is also this section's fallback, which is
-              also the only copy of these four rows anywhere on the homepage.
-              On ink it is a glass panel over the scene rather than a column
-              beside it, and .glass-chip is the material the hero's proof
-              chips are already made of: ink with real frequency under it,
-              which is the one condition a backdrop blur needs to produce
-              anything at all. */}
-          <div ref={copyRef} className="crossroads-copy lg:max-w-[30rem]">
-            <Eyebrow onInk>{eyebrow}</Eyebrow>
-            <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
-            <p className={`${RHYTHM.lead} max-w-measure text-ink-muted`}>{lead}</p>
-
-            {/* The place, once, for everyone who never sees it move.
-
-                Rendered from this scene by tools/shoot-poster.mjs rather
-                than drawn, so it cannot end up describing a world the site
-                stopped having, and 13 kB of WebP against the 148 kB of
-                three.js the fallback exists to not download. Rendered only
-                in the fallback, so a laptop that gets the real thing never
-                fetches it, and not on a phone at all: a 1600x481 strip at
-                327px wide is 98px tall, and nothing in it is identifiable at
-                that size. It reads as a dark banner, which is worse than no
-                picture. */}
-            {enhanced ? null : (
-              <picture>
-                {/* Two crops of one render, chosen by width. The strip is
-                    1600x481 and at 327px it is 98px tall, where nothing in it
-                    is identifiable and it reads as a dark banner — which is why
-                    it used to be hidden below `sm`, and why the services
-                    section then had no picture at all on the device most
-                    visitors use. The upright crop holds the landing page and
-                    the dashboard at about three times that width.
-
-                    <source> rather than two <img>s, so the browser fetches one
-                    file and not both, and the alt text belongs to the <img>
-                    because the two crops show different things — four ways in
-                    one, two in the other. */}
-                <source media="(min-width: 40rem)" srcSet={asset('/crossroads.webp')} />
+              Plain <img> and the rule turned off for it, rather than
+              next/image: the export has no optimiser (images.unoptimized is
+              set in next.config.mjs), so <Image> would emit this same tag
+              inside a wrapper with sizing of its own, and the sizing here is
+              one transform on the box around all five. */}
+          {enhanced ? (
+            <div ref={stackRef} aria-hidden="true" className="crossroads-stills">
+              {STILL_ORDER.map((key) => (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={asset('/crossroads-phone.webp')}
-                  alt={phoneCrop ? scenePhoneAlt : sceneAlt}
-                  width={880}
-                  height={643}
+                  key={key}
+                  data-key={key}
+                  data-on={still === key}
+                  className="crossroads-still"
+                  src={asset(STILLS[key].src)}
+                  srcSet={`${asset(STILLS[key].src)} 1x, ${asset(STILLS[key].src2x)} 2x`}
+                  width={STILL.width}
+                  height={STILL.height}
+                  alt=""
                   loading="lazy"
                   decoding="async"
-                  className="mt-6 w-full rounded-md border border-ink-line"
+                  draggable={false}
                 />
-              </picture>
-            )}
-
-            {/* Four rows, every detail open, every row a link.
-
-                The old board opened one row's detail at a time, on the row
-                the camera was standing at, so at the two positions a normal
-                scroll lands on nothing was open at all and a laptop got less
-                than a phone. Nothing collapses now. And each row goes to its
-                own card on the services page, because four objects and four
-                services with nothing to click was the strangest thing about
-                the section. */}
-            <ol
-              ref={listRef}
-              className="crossroads-ways mt-8 divide-y divide-ink-line border-y border-ink-line"
-              onMouseLeave={() => setFocus(-1)}
-              onBlur={(e) => {
-                // Tabbing from one row to the next fires blur before focus.
-                // Only a departure from the list as a whole sends the camera
-                // back to the junction.
-                if (!listRef.current?.contains(e.relatedTarget as Node | null)) setFocus(-1);
-              }}
-            >
-              {ordered.map((way, i) => (
-                <li key={way.key} data-key={way.key} data-focus={focus === i}>
-                  <Link
-                    href={`${servicesPath}#${way.key}`}
-                    className="crossroads-way"
-                    onMouseEnter={() => setFocus(i)}
-                    onFocus={() => setFocus(i)}
-                  >
-                    {/* text-lead rather than the h3 size: four of these in a
-                        panel that has to fit a laptop viewport, and the
-                        name's job is to be found, not to headline. The number
-                        is inside the heading rather than in a column of its
-                        own, because a column costs the name the width it
-                        needs to stay on one line, and it is hidden from the
-                        accessibility tree because the list is already
-                        numbered. */}
-                    <h3 className="crossroads-way-name text-lead">
-                      <span
-                        aria-hidden="true"
-                        className="crossroads-way-no font-mono text-eyebrow text-ink-accent"
-                      >
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      {way.name}
-                    </h3>
-                    <span className="crossroads-way-price font-display text-lead font-medium text-ink-accent">
-                      <span className="font-sans text-small font-normal text-ink-muted">
-                        {fromLabel}{' '}
-                      </span>
-                      {way.price}
-                    </span>
-                    <span className="crossroads-way-detail text-small text-ink-muted">
-                      {way.forWhom}
-                    </span>
-                    <span className="crossroads-way-note text-small text-ink-muted">
-                      {way.priceNote}
-                    </span>
-                  </Link>
-                </li>
               ))}
-            </ol>
+            </div>
+          ) : null}
 
-            {/* The affordance, and it is one line because one line is what was
-                missing. The camera follows the row under the pointer, every
-                row is a link, and nothing on the page said so: no caption, no
-                cursor note, and a hover fill that only arrives once the
-                pointer is already on a row. So the shot the whole section
-                exists for was one almost nobody saw. .crossroads-hint hides it
-                wherever the scene does not mount. */}
-            <p className="crossroads-hint mt-6 items-center gap-2 text-small text-ink-faint">
-              <span aria-hidden="true">↖</span>
-              {hint}
-            </p>
+          {/* The gutter, faded to the section's own ink. See the note above
+              .crossroads-veil: it is the strip between the viewport edge and
+              the panel, and it is the one part of a full-bleed frame that the
+              render never reaches. */}
+          {enhanced ? <div aria-hidden="true" className="crossroads-veil" /> : null}
 
-            <div className="mt-6">
-              <ArrowLink onInk href={link.href}>
-                {link.label}
-              </ArrowLink>
+          {/* py-16 rather than the section rhythm, because this section's height
+              is what the panel has to fit inside a laptop viewport with, and the
+              two columns of rhythm padding were 20% of it. Pinned, globals.css
+              takes it down again: the panel then has to fit inside 100svh. */}
+          <div className="crossroads-layout relative mx-auto max-w-container px-6 py-16 md:px-8">
+            {/* The price board, which is also this section's fallback, which is
+                also the only copy of these four rows anywhere on the homepage.
+                On ink it is a panel standing on the left of the world rather
+                than a column beside a box, and the world is placed into what is
+                left of the stage: see the note above .crossroads-copy for what
+                its glass is now doing and what it is not. */}
+            <div ref={copyRef} className="crossroads-copy lg:max-w-[30rem]">
+              <Eyebrow onInk>{eyebrow}</Eyebrow>
+              <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
+              <p className={`${RHYTHM.lead} max-w-measure text-ink-muted`}>{lead}</p>
+
+              {/* The place, once, for everyone who never sees it change.
+
+                  Rendered from the same Blender scene as the five stills by
+                  tools/blender/emit-stills.mjs rather than drawn, so it cannot
+                  end up describing a world the site stopped having, and 16 kB
+                  of WebP for the upright crop or 21 for the strip against the
+                  198 kB the five stills weigh at 1x.
+                  Rendered only in the fallback, so a laptop that gets the real
+                  thing never fetches it, and not on a phone at all: a 1600x516
+                  strip at 327px wide is 105px tall, and nothing in it is
+                  identifiable at that size. It reads as a dark banner, which is
+                  worse than no picture. */}
+              {enhanced ? null : (
+                <picture>
+                  {/* Two crops of one render, chosen by width. The strip is
+                      1600x516 and at 327px it is 105px tall, where nothing in
+                      it is identifiable and it reads as a dark banner, which is
+                      why it used to be hidden below `sm`, and why the services
+                      section then had no picture at all on the device most
+                      visitors use. The upright crop holds the landing page and
+                      the dashboard at about three times that width.
+
+                      <source> rather than two <img>s, so the browser fetches one
+                      file and not both, and the alt text belongs to the <img>
+                      because the two crops show different things: four ways in
+                      one, two in the other. */}
+                  <source media="(min-width: 40rem)" srcSet={asset('/crossroads.webp')} />
+                  <img
+                    src={asset('/crossroads-phone.webp')}
+                    alt={phoneCrop ? scenePhoneAlt : sceneAlt}
+                    width={880}
+                    height={657}
+                    loading="lazy"
+                    decoding="async"
+                    className="mt-6 w-full rounded-md border border-ink-line"
+                  />
+                </picture>
+              )}
+
+              {/* Four rows, every detail open, every row a link.
+
+                  The old board opened one row's detail at a time, on the row
+                  the camera was standing at, so at the two positions a normal
+                  scroll lands on nothing was open at all and a laptop got less
+                  than a phone. Nothing collapses now. And each row goes to its
+                  own card on the services page, because four objects and four
+                  services with nothing to click was the strangest thing about
+                  the section. */}
+              <ol
+                ref={listRef}
+                className="crossroads-ways mt-8 divide-y divide-ink-line border-y border-ink-line"
+                onMouseLeave={() => setFocus(-1)}
+                onBlur={(e) => {
+                  // Tabbing from one row to the next fires blur before focus.
+                  // Only a departure from the list as a whole hands the picture
+                  // back to the track.
+                  if (!listRef.current?.contains(e.relatedTarget as Node | null)) setFocus(-1);
+                }}
+              >
+                {ordered.map((way, i) => (
+                  <li key={way.key} data-key={way.key} data-focus={aim === i}>
+                    <Link
+                      href={`${servicesPath}#${way.key}`}
+                      className="crossroads-way"
+                      ref={(el) => {
+                        rowRefs.current[i] = el;
+                      }}
+                      onMouseEnter={() => setFocus(i)}
+                      onFocus={() => setFocus(i)}
+                    >
+                      {/* text-lead rather than the h3 size: four of these in a
+                          panel that has to fit a laptop viewport, and the
+                          name's job is to be found, not to headline. The number
+                          is inside the heading rather than in a column of its
+                          own, because a column costs the name the width it
+                          needs to stay on one line, and it is hidden from the
+                          accessibility tree because the list is already
+                          numbered. */}
+                      <h3 className="crossroads-way-name text-lead">
+                        <span
+                          aria-hidden="true"
+                          className="crossroads-way-no font-mono text-eyebrow text-ink-accent"
+                        >
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        {way.name}
+                      </h3>
+                      <span className="crossroads-way-price font-display text-lead font-medium text-ink-accent">
+                        <span className="font-sans text-small font-normal text-ink-muted">
+                          {fromLabel}{' '}
+                        </span>
+                        {way.price}
+                      </span>
+                      <span className="crossroads-way-detail text-small text-ink-muted">
+                        {way.forWhom}
+                      </span>
+                      <span className="crossroads-way-note text-small text-ink-muted">
+                        {way.priceNote}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+
+              {/* The affordance, and it is one line because one line is what was
+                  missing. The world follows the row under the pointer, every
+                  row is a link, and nothing on the page said so: no caption, no
+                  cursor note, and a hover fill that only arrives once the
+                  pointer is already on a row. So the shot the whole section
+                  exists for was one almost nobody saw. .crossroads-hint hides it
+                  wherever the stills do not mount. */}
+              <p className="crossroads-hint mt-6 items-center gap-2 text-small text-ink-faint">
+                <span aria-hidden="true">↖</span>
+                {hint}
+              </p>
+
+              <div className="mt-6">
+                <ArrowLink onInk href={link.href}>
+                  {link.label}
+                </ArrowLink>
+              </div>
             </div>
           </div>
+
+          {/* The names, standing at the things they name.
+              aria-hidden, and that is the whole i18n and accessibility story
+              in one attribute: every one of these four strings is the same
+              `way.name` the row above already carries, so a screen reader
+              hears it once and a search engine indexes it once. What this
+              layer adds is the bond a list beside a picture could not make.
+
+              On the junction the chips are live, which is what all four
+              objects being on screen at once finally allows: pointing at a
+              name is pointing at the object and clicking it opens that way's
+              row, through the row's own link rather than a second one. The
+              three that are not chosen go back to being chrome on a close-up,
+              and globals.css is where a chip gets its pointer events or does
+              not. */}
+          {enhanced ? (
+            <div aria-hidden="true" className="crossroads-marks">
+              {ordered.map((way, i) => (
+                <div
+                  key={way.key}
+                  data-on="false"
+                  ref={(el) => {
+                    markRefs.current[i] = el;
+                  }}
+                  className="crossroads-mark"
+                >
+                  <span
+                    className="crossroads-mark-box"
+                    data-focus={aim === i}
+                    onMouseEnter={() => setFocus(i)}
+                    onClick={() => rowRefs.current[i]?.click()}
+                  >
+                    <span className="crossroads-mark-no">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="crossroads-mark-name">{way.name}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
-        {/* The names, standing at the things they name.
-            aria-hidden, and that is the whole i18n and accessibility story
-            in one attribute: every one of these four strings is the same
-            `way.name` the row above already carries, so a screen reader
-            hears it once and a search engine indexes it once. What this
-            layer adds is the bond a list beside a canvas could not make. */}
-        {enhanced ? (
-          <div aria-hidden="true" className="crossroads-marks">
-            {ordered.map((way, i) => (
+        {/* The five stops the root snaps to while the section is pinned: the
+            junction and the four ways, one band apart. 1px, invisible, and
+            only rendered pinned, so an unpinned page carries no snap targets
+            at all. The band is BAND_SVH and the track's own height is the same
+            number times five in globals.css. */}
+        {pinned
+          ? [0, 1, 2, 3, 4].map((k) => (
               <div
-                key={way.key}
-                data-on="false"
-                ref={(el) => {
-                  markRefs.current[i] = el;
-                }}
-                className="crossroads-mark"
-              >
-                <span className="crossroads-mark-box" data-focus={focus === i}>
-                  <span className="crossroads-mark-no">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="crossroads-mark-name">{way.name}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : null}
+                key={k}
+                aria-hidden="true"
+                className="crossroads-stop"
+                style={{ top: `${k * BAND_SVH}svh` }}
+              />
+            ))
+          : null}
       </div>
     </section>
   );
