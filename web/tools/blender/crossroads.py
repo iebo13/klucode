@@ -54,6 +54,15 @@ RIM_W = float(arg("--rim", "500"))
 SCREEN = float(arg("--screen", "1.0"))
 FLOOR_ROUGH = float(arg("--floor-rough", "0.45"))
 VIEW = arg("--view", "Standard")
+# `--layout k` lays the four routes out as the mark's own graph: a stem through
+# the hub and two arms, four terminal nodes; `--k-rotate` turns the K on the
+# floor (radians, 0 puts the stem's top node straight away from the camera).
+# `--cam x,y,z` and `--look x,y,z` (three.js coordinates) override the
+# junction shot, which a K needs raised so the letter reads.
+LAYOUT = arg("--layout", "fan")
+K_ROTATE = float(arg("--k-rotate", "0.35"))
+CAM_OVERRIDE = arg("--cam", "")
+LOOK_OVERRIDE = arg("--look", "")
 PREVIEW = arg("--preview", "0") == "1"
 LANE_FSTOP = float(arg("--fstop", "0.8"))
 SPREAD = float(arg("--spread", "80"))
@@ -258,12 +267,20 @@ def empty(name, parent=None, pos=(0, 0, 0), rot_z=0.0):
 
 # ------------------------------------------------------------- the lanes
 
-LANES = [
+FAN_LANES = [
     {"key": "website", "angle": 0.8, "dist": 17, "back": 9.1, "aimY": 2.33},
     {"key": "app", "angle": 0.28, "dist": 17, "back": 11.4, "aimY": 2.6},
     {"key": "capacity", "angle": -0.28, "dist": 17, "back": 13.2, "aimY": 0.98},
     {"key": "care", "angle": -0.8, "dist": 17, "back": 11.2, "aimY": 2.78},
 ]
+ARM = math.atan2(19, 18)
+K_LANES = [
+    {"key": "website", "angle": K_ROTATE, "dist": 18, "back": 9.1, "aimY": 2.33},
+    {"key": "app", "angle": K_ROTATE - ARM, "dist": 26.2, "back": 11.4, "aimY": 2.6},
+    {"key": "capacity", "angle": K_ROTATE - (math.pi - ARM), "dist": 26.2, "back": 13.2, "aimY": 0.98},
+    {"key": "care", "angle": K_ROTATE + math.pi, "dist": 18, "back": 11.2, "aimY": 2.78},
+]
+LANES = K_LANES if LAYOUT == "k" else FAN_LANES
 
 images = {
     "landing": bpy.data.images.load(os.path.join(TEX, "canvas-1280x800.png")),
@@ -359,9 +376,17 @@ bm = bmesh.new()
 bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=150)
 finish("floor", bm, floor_mat, None, (0, 0, 0))
 
-bm = bmesh.new()
-bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1.7)
-finish("hub", bm, glow_plane("hub", PALETTE["accent"], 0.16), None, (0, 0.012, 0), rot_z=math.pi / 4)
+if LAYOUT == "k":
+    # The mark's hub is its largest element (radius 6 against strokes of 4.6
+    # and nodes of 4.2), so on strips 2.1 wide the hub disc is 2.7 and each
+    # node disc 1.9.
+    bm = bmesh.new()
+    bmesh.ops.create_circle(bm, cap_ends=True, segments=64, radius=2.7)
+    finish("hub", bm, glow_plane("hub", PALETTE["accent"], 0.2), None, (0, 0.013, 0))
+else:
+    bm = bmesh.new()
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=1.7)
+    finish("hub", bm, glow_plane("hub", PALETTE["accent"], 0.16), None, (0, 0.012, 0), rot_z=math.pi / 4)
 
 lane_objects = {}
 for geom in LANES:
@@ -370,7 +395,11 @@ for geom in LANES:
     bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=0.5)
     for v in bm.verts:
         v.co = Vector((v.co.x * 2.1, v.co.y * geom["dist"], 0))
-    finish(f"strip.{geom['key']}", bm, glow_plane("strip", PALETTE["accent"], 0.09), lane, (0, 0.014, -geom["dist"] / 2))
+    finish(f"strip.{geom['key']}", bm, glow_plane("strip", PALETTE["accent"], 0.14 if LAYOUT == "k" else 0.09), lane, (0, 0.014, -geom["dist"] / 2))
+    if LAYOUT == "k":
+        bm = bmesh.new()
+        bmesh.ops.create_circle(bm, cap_ends=True, segments=48, radius=1.9)
+        finish(f"node.{geom['key']}", bm, glow_plane("node", PALETTE["accent"], 0.16), lane, (0, 0.013, -geom["dist"]))
     before = set(scene.objects)
     BUILDERS[geom["key"]](lane, -geom["dist"])
     lane_objects[geom["key"]] = [ob for ob in scene.objects if ob not in before and ob.type == "MESH"]
@@ -464,7 +493,18 @@ def stand_off(target, back):
     return Vector((p.x, CAM_Y, p.z))
 
 
-SHOTS = {"junction": {"pos": Vector((0, 5, 15)), "look": Vector((0, 1.6, -10)), "fit": (WIDE_FIT_H, WIDE_FIT_V), "fstop": 11.0}}
+def vec_arg(text, default):
+    return Vector(tuple(float(v) for v in text.split(","))) if text else default
+
+
+SHOTS = {
+    "junction": {
+        "pos": vec_arg(CAM_OVERRIDE, Vector((0, 5, 15))),
+        "look": vec_arg(LOOK_OVERRIDE, Vector((0, 1.6, -10))),
+        "fit": (WIDE_FIT_H, WIDE_FIT_V),
+        "fstop": 11.0,
+    }
+}
 for geom in LANES:
     target = lane_target(geom["angle"], geom["dist"], geom["aimY"])
     SHOTS[geom["key"]] = {"pos": stand_off(target, geom["back"]), "look": target, "fit": (LANE_FIT_H, LANE_FIT_V), "fstop": LANE_FSTOP}
@@ -649,12 +689,14 @@ for name in SHOTS_WANTED:
         # One wide soft key over the arc the four objects stand on, so each
         # of them is lit and casts a shadow, rather than one key over the
         # empty middle of the floor.
-        key.location = P(0, 11, -13)
-        key.data.size = 22
-        key.data.size_y = 8
-        key.data.energy = JUNCTION_KEY_W
+        key.location = P(2, 20, 0) if LAYOUT == "k" else P(0, 11, -13)
+        # Over the K the key is a broad soft ceiling: the letter is 36 units
+        # tall and 19 wide, and every node has to be lit for the graph to read.
+        key.data.size = 44 if LAYOUT == "k" else 22
+        key.data.size_y = 44 if LAYOUT == "k" else 8
+        key.data.energy = JUNCTION_KEY_W * (2 if LAYOUT == "k" else 1)
         key.data.spread = math.radians(110)
-        aim(key, P(0, 1.5, -15))
+        aim(key, P(0, 1.5, -2) if LAYOUT == "k" else P(0, 1.5, -15))
     else:
         key.location = look + Vector((0, 0, 7.5)) - forward * 3.0 + right * 4.0
         key.data.size = 6
