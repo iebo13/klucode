@@ -14,7 +14,7 @@ The earlier live scene (August, the depth pass) was not a dead end because it wa
 
 - **The map.** The section opens on the whole K from a raised three-quarter view: a dark floor, the letter's strokes as soft green light, the hub disc brightest, an object standing on each node with its label chip. The mark, as a place.
 - **The flight.** As the reader scrolls inside the pinned track the camera flies down a stroke to its node and stands before the object, then back through the hub and down the next. Five stops snap: the map, then the four ways in the order the rows stand. The scroll moves the camera continuously between stops, not a crossfade.
-- **The hand.** The pointer tilts the view a little (parallax) and carries a soft light across the floor. Pointing at a row aims the camera at that way, as before. Pointing at an object or its chip lights the row; clicking opens it.
+- **The hand.** The pointer tilts the view a little (parallax) and carries a soft light across the floor. Pointing at a row aims the camera at that way, as before. Pointing at an object or its chip lights the row. Clicking opens the row it names, as a chip does today.
 - **Depth.** Shallow depth of field on the close-ups, a bloom on the screens and lamps, soft contact shadows and light pools baked from Cycles.
 - **Everything else as today.** The panel, the rows, the hint, the poster on phones, the stills where WebGL is missing, reduced motion cutting instead of gliding.
 
@@ -52,8 +52,8 @@ Screens keep their canvas-drawn textures (the `textures.ts` drawings, drawn per 
 ## 5. The runtime
 
 - **three.js** returns, with `GLTFLoader` and meshopt decoding, `EffectComposer` with bloom and depth of field, and the environment for the metals. All deferred: nothing loads until the section is near and the browser has WebGL.
-- **Assets:** one glTF per way plus the floor and the hub, meshopt-compressed, textures as WebP (the browser decodes them, no transcoder), 1x and 2x sizes chosen by device pixel ratio. Under `public/crossroads/scene/`.
-- **The camera** travels a spline through six poses: the map, then for each way the standing pose before its node, passing over the hub between ways. Inside the pinned track the scroll selects a position along the spline (the five stops are the poses; between stops the camera is on the way). A hovered or focused row aims the camera at that way's pose by a glide, as the August scene did; letting go returns to the scroll's position.
+- **Assets:** one glTF per way plus the floor (its strokes, hub and node discs live in its baked texture, not as separate models), meshopt-compressed, textures as WebP (the browser decodes them, no transcoder), 1x and 2x sizes chosen by device pixel ratio. Under `public/crossroads/scene/`.
+- **The camera** travels a spline through six poses: the map, the standing pose before each of the four nodes, and one pose over the hub that the spline passes on the way from one node to the next. The five stops are the map and the four standing poses. The hub pose is a via point and never a stop. Inside the pinned track the scroll selects a position along the spline (a stop is a pose, between stops the camera is on the way). A hovered or focused row aims the camera at that way's pose by a glide, as the August scene did; letting go returns to the scroll's position.
 - **The hand:** pointer parallax on the camera, a cursor point light on the floor, hover and click on objects by ray hit, chips that light their row.
 - **Labels:** anchors projected from the objects' bounds each frame, placed with today's rules.
 - **Render loop** parks when nothing moves; frames only during a glide, a scroll, a pointer move or an arrival.
