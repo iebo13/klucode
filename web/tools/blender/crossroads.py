@@ -90,6 +90,25 @@ LANE_FSTOP = float(arg("--fstop", "0.8"))
 SPREAD = float(arg("--spread", "80"))
 KEY_COLOR = arg("--key-color", "fff1dc")
 MIST_DEPTH = float(arg("--mist", "20"))
+# `--bake <dir>` takes the scene rather than rendering it: each way is joined
+# into one body, unwrapped and baked to a lightmap, the floor is baked whole,
+# all of it is exported as glTF, and `scene.json` beside them carries the same
+# layout report `--out` writes as layout.json. `tools/blender/emit-scene.mjs`
+# turns that directory into the site's assets and its generated manifest. The
+# two modes cannot share a run: the bake applies every modifier and clears
+# every parent, which is not the scene the shots were composed against.
+BAKE = arg("--bake", "")
+BAKE_SAMPLES = int(arg("--bake-samples", "128"))
+# A lightmap is one square per way, shipped at 2048 for retina and 1024 for
+# everyone else: measured on this bake, the four 1x files are 94.6 kB of WebP
+# together and the four 2x files 208.6 kB, against a 1536 kB budget for the
+# whole scene, so a way's light is the cheap part of it. The floor is one
+# square for the whole 100 by 100 plane, and 4096 is what the letter needs: a
+# stroke 2.1 units wide crosses 2.1 / 100 * 4096 = 86 texels there, against 43
+# in the 2048 mask the render draws from, so the baked edge is no softer than
+# the rendered one.
+LIGHTMAP_PX = 2048
+FLOOR_PX = 4096
 
 os.makedirs(OUT, exist_ok=True)
 
@@ -860,88 +879,91 @@ def calibrate_shift(look):
     cam_data.shift_x = (wanted - x0) / (x1 - x0)
 
 
-report = {}
-for name in SHOTS_WANTED:
-    shot = SHOTS[name]
-    pos = P(*shot["pos"])
-    look = P(*shot["look"])
-    cam.location = pos
-    aim(cam, look)
-    bpy.context.view_layer.update()
-    aspect = FREE / H
-    cam_data.angle_y = math.radians(fov_for(shot["fit"][0], shot["fit"][1], aspect))
-    # The junction's fan reaches within 48 px of the still's left edge, so its
-    # box is wider than a close-up's and its fade is tighter (see the blur's
-    # comment above for the measured profile). The landing page's monitor
-    # starts at 48 px, so only its outermost strip is touched.
-    if name == "junction":
-        box_mask.inputs["Size"].default_value = (0.92, MASK_HEIGHT)
-        mask_blur.size_x = mask_blur.size_y = int(64 * SCALE)
-    else:
-        box_mask.inputs["Size"].default_value = (0.9, MASK_HEIGHT)
-        mask_blur.size_x = mask_blur.size_y = int(200 * SCALE)
-    cam_data.dof.use_dof = DOF
-    cam_data.dof.focus_distance = (look - pos).length
-    cam_data.dof.aperture_fstop = shot["fstop"]
-    calibrate_shift(look)
-
-    if LAYOUT == "fan":
-        # Lights ride with the shot, as they do on the page: the key above and to
-        # the right of the subject, a little towards the camera; the fill at the
-        # camera; a cool rim behind the subject to lift it off the dark. The K's
-        # light is a single static rig instead (rig_k above), because baked
-        # light cannot move per shot.
-        forward = look - pos
-        forward.z = 0
-        forward.normalize()
-        right = Vector((forward.y, -forward.x, 0))
+# The shots, unless this run is a bake. A bake owns the scene from here on
+# (see bake_all at the foot of this file), so a run is one or the other.
+if not BAKE:
+    report = {}
+    for name in SHOTS_WANTED:
+        shot = SHOTS[name]
+        pos = P(*shot["pos"])
+        look = P(*shot["look"])
+        cam.location = pos
+        aim(cam, look)
+        bpy.context.view_layer.update()
+        aspect = FREE / H
+        cam_data.angle_y = math.radians(fov_for(shot["fit"][0], shot["fit"][1], aspect))
+        # The junction's fan reaches within 48 px of the still's left edge, so its
+        # box is wider than a close-up's and its fade is tighter (see the blur's
+        # comment above for the measured profile). The landing page's monitor
+        # starts at 48 px, so only its outermost strip is touched.
         if name == "junction":
-            # One wide soft key over the arc the four objects stand on, so each
-            # of them is lit and casts a shadow, rather than one key over the
-            # empty middle of the floor.
-            key.location = P(0, 11, -13)
-            key.data.size = 22
-            key.data.size_y = 8
-            key.data.energy = JUNCTION_KEY_W
-            key.data.spread = math.radians(110)
-            aim(key, P(0, 1.5, -15))
+            box_mask.inputs["Size"].default_value = (0.92, MASK_HEIGHT)
+            mask_blur.size_x = mask_blur.size_y = int(64 * SCALE)
         else:
-            key.location = look + Vector((0, 0, 7.5)) - forward * 3.0 + right * 4.0
-            key.data.size = 6
-            key.data.size_y = 4
-            key.data.energy = KEY_W
-            # A softbox with a grid: the subject is lit, the floor around it is not
-            # flooded, so the floor keeps its own colour and falls off to the dark.
-            key.data.spread = math.radians(SPREAD)
-            aim(key, look)
-        fill.location = pos + Vector((0, 0, 1.0))
-        rim.location = look + forward * 7 + Vector((0, 0, 6)) - right * 3
-        aim(rim, look)
+            box_mask.inputs["Size"].default_value = (0.9, MASK_HEIGHT)
+            mask_blur.size_x = mask_blur.size_y = int(200 * SCALE)
+        cam_data.dof.use_dof = DOF
+        cam_data.dof.focus_distance = (look - pos).length
+        cam_data.dof.aperture_fstop = shot["fstop"]
+        calibrate_shift(look)
 
-    dist = (look - pos).length
-    world.mist_settings.start = dist + 6
-    world.mist_settings.depth = MIST_DEPTH
+        if LAYOUT == "fan":
+            # Lights ride with the shot, as they do on the page: the key above and to
+            # the right of the subject, a little towards the camera; the fill at the
+            # camera; a cool rim behind the subject to lift it off the dark. The K's
+            # light is a single static rig instead (rig_k above), because baked
+            # light cannot move per shot.
+            forward = look - pos
+            forward.z = 0
+            forward.normalize()
+            right = Vector((forward.y, -forward.x, 0))
+            if name == "junction":
+                # One wide soft key over the arc the four objects stand on, so each
+                # of them is lit and casts a shadow, rather than one key over the
+                # empty middle of the floor.
+                key.location = P(0, 11, -13)
+                key.data.size = 22
+                key.data.size_y = 8
+                key.data.energy = JUNCTION_KEY_W
+                key.data.spread = math.radians(110)
+                aim(key, P(0, 1.5, -15))
+            else:
+                key.location = look + Vector((0, 0, 7.5)) - forward * 3.0 + right * 4.0
+                key.data.size = 6
+                key.data.size_y = 4
+                key.data.energy = KEY_W
+                # A softbox with a grid: the subject is lit, the floor around it is not
+                # flooded, so the floor keeps its own colour and falls off to the dark.
+                key.data.spread = math.radians(SPREAD)
+                aim(key, look)
+            fill.location = pos + Vector((0, 0, 1.0))
+            rim.location = look + forward * 7 + Vector((0, 0, 6)) - right * 3
+            aim(rim, look)
 
-    scene.render.filepath = os.path.join(OUT, f"{name}.png")
-    bpy.ops.render.render(write_still=True)
+        dist = (look - pos).length
+        world.mist_settings.start = dist + 6
+        world.mist_settings.depth = MIST_DEPTH
 
-    marks = {}
-    for k, anchor in anchors.items():
-        v = world_to_camera_view(scene, cam, anchor)
-        marks[k] = [round(v.x * W), round((1 - v.y) * H), round(v.z, 2)]
-    report[name] = {"frame": FRAME, "width": W, "height": H, "scale": SCALE, "camera": list(pos), "look": list(look), "fov_y": round(math.degrees(cam_data.angle_y), 2), "shift_x": round(cam_data.shift_x, 4), "marks": marks}
-    print(f"rendered {name}: {report[name]}")
+        scene.render.filepath = os.path.join(OUT, f"{name}.png")
+        bpy.ops.render.render(write_still=True)
 
-# Merged into what is already there, so re-rendering one shot into a
-# directory of five keeps the other four's anchors.
-anchors_path = os.path.join(OUT, "anchors.json")
-merged = {}
-if os.path.exists(anchors_path):
-    with open(anchors_path) as f:
-        merged = json.load(f)
-merged.update(report)
-with open(anchors_path, "w") as f:
-    json.dump(merged, f, indent=2)
+        marks = {}
+        for k, anchor in anchors.items():
+            v = world_to_camera_view(scene, cam, anchor)
+            marks[k] = [round(v.x * W), round((1 - v.y) * H), round(v.z, 2)]
+        report[name] = {"frame": FRAME, "width": W, "height": H, "scale": SCALE, "camera": list(pos), "look": list(look), "fov_y": round(math.degrees(cam_data.angle_y), 2), "shift_x": round(cam_data.shift_x, 4), "marks": marks}
+        print(f"rendered {name}: {report[name]}")
+
+    # Merged into what is already there, so re-rendering one shot into a
+    # directory of five keeps the other four's anchors.
+    anchors_path = os.path.join(OUT, "anchors.json")
+    merged = {}
+    if os.path.exists(anchors_path):
+        with open(anchors_path) as f:
+            merged = json.load(f)
+    merged.update(report)
+    with open(anchors_path, "w") as f:
+        json.dump(merged, f, indent=2)
 
 
 def layout_report():
@@ -986,7 +1008,13 @@ def layout_report():
         "lanes": [
             {
                 "key": geom["key"],
-                "angle": round(geom["angle"], 3),
+                # Six decimals, not the three every other number here keeps: an
+                # arm sits at 0.3 - atan2(19, 18) = -0.5126554 radians, and rounded
+                # to three that is -0.513, which is 0.000345 out. The manifest is
+                # what the runtime lays the K out from and what the unit test
+                # compares against the closed form to five decimals, so the arm
+                # would land 0.3 units off at the far node and the test would fail.
+                "angle": round(geom["angle"], 6),
                 "dist": round(geom["dist"], 3),
                 "node": [round(v, 3) for v in lane_target(geom["angle"], geom["dist"], 0)],
                 "back": round(geom["back"], 3),
@@ -1000,6 +1028,210 @@ def layout_report():
     }
 
 
-if LAYOUT == "k":
+if LAYOUT == "k" and not BAKE:
     with open(os.path.join(OUT, "layout.json"), "w") as f:
         json.dump(layout_report(), f, indent=2)
+
+
+# --------------------------------------------------------------- the bake
+
+# Everything below runs only under `--bake`, and it runs after the renders
+# above have had their chance at the scene, because it takes the scene apart:
+# modifiers applied, parents cleared, one body per way, a second UV layer on
+# each. What comes out is what the page loads: four glTF files, four
+# lightmaps, one floor texture, and the report that says where they all go.
+
+
+def select_only(obs, active):
+    for ob in scene.objects:
+        ob.select_set(False)
+    for ob in obs:
+        ob.select_set(True)
+    bpy.context.view_layer.objects.active = active
+
+
+def own_space(ob):
+    """
+    Modifiers applied, parent cleared, transforms applied: the mesh becomes its
+    own world-space self. join() drops the modifiers of every object but the
+    active one and keeps parent transforms nowhere, so both have to be baked
+    into the vertices first, and an exported mesh with no parent lands in
+    three.js exactly where the scene had it.
+    """
+    select_only([ob], ob)
+    with bpy.context.temp_override(object=ob, active_object=ob, selected_objects=[ob], selected_editable_objects=[ob]):
+        for mod in list(ob.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+
+def join_way(key):
+    """One body per way with a lightmap UV of its own, and the screens and emitters beside it."""
+    obs = lane_objects[key]
+    for ob in obs:
+        own_space(ob)
+    bodies = [ob for ob in obs if ob.get("kc", "body") == "body"]
+    others = [ob for ob in obs if ob not in bodies]
+    select_only(bodies, bodies[0])
+    with bpy.context.temp_override(active_object=bodies[0], selected_objects=bodies, selected_editable_objects=bodies):
+        bpy.ops.object.join()
+    body = bodies[0]
+    body.name = f"way.{key}"
+    body["kc"] = "body"
+    me = body.data
+    # The lightmap is always the SECOND UV layer, so it exports as TEXCOORD_1
+    # and the runtime reads it from channel 1 on every way. A way built only
+    # of boxes has no UV layer at all before this, so one is made for it.
+    if not me.uv_layers:
+        me.uv_layers.new(name="UVMap")
+    lm = me.uv_layers.new(name="lightmap")
+    me.uv_layers.active = lm
+    select_only([body], body)
+    with bpy.context.temp_override(object=body, active_object=body, selected_objects=[body], selected_editable_objects=[body]):
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.02, scale_to_bounds=False)
+        bpy.ops.object.mode_set(mode="OBJECT")
+    return body, others
+
+
+def bake_into(obs, name, px, kind, uv_layer):
+    """
+    Bakes `obs` into one new float image. Every material slot of every object
+    gets an Image Texture node named BAKE pointing at it and made active,
+    which is how Cycles chooses where a bake lands. `kind` is `light` for a
+    lightmap (diffuse direct plus indirect, no colour: the object's own colour
+    is multiplied back in by three.js) or `floor` for the combined floor.
+    """
+    img = bpy.data.images.new(name, px, px, alpha=False, float_buffer=True)
+    img.colorspace_settings.name = "Linear Rec.709"
+    for ob in obs:
+        for slot in ob.material_slots:
+            nodes = slot.material.node_tree.nodes
+            node = nodes.get("BAKE")
+            if node is None:
+                node = nodes.new("ShaderNodeTexImage")
+                node.name = "BAKE"
+            node.image = img
+            nodes.active = node
+    bake = scene.render.bake
+    bake.margin = 16
+    bake.use_clear = True
+    bake.target = "IMAGE_TEXTURES"
+    scene.cycles.samples = BAKE_SAMPLES
+    select_only(obs, obs[0])
+    with bpy.context.temp_override(active_object=obs[0], selected_objects=obs, selected_editable_objects=obs):
+        if kind == "light":
+            bpy.ops.object.bake(type="DIFFUSE", pass_filter={"DIRECT", "INDIRECT"}, uv_layer=uv_layer)
+        else:
+            bpy.ops.object.bake(type="COMBINED", pass_filter={"DIRECT", "INDIRECT", "DIFFUSE", "GLOSSY", "EMIT"}, uv_layer=uv_layer)
+    return img
+
+
+def normalise(img, floor_of_peak):
+    """
+    Scales the bake into 0..1 and returns what to multiply it by at runtime.
+    The 99.5th percentile rather than the maximum, so one hot texel under a
+    lamp does not push everything else into the bottom bits of a PNG.
+    """
+    px = img.size[0]
+    buf = np.empty(px * px * 4, dtype=np.float32)
+    img.pixels.foreach_get(buf)
+    rgba = buf.reshape(-1, 4)
+    peak = max(float(np.percentile(rgba[:, :3].max(axis=1), 99.5)), floor_of_peak, 1e-6)
+    rgba[:, :3] = np.clip(rgba[:, :3] / peak, 0, 1)
+    img.pixels.foreach_set(rgba.ravel())
+    return peak
+
+
+def denoise_to_png(img, path):
+    """
+    OpenImageDenoise over a bake, through the compositor. Cycles denoises a
+    render and not a bake, and a 128 sample lightmap is grainy in every
+    shadow. A scene of nothing with a Denoise node between the image and the
+    output renders the denoised picture in seconds, and that scene's Standard
+    view writes the same sRGB PNG a render would.
+    """
+    s = bpy.data.scenes.new("denoise")
+    s.render.engine = "BLENDER_WORKBENCH"
+    s.render.resolution_x, s.render.resolution_y = img.size
+    s.render.resolution_percentage = 100
+    s.render.image_settings.file_format = "PNG"
+    s.render.image_settings.color_mode = "RGB"
+    s.render.image_settings.color_depth = "8"
+    s.view_settings.view_transform = "Standard"
+    s.view_settings.look = "None"
+    s.use_nodes = True
+    t = s.node_tree
+    t.nodes.clear()
+    src = t.nodes.new("CompositorNodeImage")
+    src.image = img
+    dn = t.nodes.new("CompositorNodeDenoise")
+    out = t.nodes.new("CompositorNodeComposite")
+    t.links.new(src.outputs["Image"], dn.inputs["Image"])
+    t.links.new(dn.outputs["Image"], out.inputs["Image"])
+    s.render.filepath = path
+    bpy.ops.render.render(write_still=True, scene=s.name)
+    bpy.data.scenes.remove(s)
+
+
+def export_way(key, body, others, out_dir):
+    for ob in others:
+        kind = ob.get("kc", "")
+        # No PNG in the file: the runtime draws every screen per language.
+        if kind.startswith("screen:"):
+            ob.data.materials[0] = emission(f"placeholder.{kind}", "ffffff", 1.0)
+    obs = [body] + others
+    select_only(obs, body)
+    with bpy.context.temp_override(active_object=body, selected_objects=obs, selected_editable_objects=obs):
+        bpy.ops.export_scene.gltf(
+            filepath=os.path.join(out_dir, f"{key}.glb"),
+            export_format="GLB",
+            use_selection=True,
+            export_apply=True,
+            export_image_format="NONE",
+            export_extras=True,
+            export_yup=True,
+            export_animations=False,
+            export_lights=False,
+            export_cameras=False,
+            export_skins=False,
+            export_morph=False,
+            export_texcoords=True,
+            export_normals=True,
+            export_materials="EXPORT",
+        )
+
+
+def bake_all(out_dir):
+    os.makedirs(out_dir, exist_ok=True)
+    # The report first, because join_way is about to remove three quarters of
+    # the objects lane_box measures the bounds from: bpy.ops.object.join()
+    # frees every object but the active one, and reading a bound_box off a
+    # freed object raises rather than returning the box it used to have.
+    report = dict(layout_report())
+    ways = {}
+    joined = {key: join_way(key) for key in lane_objects}
+    for key, (body, others) in joined.items():
+        img = bake_into([body], f"lightmap.{key}", LIGHTMAP_PX, "light", "lightmap")
+        scale = normalise(img, 1e-6)
+        denoise_to_png(img, os.path.join(out_dir, f"lightmap-{key}.png"))
+        ways[key] = {"glb": f"{key}.glb", "lightmap": f"lightmap-{key}.png", "lightScale": round(scale, 4)}
+        print(f"baked {key}: peak {scale:.3f}")
+    floor_img = bake_into([floor_ob], "floor", FLOOR_PX, "floor", "UVMap")
+    floor_scale = normalise(floor_img, 1.0)
+    denoise_to_png(floor_img, os.path.join(out_dir, "floor.png"))
+    for key, (body, others) in joined.items():
+        export_way(key, body, others, out_dir)
+    report["ways"] = ways
+    report["floor"] = {"texture": "floor.png", "scale": round(floor_scale, 4)}
+    with open(os.path.join(out_dir, "scene.json"), "w") as f:
+        json.dump(report, f, indent=2)
+    print(f"baked the floor: peak {floor_scale:.3f}")
+
+
+if BAKE:
+    if LAYOUT != "k":
+        raise SystemExit("crossroads.py: --bake only makes sense on the K layout, which is what the page loads")
+    bake_all(BAKE)

@@ -1,8 +1,32 @@
 // The key union is owned by the content files, which is why it is imported
 // rather than declared again here. Two copies of a closed set drift.
+import type { Vector3 } from 'three';
+
 import type { ServiceKey } from '@/content/types';
 
 export type { ServiceKey };
+
+/** A point or a direction as the pipeline writes it into JSON and the manifest. */
+export type Vec3 = readonly [number, number, number];
+
+/**
+ * One camera pose as the pipeline exports it: where it stands, what it looks
+ * at, the half-angles it must cover (see fovFor in camera.ts) and its
+ * aperture as an f-stop, which post.ts turns into a depth of field.
+ */
+export type Pose = { pos: Vec3; look: Vec3; fitH: number; fitV: number; fstop: number };
+
+/** The camera as the runtime moves it: the same five things with live vectors, rewritten in place every frame. */
+export type CameraState = {
+  pos: Vector3;
+  look: Vector3;
+  fitH: number;
+  fitV: number;
+  fstop: number;
+};
+
+/** Where one way's name belongs on screen, in CSS pixels inside the view. `front` is false behind the lens. */
+export type Mark = { x: number; y: number; front: boolean };
 
 /** One way, as the scene needs it. A projection of Service, not a copy of it. */
 export type Way = {

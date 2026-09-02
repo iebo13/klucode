@@ -112,9 +112,21 @@ node tools/blender/emit-stills.mjs --renders tools/blender/renders --poster tool
 #   public/crossroads/*.webp, public/crossroads*.webp, src/components/crossroads/stills.ts
 ```
 
-Both render directories are gitignored working output: what ships out of them
-is the WebP in `public/` and the anchors baked into `stills.ts`, and the emitter
-is the only thing that writes either.
+The same scene is also baked for the live version of the section, which is
+three more lines from `web/` and about half an hour of CPU:
+
+```bash
+blender -b -P tools/blender/crossroads.py -- --bake tools/blender/scene --bake-samples 128
+#   four lightmaps, the floor, four glTF bodies and scene.json, none of it committed
+node tools/blender/emit-scene.mjs --bake tools/blender/scene
+#   public/crossroads/scene/*, src/components/crossroads/scene-manifest.ts
+node tools/blender/viewer/serve.mjs & node tools/blender/viewer/shoot.mjs
+#   the six poses in a browser beside the Cycles renders, for judging the bake
+```
+
+Every render directory is gitignored working output: what ships out of them
+is the WebP and the glTF in `public/` and the numbers baked into `stills.ts`
+and `scene-manifest.ts`, and the emitters are the only things that write either.
 
 ---
 
