@@ -546,24 +546,33 @@
 }
 
 /* --- the crossroads ------------------------------------------------------
-   A section with a place behind it. The place is five pre-rendered stills,
-   absolutely positioned inside the stage, and the stage is the section's own
-   height unless the track is pinning it.
+   A section with a place behind it. The place is a live three.js scene where
+   the browser can make a context and five pre-rendered stills where it cannot,
+   and either way it is absolutely positioned inside the stage, with the stage
+   at the section's own height unless the track is pinning it.
 
-   It was a live three.js scene, and before that a 300svh track the camera read
-   the scroll from. The scene is gone because a browser cannot light a room as
-   well as one Cycles pass can, and what the page ships now is that pass's
-   output. Nothing about the section's contract changed with it: the panel, the
-   four rows, the names at the objects and the fallback are the same. */
+   The scene came back because a browser CAN light a room as well as one Cycles
+   pass can, as long as it does not have to do the lighting: every object
+   carries a lightmap Cycles baked, so what moves at runtime is the camera and
+   not the light. The stills are what that pass produced, and they stay as the
+   fallback and as the poster.
+
+   Nothing about the section's contract changed with any of it: the panel, the
+   four rows, the names at the objects and the price board are the same in both
+   worlds and the same again where neither mounts. The rules below are written
+   so that they hold whichever picture is behind them, and the two that cannot
+   be say which world they mean with [data-world]. */
 .crossroads-stage {
   position: relative;
 }
 
 /* --- the track -----------------------------------------------------------
    Pinned, the section is a track of five bands, junction then the four ways,
-   and the stage holds still inside it for the whole ride. The scroll SELECTS
-   a way at each boundary and the still crossfades to it through the same aim
-   a hover uses, so nothing about the picture is tied to a pixel of scroll.
+   and the stage holds still inside it for the whole ride. What the scroll does
+   with that depends on the world: the stills SELECT a way at each boundary and
+   crossfade to it, while the live camera reads the position continuously and
+   flies the letter between the stops. Both read the same number, which is
+   scrollT in crossroads/track.ts.
    The root snaps to the boundaries only while a pinned section is on the page,
    and only by proximity, so native scrolling, inertia and the page keys all
    keep working.
@@ -648,14 +657,19 @@ html:has(#services[data-pinned='true']) {
 }
 
 /* --- full bleed ----------------------------------------------------------
-   The world is five stills, one per shot, stacked and placed by one transform
-   the component writes from the panel's measured reserve and the stage's box:
-   a still fits the free region beside the panel with contain semantics, so the
+   The stills world is five renders, one per shot, stacked and placed by one
+   transform it writes from the panel's measured reserve and the stage's box: a
+   still fits the free region beside the panel with contain semantics, so the
    objects keep close to their rendered size on a big screen with the section's
    ink either side, and in a narrow column the whole island shrinks. See fit()
-   in index.tsx for the scale each viewport actually lands on. The ink is the
-   section's own: every still is transparent where there is no light, so there
-   is no seam and nothing to repaint on a theme switch.
+   in stills-world.tsx for the scale each viewport actually lands on. The ink is
+   the section's own: every still is transparent where there is no light, so
+   there is no seam and nothing to repaint on a theme switch.
+
+   The live world does the same composition with a lens instead of a transform,
+   and the difference is where the free region is applied: its canvas is the
+   whole stage and camera.ts shifts the projection by half the panel's reserve
+   (see the .crossroads-canvas rule below).
 
    The box is the size the stills were rendered at, and the images stretch over
    it, so all five share one transform and a crossfade can never be two
@@ -711,6 +725,49 @@ html:has(#services[data-pinned='true']) {
   .crossroads-still {
     transition: opacity 500ms ease;
   }
+}
+
+/* The live world: one canvas the size of the stage, under the panel and the
+   chips, faded up by the reveal like the stills. The scene composes into the
+   part of the stage the panel is not standing on (see applyPose in camera.ts),
+   so the canvas is full bleed and never sized to the free region: the reserve
+   is already taken out twice down there, once when the field of view is worked
+   out from the free region's aspect and once when the projection is shifted by
+   half of it, and a canvas that had been narrowed as well would frame the shot
+   in the middle of what was left of what was left. */
+.crossroads-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* The stage is the element that hears the hand: live-world.tsx asks the
+     scene what is under the pointer and the canvas answers no events of its
+     own. See the note on .crossroads-marks for the same reasoning a layer up. */
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* The same reveal the stills get, for the same reason: a reader arriving at
+   the section sees the place appear rather than finding it already there.
+   scene.ts draws its first frame as soon as the models land, which can be four
+   viewports before anyone is looking. */
+[data-revealed='true'] .crossroads-canvas {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .crossroads-canvas {
+    transition: opacity 700ms ease;
+  }
+}
+
+/* An object under the pointer is a link, and the stage says so. Written from
+   the scene's own ray hit rather than from a shape in the DOM, because there
+   is no shape in the DOM: live-world.tsx writes data-hit on every pointer
+   move. */
+[data-world='live'] .crossroads-stage[data-hit='true'] {
+  cursor: pointer;
 }
 
 /* The panel, and its fill is the number that matters.
@@ -978,10 +1035,23 @@ html:has(#services[data-pinned='true']) {
    oversight. It did for a day, and a chip that crossfades the picture away
    from under the pointer that touched it moves itself 100 to 200px in the same
    moment: a control that leaves is a surprise, and the rows beside it already
-   reach every close-up. So a chip on a close-up needs no pointer events of its
-   own either, because the junction is the only place a chip is ever under a
-   pointer. */
-[data-still='junction'] .crossroads-mark-box {
+   reach every close-up. So in the stills world a chip on a close-up needs no
+   pointer events of its own either, because the junction is the only place a
+   chip is ever under a pointer there.
+
+   In the live world it is every place, which is the rule below this one. */
+[data-stop='junction'] .crossroads-mark-box {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* The chips are live at every stop in the live world, not only at the map:
+   pointing at one lights its row and leaves the camera alone, so there is no
+   control that moves out from under the pointer, which was the whole reason
+   the stills limit them to the junction. An object under the pointer is the
+   same weak input and behaves the same way, so the two ends of a bond a reader
+   can touch are consistent wherever the camera is standing. */
+[data-world='live'] .crossroads-mark-box {
   pointer-events: auto;
   cursor: pointer;
 }

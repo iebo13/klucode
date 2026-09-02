@@ -1,11 +1,124 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const section = '#services';
+const canvas = `${section} canvas.crossroads-canvas`;
 const stills = `${section} img.crossroads-still`;
 const shown = `${stills}[data-on="true"]`;
 
+const row = (key: string) => `${section} li[data-key="${key}"] a`;
+const mark = (page: Page, i: number) =>
+  page.locator(`${section} .crossroads-mark`).nth(i).locator('.crossroads-mark-box');
+const KEYS = ['website', 'app', 'capacity', 'care'] as const;
+
+/** Every width a world mounts at, from the floor to a big desktop. */
+const SIZES = [
+  { width: 1024, height: 736 },
+  { width: 1440, height: 900 },
+  { width: 1920, height: 1080 },
+];
+
+/** The stills' crossfade is 500ms and the label fade 200ms. Long enough for both. */
+const FADE = 800;
+
 /**
- * Scrolls the section's top to the viewport's top and waits for the reveal.
+ * Playwright's 30 seconds is the stills suite's budget, and it is not this
+ * one's.
+ *
+ * Headless Chromium has no GPU: it draws WebGL through SwiftShader on the CPU,
+ * and every pass the composer runs is a full frame of software rasterisation.
+ * Measured here at 1440x900, one frame costs about 250ms, a boot (four glTF
+ * bodies, five textures, a studio bake and the first frame) about 5 seconds,
+ * and a glide three or four frames. The label test walks five stops at three
+ * viewports with a boot at each, which is a couple of minutes of honest work
+ * and nothing to do with a hang.
+ *
+ * Raised for every test in the file rather than for the slow ones, because a
+ * timeout is a bound on a hang and not a performance assertion, and the ones
+ * that finish in a second still finish in a second. What frame rate the scene
+ * actually reaches is measured on a real GPU by Task 6's timing test.
+ */
+test.beforeEach(() => {
+  test.setTimeout(150_000);
+});
+
+/**
+ * Turns WebGL off for a page, before any of its own script runs.
+ *
+ * The August route, and it is a route rather than a browser flag because the
+ * component's question is exactly this one: `canvas.getContext('webgl')`
+ * answering null is what a browser with the renderer disabled looks like from
+ * inside a page, and it is what the stills world exists for. Every other
+ * context type is handed back untouched, because the poster and the label
+ * measurements still want 2d.
+ */
+async function withoutWebGL(page: Page) {
+  await page.addInitScript(() => {
+    const real = HTMLCanvasElement.prototype.getContext;
+    function refuseWebGL(this: HTMLCanvasElement, type: string, options?: unknown) {
+      if (type.toLowerCase().includes('webgl')) return null;
+      return real.call(this, type as '2d', options as CanvasRenderingContext2DSettings);
+    }
+    HTMLCanvasElement.prototype.getContext =
+      refuseWebGL as typeof HTMLCanvasElement.prototype.getContext;
+  });
+}
+
+/** Which world this page decided on. Waits for the decision, which is a client effect. */
+async function worldOf(page: Page): Promise<'live' | 'stills'> {
+  await expect(page.locator(section)).toHaveAttribute('data-world', /^(live|stills)$/, {
+    timeout: 15000,
+  });
+  return (await page.locator(section).getAttribute('data-world')) === 'live' ? 'live' : 'stills';
+}
+
+/**
+ * How long the render loop has to be quiet before a move counts as over.
+ *
+ * A single reading of data-parked is not enough, and the reason is worth
+ * writing down because it looks like a flake and is not. A pointer moving onto
+ * a row draws a frame of its own before React has committed anything: the
+ * stage's pointermove tells the scene the hand has gone to the panel, the
+ * scene draws one frame and parks. So for a few milliseconds after a hover the
+ * section says parked with the PREVIOUS row's camera, and a test that reads
+ * there reads the shot before the one it asked for. Measured on this machine:
+ * that frame lands about 20ms after the hover and the aim's first frame about
+ * 15ms after it.
+ *
+ * 300ms, against a frame that costs about 250ms here (headless Chromium draws
+ * through SwiftShader) and a requestAnimationFrame that is scheduled within
+ * 16ms of the aim. So a loop that is still parked 300ms later has nothing
+ * pending, and one that is mid-glide has drawn in between and moved the count.
+ */
+const QUIET = 300;
+
+/**
+ * Waits until the scene has stopped moving, and returns at once in the stills
+ * world, which has no loop to park.
+ */
+async function settled(page: Page) {
+  const state = () =>
+    page.locator(section).evaluate((el) => ({
+      parked: el.dataset.parked ?? 'absent',
+      frames: Number(el.dataset.frames ?? -1),
+    }));
+  if ((await state()).parked === 'absent') return;
+  await expect
+    .poll(
+      async () => {
+        const before = await state();
+        if (before.parked !== 'true') return false;
+        await page.waitForTimeout(QUIET);
+        const after = await state();
+        return after.parked === 'true' && after.frames === before.frames;
+      },
+      { timeout: 15000, message: 'the render loop never stopped moving' },
+    )
+    .toBe(true);
+}
+
+/**
+ * Scrolls the section's top to the viewport's top and waits for the world to
+ * be up, revealed and still.
  *
  * window.scrollTo rather than scrollIntoView, because html carries
  * scroll-padding-top: 5.5rem for the fixed header and scrollIntoView honours
@@ -13,9 +126,18 @@ const shown = `${stills}[data-on="true"]`;
  * not the top of the track. 'instant', because globals.css sets
  * scroll-behavior: smooth and a smooth scroll leaves the observer watching the
  * hero for a while.
+ *
+ * The 15 second waits are the live world's. Headless Chromium draws WebGL
+ * through SwiftShader on the CPU, which is real rendering and slow rendering:
+ * a frame at 1440x900 costs about a third of a second here, and the place is
+ * four glTF bodies, five textures and a studio bake before the first one.
  */
 async function arrive(page: Page) {
-  await expect(page.locator(shown)).toBeAttached();
+  if ((await worldOf(page)) === 'live') {
+    await expect(page.locator(canvas)).toHaveAttribute('data-ready', 'true', { timeout: 15000 });
+  } else {
+    await expect(page.locator(shown)).toBeAttached();
+  }
   await page.evaluate(() => {
     const el = document.querySelector('#services');
     if (el)
@@ -24,23 +146,9 @@ async function arrive(page: Page) {
         behavior: 'instant',
       });
   });
-  await expect(page.locator(section)).toHaveAttribute('data-revealed', 'true', { timeout: 6000 });
+  await expect(page.locator(section)).toHaveAttribute('data-revealed', 'true', { timeout: 15000 });
+  await settled(page);
 }
-
-/** The crossfade is 500ms and the label fade 200ms. Long enough for both. */
-const FADE = 800;
-
-const row = (key: string) => `${section} li[data-key="${key}"] a`;
-const mark = (page: Page, i: number) =>
-  page.locator(`${section} .crossroads-mark`).nth(i).locator('.crossroads-mark-box');
-const KEYS = ['website', 'app', 'capacity', 'care'] as const;
-
-/** Every width the stills mount at, from the floor to a big desktop. */
-const SIZES = [
-  { width: 1024, height: 736 },
-  { width: 1440, height: 900 },
-  { width: 1920, height: 1080 },
-];
 
 /**
  * Leaves the rows and the chips without leaving the page.
@@ -54,30 +162,85 @@ async function leaveStage(page: Page) {
 }
 
 test.describe('the four ways are readable however the visitor arrives', () => {
-  test('with stills', async ({ page }) => {
+  test('with the live scene', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
     await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'true');
+    await expect(page.locator(section)).toHaveAttribute('data-world', 'live');
+    await arrive(page);
+    // One canvas, marked as this scene's, and no still anywhere in the page:
+    // the two worlds are alternatives and never both mounted.
+    await expect(page.locator(canvas)).toHaveAttribute('data-scene', 'kc-crossroads');
+    await expect(page.locator(stills)).toHaveCount(0);
+    // At rest at the top of the track the camera is on the map, and the map is
+    // where all four objects are on screen and all four are named.
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+    await expect(page.locator(`${section} .crossroads-mark[data-on="true"]`)).toHaveCount(4);
+  });
+
+  test('with stills, where the browser cannot make a WebGL context', async ({ page }) => {
+    await withoutWebGL(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/de/');
+    await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
+    await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'true');
+    await expect(page.locator(section)).toHaveAttribute('data-world', 'stills');
+    await expect(page.locator(canvas)).toHaveCount(0);
     // Five renders in the page, one showing, and at rest it is the junction.
     await expect(page.locator(stills)).toHaveCount(5);
     await expect(page.locator(shown)).toHaveCount(1);
     await expect(page.locator(shown)).toHaveAttribute('data-key', 'junction');
-    await expect(page.locator(section)).toHaveAttribute('data-still', 'junction');
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+  });
+
+  test('with a scene that will not load, which hands the section to the stills', async ({
+    page,
+  }) => {
+    // The one path scene.ts cannot be asked about from node: boot() reaches a
+    // real WebGLRenderer before it awaits the place, so the failure has to be
+    // provoked in a browser. Aborting one body is the honest version of a 404,
+    // a dropped connection or a texture that will not decode, and what the
+    // reader must get out of it is the stills, silently.
+    const warnings: string[] = [];
+    const thrown: string[] = [];
+    page.on('console', (m) => {
+      if (m.type() === 'warning') warnings.push(m.text());
+    });
+    page.on('pageerror', (e) => thrown.push(String(e)));
+    await page.route('**/crossroads/scene/website.glb', (route) => route.abort());
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/de/');
+
+    await expect(page.locator(section)).toHaveAttribute('data-world', 'stills', { timeout: 20000 });
+    await expect(page.locator(shown)).toHaveCount(1);
+    await expect(page.locator(canvas)).toHaveCount(0);
+    await expect
+      .poll(
+        () => warnings.filter((w) => w.startsWith('crossroads: the scene did not start')).length,
+        { timeout: 10000, message: 'the failed boot said nothing to the console' },
+      )
+      .toBeGreaterThan(0);
+    // A failure that reaches a visitor as a stack trace is a failure twice.
+    expect(thrown, 'the failed boot threw at the page').toEqual([]);
   });
 
   test('with reduced motion, which is no longer a refusal', async ({ page }) => {
-    // It used to be one: the scene answered a reduced-motion request by not
-    // mounting, because the answer to "do not move things" is not to move
-    // them. Nothing moves now. The crossfade between two stills is inside a
-    // prefers-reduced-motion: no-preference block, so this reader gets a cut,
-    // and getting the world at all is strictly more than the price board.
+    // It used to be one: the August scene answered a reduced-motion request by
+    // not mounting, because the answer to "do not move things" is not to move
+    // them. The scene answers it by standing still instead. It cuts between
+    // stops rather than gliding, the stage does not lean under the hand and no
+    // pool of light follows it, so this reader gets the same place as everyone
+    // else and none of the travel.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
     await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'true');
-    await expect(page.locator(stills)).toHaveCount(5);
+    await expect(page.locator(section)).toHaveAttribute('data-reduced', 'true');
+    await expect(page.locator(section)).toHaveAttribute('data-world', 'live');
+    await arrive(page);
+    await expect(page.locator(`${section} .crossroads-mark[data-on="true"]`)).toHaveCount(4);
   });
 
   test('on a phone', async ({ page }) => {
@@ -85,6 +248,7 @@ test.describe('the four ways are readable however the visitor arrives', () => {
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
     await expect(page.locator(stills)).toHaveCount(0);
+    await expect(page.locator(canvas)).toHaveCount(0);
     await expect(page.locator(`${section} li[data-key="care"]`)).toContainText('90');
     // A phone gets a picture, and it gets the UPRIGHT CROP.
     //
@@ -107,13 +271,16 @@ test.describe('the four ways are readable however the visitor arrives', () => {
   });
 
   // 800 wide is too narrow for the panel to stand beside the world, so no
-  // stills, and wide enough for the strip to be a picture, so the strip.
+  // world, and wide enough for the strip to be a picture, so the strip.
   test('on a narrow laptop, too narrow for the panel and the world', async ({ page }) => {
     await page.setViewportSize({ width: 800, height: 900 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
     await expect(page.locator(stills)).toHaveCount(0);
+    await expect(page.locator(canvas)).toHaveCount(0);
     await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+    // No world at all, so the attribute that names one is not written.
+    expect(await page.getAttribute(section, 'data-world')).toBeNull();
     const poster = page.locator(`${section} img`);
     await expect(poster).toBeVisible();
     await expect(poster).toHaveJSProperty(
@@ -170,58 +337,77 @@ test('every row is a link to its own card, with every detail open', async ({ pag
   expect(top, 'the prices start more than two viewports down').toBeLessThan(900 * 2);
 });
 
-test('the view follows the pointer, and the keyboard is the same input', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/de/');
-  await arrive(page);
+/**
+ * The same body against both worlds, because it is the same contract.
+ *
+ * A row under the pointer or holding keyboard focus aims the picture at its
+ * way, letting go hands it back to the track, and every step of it is written
+ * in attributes rather than in pixels: which is what makes it the same test
+ * whether the picture is a camera or a crossfade.
+ */
+for (const noWebGL of [false, true]) {
+  test(`the view follows the pointer, and the keyboard is the same input (${noWebGL ? 'stills' : 'live'})`, async ({
+    page,
+  }) => {
+    if (noWebGL) await withoutWebGL(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/de/');
+    await arrive(page);
 
-  await page.hover(row('app'));
-  await expect(page.locator(section)).toHaveAttribute('data-still', 'app');
-  await expect(page.locator(shown)).toHaveAttribute('data-key', 'app');
-  await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute('data-focus', 'true');
-  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
-  await expect(mark(page, 1)).toHaveAttribute('data-focus', 'true');
+    await page.hover(row('app'));
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'app');
+    await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+    await expect(mark(page, 1)).toHaveAttribute('data-focus', 'true');
+    await settled(page);
+    if (noWebGL) await expect(page.locator(shown)).toHaveAttribute('data-key', 'app');
 
-  // Sweeping to another row hands over without a gap.
-  await page.hover(row('care'));
-  await expect(page.locator(section)).toHaveAttribute('data-still', 'care');
-  await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
-    'data-focus',
-    'true',
-  );
-  await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute(
-    'data-focus',
-    'false',
-  );
+    // Sweeping to another row hands over without a gap.
+    await page.hover(row('care'));
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'care');
+    await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute(
+      'data-focus',
+      'false',
+    );
+    await settled(page);
 
-  // Leaving the list returns to the junction, because at the top of the track
-  // the junction is what the scroll is on.
-  await leaveStage(page);
-  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
-  await expect(page.locator(section)).toHaveAttribute('data-still', 'junction');
+    // Leaving the list returns to the junction, because at the top of the track
+    // the junction is what the scroll is on.
+    await leaveStage(page);
+    await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+    await settled(page);
 
-  // Keyboard: focus a row, tab to the next, tab out.
-  await page.locator(row('capacity')).focus();
-  await expect(page.locator(section)).toHaveAttribute('data-still', 'capacity');
-  await expect(page.locator(`${section} li[data-key="capacity"]`)).toHaveAttribute(
-    'data-focus',
-    'true',
-  );
-  await page.keyboard.press('Tab');
-  await expect(page.locator(section)).toHaveAttribute('data-still', 'care');
-  await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
-    'data-focus',
-    'true',
-  );
-  await expect(page.locator(`${section} li[data-key="capacity"]`)).toHaveAttribute(
-    'data-focus',
-    'false',
-  );
-  await page.keyboard.press('Tab');
-  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
-});
+    // Keyboard: focus a row, tab to the next, tab out.
+    await page.locator(row('capacity')).focus();
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'capacity');
+    await expect(page.locator(`${section} li[data-key="capacity"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await page.keyboard.press('Tab');
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'care');
+    await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await expect(page.locator(`${section} li[data-key="capacity"]`)).toHaveAttribute(
+      'data-focus',
+      'false',
+    );
+    await page.keyboard.press('Tab');
+    await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
+  });
+}
 
-test('the chips on the junction are live', async ({ page }) => {
+test('the chips are live, and pointing at one leaves the camera alone', async ({ page }) => {
   // The thing four objects on one picture finally makes possible: the name
   // standing at the object IS the row. Pointing at it lights the row and the
   // chip, and clicking it opens the same card the row opens.
@@ -232,13 +418,52 @@ test('the chips on the junction are live', async ({ page }) => {
   await mark(page, 1).hover();
   await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute('data-focus', 'true');
   await expect(mark(page, 1)).toHaveAttribute('data-focus', 'true');
-  // And the picture stays where it was. A chip that crossfaded to its own
+  // And the camera stays where it was. A chip that flew the picture to its own
   // close-up moved itself out from under the pointer that touched it, which
   // is a control that leaves rather than a control.
-  await expect(page.locator(section)).toHaveAttribute('data-still', 'junction');
-  await expect(page.locator(shown)).toHaveAttribute('data-key', 'junction');
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+  await settled(page);
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
 
   await mark(page, 1).click();
+  await expect(page).toHaveURL(/\/de\/leistungen\/#app$/);
+});
+
+test('the objects are live, and are the same weak input as the chips', async ({ page }) => {
+  // The half of the bond only a real scene has: the thing itself, under the
+  // pointer, answering. The camera is asked what is at (x, y) and the row it
+  // names lights, exactly as a chip's does.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  // Down from the chip's anchor in 10px steps until the stage says there is
+  // something under the hand. The anchor is where the label's own transform
+  // puts it, which is the point on the object the render chose, so the object
+  // is a short way below it: measured at the three widths, the hit is between
+  // 0 and 40px down. Walked rather than assumed, because the exact pixel is
+  // the camera's business and moves with a pose.
+  const anchor = await page.locator(`${section} .crossroads-mark`).nth(1).boundingBox();
+  expect(anchor, 'the app chip has no box to walk down from').not.toBeNull();
+  let found = -1;
+  for (let step = 0; step <= 30 && found < 0; step += 1) {
+    await page.mouse.move(anchor!.x, anchor!.y + step * 10);
+    if ((await page.getAttribute(`${section} .crossroads-stage`, 'data-hit')) === 'true') {
+      found = step * 10;
+    }
+  }
+  expect(found, 'no object was found under the pointer below the app chip').toBeGreaterThanOrEqual(
+    0,
+  );
+
+  await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute('data-focus', 'true');
+  // The camera is left alone, on the same ruling the chips are: a reader
+  // exploring the place with the pointer must be able to look at a thing
+  // without being flown somewhere by having brushed it.
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+
+  await page.mouse.down();
+  await page.mouse.up();
   await expect(page).toHaveURL(/\/de\/leistungen\/#app$/);
 });
 
@@ -253,10 +478,22 @@ test('hovering and leaving the section reports no console errors', async ({ page
   await arrive(page);
   for (const key of KEYS) {
     await page.hover(row(key));
-    await page.waitForTimeout(120);
+    await settled(page);
   }
   await leaveStage(page);
-  await page.waitForTimeout(FADE);
+  await settled(page);
+
+  // And through the track, which is the other half of what the loop does.
+  const top = await page
+    .locator(section)
+    .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+  for (let stop = 1; stop <= 4; stop += 1) {
+    await page.evaluate(
+      (y) => window.scrollTo({ top: y, behavior: 'instant' }),
+      Math.ceil(top) + stop * 900 * 0.3 + 2,
+    );
+    await settled(page);
+  }
   expect(errors).toEqual([]);
 });
 
@@ -291,41 +528,53 @@ async function labels(page: Page) {
   });
 }
 
-test('every object is named at itself, and no two names collide', async ({ page }) => {
-  // The bond a list beside a picture could not make: at the junction all four
-  // objects are on screen and none of them used to be named.
-  //
-  // Overlap is the failure this device actually has. At 1440x900 the anchors
-  // for 01 and 02 are 172 screen pixels apart and the two chips are 208 and
-  // 245 wide, so they sat on top of each other until the placement started
-  // lifting a chip clear of its neighbour. Asserted here rather than against
-  // the anchors, because a label's width is a font metric and needs a browser.
-  for (const size of SIZES) {
-    await page.setViewportSize(size);
-    await page.goto('/de/');
-    await arrive(page);
-    await page.waitForTimeout(300);
+for (const noWebGL of [false, true]) {
+  test(`every object is named at itself, and no two names collide (${noWebGL ? 'stills' : 'live'})`, async ({
+    page,
+  }) => {
+    // The bond a list beside a picture could not make: at the map all four
+    // objects are on screen and none of them used to be named.
+    //
+    // Overlap is the failure this device actually has. At 1440x900 the anchors
+    // for 01 and 02 are about 170 screen pixels apart and the two chips are 208
+    // and 245 wide, so they sat on top of each other until the placement
+    // started lifting a chip clear of its neighbour. Asserted here rather than
+    // against the anchors, because a label's width is a font metric and needs a
+    // browser, and asserted in BOTH worlds because the two produce their
+    // candidates from different places (a render's baked anchors against a live
+    // projection) and hand them to the same rules.
+    if (noWebGL) await withoutWebGL(page);
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      await page.goto('/de/');
+      await arrive(page);
+      await leaveStage(page);
+      await settled(page);
+      if (noWebGL) await page.waitForTimeout(FADE);
 
-    // The junction names all four, which is the whole point of it.
-    const idle = await labels(page);
-    expect(idle.clashes, `labels overlap at the junction on ${size.width}`).toEqual([]);
-    expect(idle.hidden, `a label is behind the panel at the junction on ${size.width}`).toBe(0);
-    expect(idle.outside, `a label is off the stage at the junction on ${size.width}`).toBe(0);
-    expect(idle.on, `wrong labels at the junction on ${size.width}`).toEqual([0, 1, 2, 3]);
+      // The map names all four, which is the whole point of it.
+      const idle = await labels(page);
+      expect(idle.clashes, `labels overlap at the junction on ${size.width}`).toEqual([]);
+      expect(idle.hidden, `a label is behind the panel at the junction on ${size.width}`).toBe(0);
+      expect(idle.outside, `a label is off the stage at the junction on ${size.width}`).toBe(0);
+      expect(idle.on, `wrong labels at the junction on ${size.width}`).toEqual([0, 1, 2, 3]);
 
-    // A close-up names the one it is standing at and hides the rest.
-    for (const [i, key] of KEYS.entries()) {
-      await page.hover(row(key));
-      await page.waitForTimeout(FADE);
-      const seen = await labels(page);
-      expect(seen.clashes, `labels overlap at ${key} on ${size.width}`).toEqual([]);
-      expect(seen.hidden, `a label is behind the panel at ${key}`).toBe(0);
-      expect(seen.outside, `a label is off the stage at ${key}`).toBe(0);
-      expect(seen.on, `wrong labels at ${key} on ${size.width}`).toEqual([i]);
+      // A stop names the one it is standing at and hides the rest.
+      for (const [i, key] of KEYS.entries()) {
+        await page.hover(row(key));
+        await expect(page.locator(section)).toHaveAttribute('data-stop', key);
+        await settled(page);
+        if (noWebGL) await page.waitForTimeout(FADE);
+        const seen = await labels(page);
+        expect(seen.clashes, `labels overlap at ${key} on ${size.width}`).toEqual([]);
+        expect(seen.hidden, `a label is behind the panel at ${key} on ${size.width}`).toBe(0);
+        expect(seen.outside, `a label is off the stage at ${key} on ${size.width}`).toBe(0);
+        expect(seen.on, `wrong labels at ${key} on ${size.width}`).toEqual([i]);
+      }
+      await leaveStage(page);
     }
-    await leaveStage(page);
-  }
-});
+  });
+}
 
 test('the name at the object is read once, not twice', async ({ page }) => {
   // The label layer is aria-hidden, so a screen reader hears each of the four
@@ -333,26 +582,25 @@ test('the name at the object is read once, not twice', async ({ page }) => {
   // is the whole of what "no floating names" was protecting.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
-  await expect(page.locator(shown)).toBeAttached();
+  await expect(page.locator(`${section} .crossroads-marks`)).toBeAttached();
 
   await expect(page.locator(`${section} .crossroads-marks`)).toHaveAttribute('aria-hidden', 'true');
+  // The canvas too: everything a reader can read or click is DOM.
+  await expect(page.locator(canvas)).toHaveAttribute('aria-hidden', 'true');
   // Once in the accessible tree, whatever the labels are drawing.
   await expect(
     page.getByRole('heading', { name: 'Website & Landingpage', exact: true }),
   ).toHaveCount(1);
 });
 
-test('the stills are hidden until the section is looked at', async ({ page }) => {
+test('the world is hidden until the section is looked at', async ({ page }) => {
   // The reveal is tied to the stage coming into view, not to the mount, which
   // happens four viewports before the reader arrives.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
-  await expect(page.locator(shown)).toBeAttached();
-  await page.waitForTimeout(400);
+  await expect(page.locator(canvas)).toHaveAttribute('data-ready', 'true', { timeout: 15000 });
   await expect(page.locator(section)).toHaveAttribute('data-revealed', 'false');
-  const hidden = await page
-    .locator(`${section} .crossroads-stills`)
-    .evaluate((el) => getComputedStyle(el).opacity);
+  const hidden = await page.locator(canvas).evaluate((el) => getComputedStyle(el).opacity);
   expect(hidden, 'the world is already there before the reader arrives').toBe('0');
 
   await arrive(page);
@@ -362,7 +610,6 @@ test('the stills are hidden until the section is looked at', async ({ page }) =>
 test('under the pin height the section is its own height and costs no scroll', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 640 });
   await page.goto('/de/');
-  await expect(page.locator(shown)).toBeAttached();
   await expect(page.locator(section)).toHaveAttribute('data-pinned', 'false');
   const seen = await page.evaluate(() => {
     const sec = document.querySelector('#services') as HTMLElement;
@@ -411,13 +658,15 @@ test('pinned, the track walks the four routes, a hover overrides, and the end re
   const band = 900 * 0.3;
   const stageTop = () =>
     page.evaluate(() => document.querySelector('.crossroads-stage')!.getBoundingClientRect().top);
+  const frames = () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
 
-  // The junction, then each stop in turn: the row lights, the still changes
-  // and the stage holds. The two pixels are the snap's: the section's top is a
+  // The junction, then each stop in turn: the row lights, the camera flies and
+  // the stage holds. The two pixels are the snap's: the section's top is a
   // fractional page offset and a scroll position is a whole pixel, so an exact
   // boundary is the one place the answer is ambiguous.
   await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
-  await expect(page.locator(section)).toHaveAttribute('data-still', 'junction');
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+  const drawn = [await frames()];
   for (const [i, key] of KEYS.entries()) {
     await page.evaluate(
       (y) => window.scrollTo({ top: y, behavior: 'instant' }),
@@ -427,8 +676,17 @@ test('pinned, the track walks the four routes, a hover overrides, and the end re
       'data-focus',
       'true',
     );
-    await expect(page.locator(section)).toHaveAttribute('data-still', key);
+    await expect(page.locator(section)).toHaveAttribute('data-stop', key);
+    await settled(page);
     expect(Math.abs(await stageTop()), `the stage moved at stop ${i + 1}`).toBeLessThan(2);
+    drawn.push(await frames());
+  }
+  // Every stop cost the camera frames, which is what tells a flight from five
+  // pictures: a crossfade would have drawn none of them.
+  for (let i = 1; i < drawn.length; i += 1) {
+    expect(drawn[i]!, `stop ${i} drew no frames (${drawn.join(', ')})`).toBeGreaterThan(
+      drawn[i - 1]!,
+    );
   }
 
   // A hover overrides the track, and letting go returns to the track's row.
@@ -505,17 +763,90 @@ test('pinned, a scroll that ends past a stop settles back onto the stop', async 
   }
 });
 
+test('a still page costs no frames, and a scroll gets them', async ({ page }) => {
+  // The whole reason the loop parks. A section a reader has stopped looking at
+  // is a section that costs a laptop's battery nothing, and the only way to
+  // say that from outside is to watch the counter not move.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+  const frames = () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
+
+  const atRest = await frames();
+  await page.waitForTimeout(800);
+  expect(await frames(), 'the parked loop drew a frame with nothing happening').toBe(atRest);
+
+  // Half a band, which is a camera in the middle of a stroke rather than at a
+  // stop, so the flight is definitely moving.
+  const top = await page
+    .locator(section)
+    .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+  await page.evaluate(
+    (y) => window.scrollTo({ top: y, behavior: 'instant' }),
+    Math.ceil(top) + 900 * 0.15,
+  );
+  await expect
+    .poll(frames, { timeout: 3000, message: 'a scroll drew no frames' })
+    .toBeGreaterThan(atRest);
+  await settled(page);
+  await expect(page.locator(section)).toHaveAttribute('data-parked', 'true');
+});
+
+test('both themes paint the world in the section own ink', async ({ page }) => {
+  // The scene is full bleed and the ink hero lands on its first pixel, so the
+  // world's ground and the section's background have to be the same colour or
+  // the page gets a hard line across it. three.js holds its own copy of that
+  // colour, which is why a theme switch is a repaint here and a stylesheet
+  // everywhere else on the site.
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  const ink = () =>
+    page.locator(section).evaluate((el) => ({
+      ground: el.dataset.ground ?? 'absent',
+      painted: getComputedStyle(el).backgroundColor,
+    }));
+  const dark = await ink();
+  expect(dark.ground, 'the scene is standing in a colour the section is not').toBe(dark.painted);
+
+  // The site's own control writes data-theme onto <html>. Set here rather than
+  // clicked, because this is about the scene following the attribute and not
+  // about where the button is.
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = 'light';
+  });
+  const painted = await page
+    .locator(section)
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(painted, 'the two themes paint the same ink, so nothing was tested').not.toBe(
+    dark.painted,
+  );
+  await expect
+    .poll(async () => (await ink()).ground, {
+      timeout: 5000,
+      message: 'the scene kept the ground it booted with after a theme switch',
+    })
+    .toBe(painted);
+});
+
 for (const lang of ['de', 'en'] as const) {
   test(`${lang}: every row names its own service`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/${lang}/`);
     await arrive(page);
 
-    // The junction's four chips, in THIS language. A chip's width is a font
-    // metric, so the lift that separates 01 and 02 is a different sum in each
-    // one: measured at 1440, the four are 208, 245, 183 and 170 pixels wide in
+    // The map's four chips, in THIS language. A chip's width is a font metric,
+    // so the lift that separates 01 and 02 is a different sum in each one:
+    // measured at 1440, the four are 208, 245, 183 and 170 pixels wide in
     // German and 208, 208, 199 and 223 in English. Both need the lift and only
     // German was ever checked for a clash.
+    //
+    // The screens inside the world are drawn in this language too, from
+    // LABELS[lang] through textures.ts, and nothing here asserts a pixel of
+    // that: tests/unit/crossroads-textures.spec.ts holds it by recording every
+    // string the drawing calls fillText with.
     const named = await labels(page);
     expect(named.on, `wrong labels at the junction in ${lang}`).toEqual([0, 1, 2, 3]);
     expect(named.clashes, `labels overlap at the junction in ${lang}`).toEqual([]);
@@ -532,7 +863,8 @@ for (const lang of ['de', 'en'] as const) {
         'data-key',
         key,
       );
-      await expect(page.locator(section)).toHaveAttribute('data-still', key);
+      await expect(page.locator(section)).toHaveAttribute('data-stop', key);
+      await settled(page);
     }
   });
 }

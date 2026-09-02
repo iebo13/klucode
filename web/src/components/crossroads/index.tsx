@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 
 import { ArrowLink, Eyebrow, RHYTHM } from '@/components/ui';
 import { asset } from '@/lib/base-path';
 import type { Lang } from '@/lib/routes';
 
-import { STILL, STILLS, STILL_ORDER, type StillKey } from './stills';
-import { BAND_SVH, scrollWay } from './track';
+import { LiveWorld } from './live-world';
+import type { Metrics } from './marks';
+import { StillsWorld } from './stills-world';
+import { BAND_SVH, nearestStop, scrollT } from './track';
 import type { ServiceKey, Way } from './types';
 
 /**
@@ -16,11 +18,12 @@ import type { ServiceKey, Way } from './types';
  *
  * The content files do not agree on this: de.ts lists the services in the
  * order they are priced, en.ts leads with developer capacity. That is each
- * language's own editorial call and the services page keeps it. The stills
- * cannot: each one was rendered with the four objects on their own lanes, in
- * this order, and the anchors in stills.ts are the positions those objects
- * came out at. Fed a different order the rows would point at the wrong
- * pictures and the labels would stand at somebody else's object.
+ * language's own editorial call and the services page keeps it. Neither world
+ * can: the scene's four bodies stand on the four strokes of the K in this
+ * order and boot() refuses any other (see SCENE_ORDER in scene-manifest.ts),
+ * and each still was rendered with the four objects on their own lanes in the
+ * same one. Fed a different order the rows would point at the wrong lanes and
+ * the labels would stand at somebody else's object.
  *
  * So the crossroads sorts, and the column beside it sorts with it, because
  * the rows, the lanes and the labels are the same four things in the same
@@ -32,7 +35,7 @@ const inOrder = (ways: readonly Way[]): Way[] =>
   ORDER.map((key) => ways.find((w) => w.key === key)).filter((w): w is Way => w !== undefined);
 
 /**
- * The room the stills need, as one query. Width only.
+ * The room a world needs, as one query. Width only.
  *
  * 64rem is Tailwind's `lg`, which is where the copy becomes a panel standing
  * on the left of the world rather than the whole width of the section. Below
@@ -42,8 +45,8 @@ const inOrder = (ways: readonly Way[]): Way[] =>
  * There used to be a height half: `(min-height: 46rem)`, because the section
  * was a stage fixed at 100svh with the panel inside it, and on a 1366x768
  * laptop the panel was taller than the stage and clipped a price. Height is
- * PIN's question now, and it answers it differently: a short laptop gets the
- * stills like any other, it just does not get the track.
+ * PIN's question now, and it answers it differently: a short laptop gets a
+ * world like any other, it just does not get the track.
  */
 const ROOM = '(min-width: 64rem)';
 
@@ -82,59 +85,140 @@ const PIN = '(min-width: 64rem) and (min-height: 55rem)';
 const STRIP = '(min-width: 40rem)';
 
 /**
- * How much clear space a label needs on every side before it is shown at all.
+ * A reader who has asked their system for less movement.
  *
- * A chip touching the panel's edge or the top of the stage reads as a
- * rendering fault rather than as a label, and one that is half under the panel
- * reads as a bug. 12px is a hair more than the chip's own corner radius, which
- * is what makes it look placed rather than trapped.
+ * Not a refusal any more, and it has been both. The August scene answered it
+ * by not mounting, on the grounds that the answer to "do not move things" is
+ * not to move them; the stills answered it with a cut between two pictures.
+ * The live scene answers it by standing still: scene.ts takes `reduced` and
+ * cuts between stops instead of gliding, holds the parallax at rest and never
+ * lights the floor under the hand. So this reader gets the same place as
+ * everybody else, without the travel.
  */
-const MARK_GAP = 12;
+const CALM = '(prefers-reduced-motion: reduce)';
+
+/** Which picture this visitor gets, if any. */
+type World = 'board' | 'stills' | 'live';
+
+/** What data-stop carries: the junction, or the way the section is standing at. */
+type StopKey = 'junction' | ServiceKey;
 
 /**
- * The contain transform of a still inside the free region.
+ * Whether this browser can make a WebGL context, asked once.
  *
- * `contain` semantics and nothing cleverer: the smaller of the two ratios, so
- * the whole frame is inside the free region on both axes, centred in the free
- * region horizontally and in the stage vertically. Measured against the build,
- * at 1024x736 the section is its own height, the stage is 1024x972, the free
- * region is 536 wide and the width binds at 0.663; at 1440x900 and 1920x1080
- * the track pins the stage to one viewport and the height binds, at 0.902 and
- * 1.082. So the objects keep close to their rendered size on a big screen with
- * the section's own ink either side, and shrink to fit a narrow column, which
- * is what the live camera's field of view used to do.
+ * Once, and the cache is the point rather than a saving. A context is a
+ * scarce resource: a browser caps how many one page may hold at a time and
+ * drops the oldest when it is reached. worldFor() below runs on every ROOM,
+ * PIN and STRIP change, which is every frame of a window drag, so probing
+ * each time would spend the whole allowance in a second and take the scene's
+ * own context with it.
  *
- * The render's own 808x998 is the free region beside the panel at 1440x900
- * with the section standing at its own height, which is what it was framed
- * for. The pin makes the stage shorter than that, so at both pinned widths the
- * picture is letterboxed rather than exact.
+ * The probe hands its context straight back through WEBGL_lose_context where
+ * the browser offers the extension, so what is left after this is an answer
+ * and not a live context.
  */
-function fit(reserve: number, stageW: number, stageH: number) {
-  const freeW = Math.max(0, stageW - reserve);
-  const s = Math.min(freeW / STILL.width, stageH / STILL.height);
-  return {
-    s,
-    ox: reserve + (freeW - STILL.width * s) / 2,
-    oy: (stageH - STILL.height * s) / 2,
+let webgl: boolean | undefined;
+
+function hasWebGL(): boolean {
+  if (webgl !== undefined) return webgl;
+  try {
+    const probe = document.createElement('canvas');
+    const gl = probe.getContext('webgl2') ?? probe.getContext('webgl');
+    webgl = gl !== null;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+  } catch {
+    webgl = false;
+  }
+  return webgl;
+}
+
+/**
+ * Whether this visitor gets a world, and which.
+ *
+ * Room first, as before: under 64rem the panel would cover the picture, so
+ * there is no picture. With room, a browser that can make a WebGL context
+ * gets the live scene and one that cannot gets the stills, which need no
+ * context at all. Probed on the client, and re-decided when ROOM flips.
+ */
+function worldFor(): World {
+  if (typeof window === 'undefined' || !window.matchMedia(ROOM).matches) return 'board';
+  return hasWebGL() ? 'live' : 'stills';
+}
+
+/**
+ * The track's position, published to the world without a re-render: the
+ * scroll fires sixty times a second and a React state for it would render
+ * the panel, the rows and the chips on every notch to move a camera.
+ */
+export type TrackRef = {
+  /** The last published position. */
+  t: number;
+  publish(t: number): void;
+  /** Returns the unsubscribe. The listener is called at once with the current position. */
+  subscribe(listener: (t: number) => void): () => void;
+};
+
+function createTrack(): TrackRef {
+  const listeners = new Set<(t: number) => void>();
+  const track: TrackRef = {
+    t: 0,
+    publish(t) {
+      if (t === track.t) return;
+      track.t = t;
+      for (const fn of listeners) fn(t);
+    },
+    subscribe(fn) {
+      listeners.add(fn);
+      fn(track.t);
+      return () => listeners.delete(fn);
+    },
   };
+  return track;
 }
 
 /**
- * Whether this visitor gets the stills at all.
+ * Everything a world is handed, and the whole of it.
  *
- * One question now, and it is about room. The WebGL probe went with the
- * renderer: a picture needs no graphics context, so a browser with WebGL
- * switched off sees the same section as everybody else. The reduced-motion
- * refusal went with the camera: five stills and a crossfade have nothing that
- * travels, and the crossfade itself is inside a
- * `prefers-reduced-motion: no-preference` block in globals.css, so a reader
- * who asks for no motion gets a cut between two pictures rather than a price
- * board where every other laptop shows the world.
+ * The split is one sentence: the shell owns the section and a world owns its
+ * picture. So a world is given the state it must draw against and the elements
+ * it must draw into, and it hands back only the two things a picture can tell
+ * the section that the section could not work out for itself, which is what is
+ * under the pointer and whether the picture started at all. Nothing here is a
+ * setter: a world never writes the section's own attributes.
  */
-function canMount(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia(ROOM).matches;
-}
+export type WorldProps = {
+  lang: Lang;
+  ordered: readonly Way[];
+  focus: number;
+  /** The track's position, published without a re-render. */
+  track: TrackRef;
+  reduced: boolean;
+  revealed: boolean;
+  pinned: boolean;
+  metrics: RefObject<Metrics>;
+  sectionRef: RefObject<HTMLElement | null>;
+  stageRef: RefObject<HTMLDivElement | null>;
+  copyRef: RefObject<HTMLDivElement | null>;
+  markRefs: RefObject<(HTMLDivElement | null)[]>;
+  /**
+   * Where a world leaves its own placement pass, so the shell's measure can
+   * call it.
+   *
+   * Both worlds place the chips from `metrics`, and the metrics are measured
+   * here: on mount, on resize and again when the web fonts land, because a
+   * chip's width is a font metric. A world therefore has to be told when they
+   * moved, and it cannot listen for it itself: React runs a child's effects
+   * before its parent's, so a world binding its own resize handler would read
+   * the numbers a frame before the shell rewrote them and place every chip
+   * against the previous shape of the stage.
+   */
+  placeRef: RefObject<() => void>;
+  /** A pointer on an object or a chip lights that row, and nothing else. -1 clears it. */
+  onHint(way: number): void;
+  /** A click on an object opens its row. */
+  onOpen(way: number): void;
+  onFail(error: unknown): void;
+};
 
 export function Crossroads({
   lang,
@@ -155,7 +239,7 @@ export function Crossroads({
   lead: string;
   link: { href: string; label: string };
   /**
-   * That the rows do anything. Rendered only where the stills mount, because
+   * That the rows do anything. Rendered only where a world mounts, because
    * in the fallback there is nothing to hover towards and the line would be a
    * promise the page cannot keep.
    */
@@ -170,8 +254,6 @@ export function Crossroads({
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  /** The five stills, as one box that one transform places. */
-  const stackRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLOListElement>(null);
   /**
@@ -179,11 +261,12 @@ export function Crossroads({
    *
    * Held as DOM nodes and never as state. A label's position is one transform
    * and nothing else, and routing four pixel positions through React would
-   * re-render this whole section to move a chip.
+   * re-render this whole section to move a chip. In the live world that
+   * happens sixty times a second.
    */
   const markRefs = useRef<(HTMLDivElement | null)[]>([]);
   /**
-   * The four rows, so a chip can open the one it names.
+   * The four rows, so a chip or an object can open the one it names.
    *
    * A chip is not a second link: two anchors with the same href and the same
    * text would be two entries in a screen reader's link list for one
@@ -192,27 +275,33 @@ export function Crossroads({
    */
   const rowRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
-  const [enhanced, setEnhanced] = useState(false);
+  const [world, setWorld] = useState<World>('board');
   /**
    * Whether the poster is showing the upright crop rather than the strip.
    *
    * Only the alt text depends on it: <picture> picks the file on its own, and
    * it cannot pick an alt. Starts false so the first render matches the static
-   * HTML, and is corrected in an effect, the same shape as `enhanced`.
+   * HTML, and is corrected in an effect, the same shape as `world`.
    */
   const [phoneCrop, setPhoneCrop] = useState(false);
   /** The row under the pointer or holding keyboard focus, or -1 for none. */
   const [focus, setFocus] = useState(-1);
   /**
-   * The chip under the pointer, or -1 for none. Called `hinted` and not `hint`
-   * because the prop of that name is the affordance line under the board.
+   * The chip or the object under the pointer, or -1 for none. Called `hinted`
+   * and not `hint` because the prop of that name is the affordance line under
+   * the board.
    *
    * A second, weaker input than `focus`, and the difference is the whole of
    * what a chip does on the way in: it lights its own row and itself, and it
-   * leaves the picture alone. Pointing at a chip used to set the aim, which
-   * crossfaded to that way's close-up, where the chip's own object is
+   * leaves the camera alone. Pointing at a chip used to set the aim, which
+   * moved the picture to that way's close-up, where the chip's own object is
    * somewhere else entirely: the control moved out from under the pointer that
    * touched it. Clicking still opens the row, which is what a chip is for.
+   *
+   * An object in the live world is the same weak input for the same reason
+   * (spec section 2): the reader is exploring the place with the pointer, and
+   * a camera that flew to whatever the hand happened to brush would never let
+   * them look at anything.
    */
   const [hinted, setHinted] = useState(-1);
   /** Whether the track is running: ROOM and a viewport tall enough for PIN. */
@@ -220,14 +309,41 @@ export function Crossroads({
   /** The way the track has scrolled to, or -1 for the junction. */
   const [scrollWayNow, setScrollWayNow] = useState(-1);
   /**
-   * Whether the section has been looked at. The stack fades in on the way in,
-   * so a reader arriving sees the world appear rather than already there.
+   * Whether the section has been looked at. The world fades in on the way in,
+   * so a reader arriving sees it appear rather than already there.
    */
   const [revealed, setRevealed] = useState(false);
+  /** Whether this reader has asked for less movement. See CALM above. */
+  const [reduced, setReduced] = useState(false);
 
-  // Sorted once, and everything downstream reads this: the stills, the rows,
-  // the labels and the numbering. The prop's own order is never used.
+  const enhanced = world !== 'board';
+
+  // Sorted once, and everything downstream reads this: the scene's four
+  // bodies, the rows, the labels and the numbering. The prop's own order is
+  // never used.
   const ordered = useMemo(() => inOrder(ways), [ways]);
+
+  /**
+   * The track's position, one object for the life of the section.
+   *
+   * Lazily, so it is built on the first render and never again: `useRef(
+   * createTrack())` would allocate a Set and an object on every render only to
+   * throw both away, and a world holding a subscription to a track the shell
+   * has replaced would hear nothing.
+   */
+  const trackRef = useRef<TrackRef | null>(null);
+  const track = (trackRef.current ??= createTrack());
+
+  /**
+   * Set once the live world has failed to boot, and never cleared.
+   *
+   * Without it the drop to the stills would last until the next resize:
+   * `decide()` below re-asks worldFor(), which still says `live` because the
+   * browser still has WebGL, and the section would try the same failing boot
+   * again on every notch of a window drag. What failed was the place, not the
+   * browser, and nothing about dragging a window fixes a missing asset.
+   */
+  const sceneFailed = useRef(false);
 
   /**
    * Two inputs, one aim. The pointer's or the keyboard's way wins while it is
@@ -236,31 +352,36 @@ export function Crossroads({
    * walks the highlight down the board.
    */
   const aim = focus >= 0 ? focus : scrollWayNow;
-  /** Which of the five renders is showing. The section carries it as data-still. */
-  const still: StillKey = (aim >= 0 ? ORDER[aim] : undefined) ?? 'junction';
+  /** Where the section is standing. It carries it as data-stop for both worlds. */
+  const stop: StopKey = (aim >= 0 ? ORDER[aim] : undefined) ?? 'junction';
 
-  // Decided on the client and re-decided when ROOM or PIN flips, because
-  // rotating a tablet or dragging a window crosses those lines in both
-  // directions. Watching the queries themselves rather than a second copy of
-  // them is the point: the two cannot be given different numbers.
+  // Decided on the client and re-decided when ROOM, PIN or CALM flips, because
+  // rotating a tablet, dragging a window or changing a system setting crosses
+  // those lines in both directions. Watching the queries themselves rather
+  // than a second copy of them is the point: the two cannot be given
+  // different numbers.
   useEffect(() => {
     const room = window.matchMedia(ROOM);
     const pin = window.matchMedia(PIN);
     const strip = window.matchMedia(STRIP);
+    const calm = window.matchMedia(CALM);
     const decide = () => {
-      const mounts = canMount();
-      setEnhanced(mounts);
-      setPinned(mounts && pin.matches);
+      const next = worldFor();
+      setWorld(next === 'live' && sceneFailed.current ? 'stills' : next);
+      setPinned(next !== 'board' && pin.matches);
       setPhoneCrop(!strip.matches);
+      setReduced(calm.matches);
     };
     decide();
     room.addEventListener('change', decide);
     pin.addEventListener('change', decide);
     strip.addEventListener('change', decide);
+    calm.addEventListener('change', decide);
     return () => {
       room.removeEventListener('change', decide);
       pin.removeEventListener('change', decide);
       strip.removeEventListener('change', decide);
+      calm.removeEventListener('change', decide);
     };
   }, []);
 
@@ -270,148 +391,30 @@ export function Crossroads({
    * labels actually is.
    *
    * One measurement rather than three, taken on mount, once more when the web
-   * fonts have landed, and on resize. Nothing here runs on a hover: the stack's
-   * transform is the same for all five stills, so the picture changing costs
-   * five attributes and four transforms and no layout read at all.
+   * fonts have landed, and on resize. Nothing here runs on a hover or on a
+   * frame: a world places its chips against these numbers and reads them, so
+   * the live world's sixty placements a second cost no layout at all.
    *
    * The label widths are the part that has to be here. A label is a box of
    * text and its width is a font metric: measured at 1440 in German, the chip
    * for "02 Individuelle Web-Anwendung" is 245px and "04 Betrieb & Wartung"
    * 170, the name set in the body face (Inter) at 14px and the number beside
-   * it in the mono face at 11px, and nothing in the render knows either. The
-   * anchors say where an object is, not how wide its name will be in this
+   * it in the mono face at 11px, and nothing in either world knows either. An
+   * anchor says where an object is, not how wide its name will be in this
    * reader's browser.
    */
-  const metrics = useRef({ reserve: 0, stageW: 0, stageH: 0, half: [] as number[], tall: 0 });
+  const metrics = useRef<Metrics>({ reserve: 0, stageW: 0, stageH: 0, half: [], tall: 0 });
 
   /**
-   * Moves the four labels, and nothing else touches their transforms.
+   * The world's own placement pass, so the measure below can call it.
    *
-   * The anchors come from stills.ts, which is written by the render itself, so
-   * a label's position and the picture it stands on can never disagree: both
-   * were produced by the same camera in the same pass. Mapped through the same
-   * contain transform the stack carries, then held to the rules below.
-   *
-   * translate3d rather than left/top, so a label move is a compositor
-   * transform and never a layout pass.
+   * A ref rather than a dependency, because the pass is rebuilt whenever the
+   * world's picture changes, which in the stills world is every hover and in
+   * the live world every render, and this effect owns the resize listener.
+   * Tearing that down and building it again to follow a pointer would be churn
+   * for nothing.
    */
-  const place = useCallback(() => {
-    const { reserve, stageW, stageH, half, tall } = metrics.current;
-    const { s, ox, oy } = fit(reserve, stageW, stageH);
-    const anchors = STILLS[still].marks;
-    /**
-     * Every chip's box before anything is written to the DOM, because two of
-     * them have to be compared with each other and a box read back out of the
-     * DOM would be a layout read per chip per hover.
-     *
-     * x is the chip's centre and y its bottom, which is where the transform
-     * puts it: the chip is centred on its anchor and rises from it, so it
-     * reaches `w` to either side and `tall` up.
-     */
-    const chips = ORDER.map((key, i) => {
-      const anchor = anchors[key];
-      const at = { x: ox + anchor.x * s, y: oy + anchor.y * s };
-      /**
-       * The chip is nudged into the free region rather than dropped out of
-       * it. At the 1024 floor the free region is 536px wide, the fan fills
-       * it, and "01 Website & Landingpage" is 208px: measured there, the
-       * first chip's own left half reaches 39px past the panel's edge.
-       * Hiding it would cost exactly the shot the labels exist for, which is
-       * the one where all four objects are on screen and the reader is
-       * finding out what they are. A 39px shift on a 208px chip is 19% and
-       * reads as placement.
-       *
-       * Bounded at half the box, because past that the nudge stops meaning
-       * "this label, slightly moved" and starts meaning "this label, over
-       * somebody else's object". Past it the label is dropped.
-       */
-      const w = half[i] ?? 0;
-      const low = reserve + MARK_GAP + w;
-      const high = stageW - MARK_GAP - w;
-      return {
-        at,
-        w,
-        low,
-        high,
-        x: low > high ? at.x : Math.min(Math.max(at.x, low), high),
-        y: Math.max(at.y, MARK_GAP + tall),
-        on: anchor.on,
-      };
-    });
-
-    /**
-     * Two chips at neighbouring objects can want the same pixels, and at the
-     * junction two of them do.
-     *
-     * Measured at 1440x900: the anchors for 01 and 02 are 191 still pixels
-     * apart, which is 172 on screen, and the two chips are 208 and 245 wide.
-     * They overlap by about 50px with their type on the same line, which reads
-     * as one broken label rather than two. The old scene solved it by moving
-     * the objects on their lanes; the objects are baked into the render now,
-     * so the layout has to solve it here.
-     *
-     * A chip is therefore lifted clear of the ones already placed to its left,
-     * by its own height at a time, up to twice. Lifting rather than shifting
-     * sideways, because sideways is the axis that says WHICH object this
-     * names: a chip 50px to the left of its anchor is standing at its
-     * neighbour, while a chip a line higher is standing at the same object
-     * from a little further up. The lift also passes the drop test below by
-     * construction, which only refuses a chip that has been pushed DOWN and
-     * away from its object.
-     *
-     * Two lifts and no more, because the third would be so far above the
-     * object that it names nothing. A chip that is still overlapping after
-     * them is dropped instead: a missing label is a label a reader can live
-     * without, and two labels on top of each other is the failure this whole
-     * pass exists to prevent. It should never happen, one lift clears every
-     * viewport measured, and the browser suite's clash test is the alarm if a
-     * longer name in some future language makes it happen anyway.
-     */
-    const clashes = (chip: (typeof chips)[number], before: number) =>
-      chips.some(
-        (other, j) =>
-          j < before &&
-          other.on &&
-          Math.abs(chip.x - other.x) < chip.w + other.w &&
-          Math.abs(chip.y - other.y) < tall,
-      );
-
-    for (let i = 0; i < chips.length; i += 1) {
-      const chip = chips[i];
-      if (!chip || !chip.on) continue;
-      for (let attempt = 0; attempt < 2 && clashes(chip, i); attempt += 1) {
-        chip.y = Math.max(chip.y - (tall + 4), MARK_GAP + tall);
-      }
-      if (clashes(chip, i)) chip.on = false;
-    }
-
-    for (let i = 0; i < chips.length; i += 1) {
-      const el = markRefs.current[i];
-      const chip = chips[i];
-      if (!el || !chip) continue;
-      const { at, w, low, high, x, y, on } = chip;
-      // Rounded, because a label is type and a half pixel of it is a blurred
-      // glyph. The object underneath is free to sit wherever it likes.
-      el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
-      el.dataset.on = String(
-        on &&
-          low <= high &&
-          Math.abs(x - at.x) <= w * 0.5 &&
-          y - at.y <= tall * 0.5 &&
-          y <= stageH - MARK_GAP,
-      );
-    }
-  }, [still]);
-
-  /**
-   * The measure, and the one transform it writes.
-   *
-   * It reaches the labels through a ref rather than depending on `place`
-   * directly: `place` is rebuilt whenever the shown still changes, which is
-   * every hover, and this effect owns the resize listener. Tearing that down
-   * and building it again to follow a pointer would be churn for nothing.
-   */
-  const placeRef = useRef(place);
+  const placeRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     if (!enhanced) return;
@@ -430,16 +433,6 @@ export function Crossroads({
         half: boxes.map((b) => (b?.width ?? 0) / 2),
         tall: boxes[0]?.height ?? 0,
       };
-      // One transform for all five stills, because all five are the same
-      // camera at the same size: the stack is a fixed 808x998 box with the
-      // pictures stretched over it, so placing the box places every frame of
-      // the crossfade at once and a fade can never be two pictures at two
-      // different scales.
-      const stack = stackRef.current;
-      if (stack) {
-        const { s, ox, oy } = fit(metrics.current.reserve, box.width, box.height);
-        stack.style.transform = `translate3d(${ox}px, ${oy}px, 0) scale(${s})`;
-      }
       placeRef.current();
     };
 
@@ -450,16 +443,10 @@ export function Crossroads({
     window.addEventListener('resize', measure, { passive: true });
     return () => window.removeEventListener('resize', measure);
     // `pinned` is in here because pinning changes the stage from the section's
-    // own height to 100svh, and `lang` and `ordered` because the names in the
+    // own height to 100svh, `world` because the two worlds put different
+    // things in the stage, and `lang` and `ordered` because the names in the
     // chips are what `half` and `tall` measure.
-  }, [enhanced, ordered, lang, pinned]);
-
-  // The labels follow the shown still. Declared after the measure so that on
-  // mount the metrics are filled before the first placement.
-  useEffect(() => {
-    placeRef.current = place;
-    if (enhanced) place();
-  }, [place, enhanced]);
+  }, [enhanced, world, ordered, lang, pinned]);
 
   /**
    * The reveal: the world fades up, once, when the section first comes into
@@ -484,14 +471,22 @@ export function Crossroads({
 
   /**
    * The track's input. The section's top scrolls above the viewport's top by
-   * `y`; the band it is in selects the way. Read on scroll and on resize,
-   * passive, and only while pinned: unpinned, the track's way stays -1 and the
-   * section behaves as it did before the track, which is hover-driven and its
-   * own height.
+   * `y`; where that falls along the flight selects the way. Read on scroll and
+   * on resize, passive, and only while pinned: unpinned, the track's position
+   * stays 0 and its way -1, and the section behaves as it did before the
+   * track, which is hover-driven and its own height.
+   *
+   * Two things come out of one reading, and that is the whole reason `scrollT`
+   * exists: the row and the chips take the NEAREST STOP, which is a number
+   * that changes four times in the whole ride and belongs in React, and the
+   * camera takes the CONTINUOUS position, which changes on every notch and is
+   * published straight to the world. Read separately they could disagree about
+   * where the reader is standing.
    */
   useEffect(() => {
     if (!pinned) {
       setScrollWayNow(-1);
+      track.publish(0);
       return;
     }
     const section = sectionRef.current;
@@ -505,7 +500,9 @@ export function Crossroads({
       // and every stop would select the way before it. A pixel either way is
       // nothing to a reader and is the difference between a stop meaning what
       // it looks like it means and being one route behind all the way down.
-      setScrollWayNow(scrollWay(1 - section.getBoundingClientRect().top, band));
+      const t = scrollT(1 - section.getBoundingClientRect().top, band);
+      setScrollWayNow(nearestStop(t) - 1);
+      track.publish(t);
     };
     read();
     window.addEventListener('scroll', read, { passive: true });
@@ -514,16 +511,55 @@ export function Crossroads({
       window.removeEventListener('scroll', read);
       window.removeEventListener('resize', read);
     };
-  }, [pinned]);
+  }, [pinned, track]);
+
+  /** A chip or an object under the pointer lights its row, and moves nothing. */
+  const onHint = useCallback((way: number) => setHinted(way), []);
+  /**
+   * Opening a way goes through the row's own anchor, so Next handles the
+   * navigation and nothing about routing is written twice.
+   */
+  const onOpen = useCallback((way: number) => rowRefs.current[way]?.click(), []);
+  /**
+   * A world that will not start is not worth telling a visitor about: the
+   * stills say everything the scene would, and under them the price board
+   * says it again. The warning is for whoever is looking at a console.
+   */
+  const onFail = useCallback((error: unknown) => {
+    sceneFailed.current = true;
+    setWorld((current) => (current === 'live' ? 'stills' : current));
+    console.warn('crossroads: the scene did not start', error);
+  }, []);
+
+  const worldProps: WorldProps = {
+    lang,
+    ordered,
+    focus,
+    track,
+    reduced,
+    revealed,
+    pinned,
+    metrics,
+    sectionRef,
+    stageRef,
+    copyRef,
+    markRefs,
+    placeRef,
+    onHint,
+    onOpen,
+    onFail,
+  };
 
   return (
     <section
       id="services"
       ref={sectionRef}
       data-enhanced={enhanced}
+      data-world={world === 'board' ? undefined : world}
       data-pinned={pinned}
       data-revealed={revealed}
-      data-still={still}
+      data-stop={stop}
+      data-reduced={reduced}
       // overflow-CLIP, not the overflow-hidden every other ink section carries.
       // An element with a hidden overflow is a scroll container, and a sticky
       // child sticks to the nearest one: the stage would stick to a box that
@@ -536,9 +572,9 @@ export function Crossroads({
       className="grain relative isolate overflow-clip bg-ink text-ink-fg"
     >
       {/* The wash and the grain belong to the fallback, where this section is
-          ink carrying text. With the world up they are the thing that made the
+          ink carrying text. With a world up they are the thing that made the
           picture read as a video embedded in a slide: a flat fogged rectangle
-          with a different dark either side of it. The stills ARE the ink, so
+          with a different dark either side of it. Both worlds ARE the ink, so
           they run to the viewport edges and nothing is layered over them. */}
       {enhanced ? null : <div aria-hidden="true" className="ink-aurora -z-10" />}
 
@@ -557,49 +593,18 @@ export function Crossroads({
           // the way in.
           onMouseLeave={() => setFocus(-1)}
         >
-          {/* The world: five renders of the same place, one showing. The stack
-              is one box at the render's own size that the measure above scales
-              and moves as a whole, so the pictures need no geometry of their
-              own and a crossfade is two opacities and nothing else.
+          {/* The world, and which one is the only thing this section decides
+              about it. A live scene where the browser can make a context, the
+              five renders where it cannot, and nothing at all where the panel
+              would be standing on the picture.
 
-              The size is inline rather than in globals.css because STILL comes
-              out of the render: the emitter writes stills.ts from the same pass
-              that produced the pictures and the anchors, so the box, the images
-              and the label positions are one measurement. In the stylesheet it
-              would be a second, typed copy of it, and fit() below already reads
-              the generated one.
-
-              Plain <img> and the rule turned off for it, rather than
-              next/image: the export has no optimiser (images.unoptimized is
-              set in next.config.mjs), so <Image> would emit this same tag
-              inside a wrapper with sizing of its own, and the sizing here is
-              one transform on the box around all five. */}
-          {enhanced ? (
-            <div
-              ref={stackRef}
-              aria-hidden="true"
-              className="crossroads-stills"
-              style={{ width: STILL.width, height: STILL.height }}
-            >
-              {STILL_ORDER.map((key) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={key}
-                  data-key={key}
-                  data-on={still === key}
-                  className="crossroads-still"
-                  src={asset(STILLS[key].src)}
-                  srcSet={`${asset(STILLS[key].src)} 1x, ${asset(STILLS[key].src2x)} 2x`}
-                  width={STILL.width}
-                  height={STILL.height}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  draggable={false}
-                />
-              ))}
-            </div>
-          ) : null}
+              One at a time, and the shell owns everything either would
+              otherwise have to agree with the other about: the section's
+              attributes, the panel, the rows, the chips' markup, the stops and
+              the metrics they are all placed against. What a world owns is its
+              own picture and where the four chips go in it. */}
+          {world === 'live' ? <LiveWorld {...worldProps} /> : null}
+          {world === 'stills' ? <StillsWorld {...worldProps} /> : null}
 
           {/* py-16 rather than the section rhythm, because this section's height
               is what the panel has to fit inside a laptop viewport with, and the
@@ -609,9 +614,9 @@ export function Crossroads({
             {/* The price board, which is also this section's fallback, which is
                 also the only copy of these four rows anywhere on the homepage.
                 On ink it is a panel standing on the left of the world rather
-                than a column beside a box, and the world is placed into what is
-                left of the stage: see the note above .crossroads-copy for what
-                its glass is now doing and what it is not. */}
+                than a column beside a box, and the world is composed into what
+                is left of the stage: see the note above .crossroads-copy for
+                what its glass is now doing and what it is not. */}
             <div ref={copyRef} className="crossroads-copy lg:max-w-[30rem]">
               <Eyebrow onInk>{eyebrow}</Eyebrow>
               <h2 className={`${RHYTHM.heading} text-h2`}>{title}</h2>
@@ -729,7 +734,7 @@ export function Crossroads({
                   cursor note, and a hover fill that only arrives once the
                   pointer is already on a row. So the shot the whole section
                   exists for was one almost nobody saw. .crossroads-hint hides it
-                  wherever the stills do not mount. */}
+                  wherever no world mounts. */}
               <p className="crossroads-hint mt-6 items-center gap-2 text-small text-ink-faint">
                 <span aria-hidden="true">↖</span>
                 {hint}
@@ -754,14 +759,20 @@ export function Crossroads({
               hears it once and a search engine indexes it once. What this
               layer adds is the bond a list beside a picture could not make.
 
-              On the junction the chips are live, which is what all four
-              objects being on screen at once finally allows: pointing at a
-              name lights that row and the chip itself, and clicking it opens
-              the row, through the row's own link rather than a second one.
-              Pointing leaves the picture alone, on the ruling of 2 September:
-              see the note on `hinted` above. On a close-up the one chip
-              showing is chrome, and globals.css hands out the pointer events
-              on the junction only. */}
+              The markup is the shell's and the positions are the world's:
+              stills-world.tsx maps the render's own anchors through the
+              contain transform, live-world.tsx takes them from the camera on
+              every frame, and both hand the same four candidates to the same
+              rules in marks.ts. So a chip behaves identically whichever
+              picture is behind it, which is what lets a reader who was handed
+              the stills after a failed boot notice nothing.
+
+              Pointing at a name lights that row and the chip itself, and
+              clicking it opens the row, through the row's own link rather than
+              a second one. Pointing leaves the picture alone, on the ruling of
+              2 September: see the note on `hinted` above. globals.css hands
+              out the pointer events, on the junction in the stills world and
+              everywhere in the live one. */}
           {enhanced ? (
             <div aria-hidden="true" className="crossroads-marks">
               {ordered.map((way, i) => (

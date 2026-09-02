@@ -1,4 +1,5 @@
 {
-  "$comment": "Gzipped bytes of every script out/de/index.html references directly, last captured after the crossroads section stopped booting a scene and became five pre-rendered stills. Moving this number is a deliberate act: say why in the commit message.",
-  "eagerGzipBytes": 152731
+  "$comment": "Gzipped bytes of every script out/de/index.html references directly. Moving this number is a deliberate act: say why in the commit message. expectSceneChunk makes the deferred budget refuse a build where it found no three.js chunk and no scene chunk, because a budget that measures nothing is worse than no budget.",
+  "eagerGzipBytes": 152731,
+  "expectSceneChunk": true
 }
