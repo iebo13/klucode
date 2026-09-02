@@ -291,12 +291,12 @@ export type Content = {
     /**
      * That the rows do anything.
      *
-     * The camera follows the row under the pointer, which is the section's
-     * whole device, and nothing on the page said so: no cursor note, no
-     * caption, and a hover fill that only arrives once the pointer is already
-     * on a row. So the shot the section exists for was one almost nobody saw.
-     * Rendered only where the scene mounts, because in the fallback it is a
-     * promise the page cannot keep.
+     * The picture changes with the row under the pointer, which is the
+     * section's whole device, and nothing on the page said so: no cursor note,
+     * no caption, and a hover fill that only arrives once the pointer is
+     * already on a row. So the shot the section exists for was one almost
+     * nobody saw. Rendered only where the stills mount, because in the
+     * fallback it is a promise the page cannot keep.
      */
     servicesHint: string;
     /**

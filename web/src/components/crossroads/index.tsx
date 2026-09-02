@@ -275,9 +275,10 @@ export function Crossroads({
    * five attributes and four transforms and no layout read at all.
    *
    * The label widths are the part that has to be here. A label is a box of
-   * text and its width is a font metric: measured at 1440 in German,
-   * "02 Individuelle Web-Anwendung" is 245px in Schibsted Grotesk at 14px and
-   * "04 Betrieb & Wartung" is 170, and nothing in the render knows either. The
+   * text and its width is a font metric: measured at 1440 in German, the chip
+   * for "02 Individuelle Web-Anwendung" is 245px and "04 Betrieb & Wartung"
+   * 170, the name set in the body face (Inter) at 14px and the number beside
+   * it in the mono face at 11px, and nothing in the render knows either. The
    * anchors say where an object is, not how wide its name will be in this
    * reader's browser.
    */
@@ -557,9 +558,16 @@ export function Crossroads({
           onMouseLeave={() => setFocus(-1)}
         >
           {/* The world: five renders of the same place, one showing. The stack
-              is a fixed 808x998 box that the measure above scales and moves as
-              a whole, so the pictures need no geometry of their own and a
-              crossfade is two opacities and nothing else.
+              is one box at the render's own size that the measure above scales
+              and moves as a whole, so the pictures need no geometry of their
+              own and a crossfade is two opacities and nothing else.
+
+              The size is inline rather than in globals.css because STILL comes
+              out of the render: the emitter writes stills.ts from the same pass
+              that produced the pictures and the anchors, so the box, the images
+              and the label positions are one measurement. In the stylesheet it
+              would be a second, typed copy of it, and fit() below already reads
+              the generated one.
 
               Plain <img> and the rule turned off for it, rather than
               next/image: the export has no optimiser (images.unoptimized is
@@ -567,7 +575,12 @@ export function Crossroads({
               inside a wrapper with sizing of its own, and the sizing here is
               one transform on the box around all five. */}
           {enhanced ? (
-            <div ref={stackRef} aria-hidden="true" className="crossroads-stills">
+            <div
+              ref={stackRef}
+              aria-hidden="true"
+              className="crossroads-stills"
+              style={{ width: STILL.width, height: STILL.height }}
+            >
               {STILL_ORDER.map((key) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

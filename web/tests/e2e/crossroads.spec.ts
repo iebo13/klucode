@@ -451,6 +451,60 @@ test('pinned, the track walks the four routes, a hover overrides, and the end re
   expect(await stageTop(), 'the stage did not release').toBeLessThan(-100);
 });
 
+test('pinned, a scroll that ends past a stop settles back onto the stop', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+
+  // Where the five stops stand, measured from the section's own top rather
+  // than assumed from BAND_SVH, so this reads the same track the reader gets.
+  const { top, stops } = await page.evaluate(() => {
+    const sec = document.querySelector('#services') as HTMLElement;
+    const secTop = sec.getBoundingClientRect().top + window.scrollY;
+    return {
+      top: secTop,
+      stops: [...document.querySelectorAll('#services .crossroads-stop')].map(
+        (el) => el.getBoundingClientRect().top + window.scrollY - secTop,
+      ),
+    };
+  });
+  expect(stops.length, 'the track has five stops').toBe(5);
+
+  const sectionTop = () =>
+    page.evaluate(() => document.querySelector('#services')!.getBoundingClientRect().top);
+
+  /**
+   * What the stops' negative scroll-margin is for, and the only thing that
+   * looks at it.
+   *
+   * html carries scroll-padding-top: 5.5rem for the fixed header, which insets
+   * the snapport by 88px, and .crossroads-stop cancels it with
+   * scroll-margin-top: -5.5rem so a stop lands at the raw top instead of 88px
+   * down. Landed, the section's top is exactly minus the stop's offset; drop
+   * the scroll margin and it is 88px more than that, which is the pinned stage
+   * hanging under the header with the panel's last row cut off.
+   *
+   * Two stops rather than all five: one is not enough to tell a snap from an
+   * offset that happens to match, and the two chosen are a whole band apart.
+   * 40px past the stop, which is inside proximity's pull at this viewport, and
+   * an instant scroll, because Chromium snaps once a programmatic scroll ends.
+   */
+  for (const [k, offset] of stops.entries()) {
+    if (k !== 1 && k !== 3) continue;
+    await page.evaluate(
+      (y) => window.scrollTo({ top: y, behavior: 'instant' }),
+      Math.round(top + offset) + 40,
+    );
+    await expect
+      .poll(async () => Math.abs((await sectionTop()) + offset), {
+        timeout: 1000,
+        message: `stop ${k} did not settle at the top of the viewport`,
+      })
+      .toBeLessThanOrEqual(2);
+  }
+});
+
 for (const lang of ['de', 'en'] as const) {
   test(`${lang}: every row names its own service`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });

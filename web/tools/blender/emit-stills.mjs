@@ -4,7 +4,8 @@
  *   node tools/blender/emit-stills.mjs --renders <dir> --poster <dir>
  *
  * `<renders>` holds the five free-frame stills at 2x and their anchors.json,
- * `<poster>` the wide junction render (junction.png, opaque). Out of them:
+ * `<poster>` the wide junction render (junction.png, which carries alpha of
+ * its own wherever the render has no light). Out of them:
  *
  *   public/crossroads/<shot>@2x.webp and <shot>.webp   the stills, with alpha
  *   public/crossroads.webp, public/crossroads-phone.webp the poster's two crops
@@ -38,9 +39,11 @@ mkdirSync(OUT, { recursive: true });
 
 const anchors = JSON.parse(readFileSync(path.join(RENDERS, 'anchors.json'), 'utf8'));
 const first = anchors[ORDER[0]];
-if (!first || first.frame !== 'free')
-  throw new Error('emit-stills: the renders are not free-frame stills');
+if (!first) throw new Error(`emit-stills: anchors.json has no entry for ${ORDER[0]}`);
+// The box every still is placed in and the 1x file is resized to. Taken from
+// the first shot and then required of all five, below.
 const { width, height } = first;
+const SCALE = 2;
 
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
 let total = 0;
@@ -51,6 +54,30 @@ for (const shot of ORDER) {
   if (!meta) throw new Error(`emit-stills: no render for ${shot}`);
   const png = path.join(RENDERS, `${shot}.png`);
   if (!existsSync(png)) throw new Error(`emit-stills: ${png} is missing`);
+
+  /**
+   * What a shot has to be before it becomes something the site ships: the
+   * free frame rather than the poster's, rendered at 2x, and exactly twice
+   * the box in pixels.
+   *
+   * Per shot, not once for the first one. crossroads.py merges anchors.json
+   * so that re-rendering a single shot keeps the other four's entries, which
+   * is the whole point of that merge and also the way a mixed directory
+   * happens: one shot re-rendered at --scale 1 or --frame poster leaves four
+   * correct entries in front of it. The page then places a picture that is
+   * not the size its anchors were measured in, and every label on that shot
+   * stands somewhere else.
+   */
+  if (meta.frame !== 'free')
+    throw new Error(`emit-stills: ${shot} was rendered at frame '${meta.frame}', not 'free'`);
+  if (meta.scale !== SCALE)
+    throw new Error(`emit-stills: ${shot} was rendered at scale ${meta.scale}, not ${SCALE}`);
+  const px = await sharp(png).metadata();
+  if (px.width !== SCALE * width || px.height !== SCALE * height)
+    throw new Error(
+      `emit-stills: ${shot}.png is ${px.width}x${px.height}, not the ` +
+        `${SCALE * width}x${SCALE * height} that ${SCALE}x of the ${width}x${height} box is`,
+    );
 
   const two = await sharp(png)
     .webp({ quality: 84, alphaQuality: 90 })

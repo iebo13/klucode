@@ -105,12 +105,16 @@ why they are pre-rendered rather than drawn live):
 ```bash
 node tools/blender/capture-textures.mjs tools/blender/textures
 #   the three screen textures crossroads.py loads (needs a built, served site)
-blender -b -P tools/blender/crossroads.py -- --out renders --samples 128 --scale 2
-blender -b -P tools/blender/crossroads.py -- --out renders-poster --frame poster --samples 128
+blender -b -P tools/blender/crossroads.py -- --out tools/blender/renders --samples 128 --scale 2
+blender -b -P tools/blender/crossroads.py -- --out tools/blender/poster --frame poster --samples 128
 #   the five free-frame stills and the wide poster frame, each with anchors.json
-node tools/blender/emit-stills.mjs --renders renders --poster renders-poster
+node tools/blender/emit-stills.mjs --renders tools/blender/renders --poster tools/blender/poster
 #   public/crossroads/*.webp, public/crossroads*.webp, src/components/crossroads/stills.ts
 ```
+
+Both render directories are gitignored working output: what ships out of them
+is the WebP in `public/` and the anchors baked into `stills.ts`, and the emitter
+is the only thing that writes either.
 
 ---
 

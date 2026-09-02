@@ -657,9 +657,13 @@ html:has(#services[data-pinned='true']) {
    section's own: every still is transparent where there is no light, so there
    is no seam and nothing to repaint on a theme switch.
 
-   The box is 808x998 because that is the size the stills were rendered at, and
-   the images stretch over it, so all five share one transform and a crossfade
-   can never be two pictures at two different scales.
+   The box is the size the stills were rendered at, and the images stretch over
+   it, so all five share one transform and a crossfade can never be two
+   pictures at two different scales. Its width and height are NOT here: the
+   render writes them into STILL in stills.ts and index.tsx puts them on the
+   element, because a number the render generates and a number typed into a
+   stylesheet is exactly the pair that goes quietly wrong the first time the
+   camera moves.
 
    No fade of the page's own, and there was one for a day: the junction was
    rendered with an alpha box the width of the frame, so its first column of
@@ -673,8 +677,6 @@ html:has(#services[data-pinned='true']) {
   position: absolute;
   top: 0;
   left: 0;
-  width: 808px;
-  height: 998px;
   transform-origin: 0 0;
   pointer-events: none;
   opacity: 0;

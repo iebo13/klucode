@@ -67,7 +67,7 @@ The aim is the row under the pointer or holding focus, else the track's way (sec
 
 `enhanced` becomes `ROOM` alone (width at least 64rem). The reveal stays: the stack fades in when a fifth of the stage is on screen (`data-revealed` on the section), so a reader arriving at the section sees the world appear rather than already there.
 
-The marks layer keeps its DOM and its placement, fed from `stills.ts` instead of a frame callback. On the junction the chips take pointer events: entering one sets the aim to its way, clicking one clicks its row. On close-ups they are chrome as before.
+The marks layer keeps its DOM and its placement, fed from `stills.ts` instead of a frame callback. On the junction the chips take pointer events: entering one lights its row and itself, a hint state that leaves the picture on the junction, and clicking one clicks its row (section 2, amended 2 September). On close-ups they are chrome as before, and take no pointer events at all, because the junction is the only still a chip is ever under a pointer on.
 
 The theme switch no longer repaints anything: the stills' ink is transparent, so the section's own background shows through in both themes.
 
@@ -95,7 +95,7 @@ Unchanged from `2026-09-02-crossroads-depth-and-hand-design.md` section 12, rest
 
 ## 7. Tests
 
-Unit: `track.spec.ts` (the band maths), `stills.spec.ts` (the generated module: five stills, four anchors each, every anchor inside the still, the junction's all on, each close-up's own on and the others off), `crossroads-textures.spec.ts` as today.
+Unit: `track.spec.ts` (the band maths), `stills.spec.ts` (the generated module: five stills, four anchors each, every anchor that is on inside the still, the junction's all on, each close-up's own on and the others off), `crossroads-textures.spec.ts` as today.
 
 Browser (`tests/e2e/crossroads.spec.ts`), against the export: with stills; on a phone; on a narrow laptop; with JavaScript off; the fallback is not a dimmed copy; every row is a link; the aim follows the pointer and the keyboard (asserting `data-on` on the stills and `data-focus` on the rows); no console errors on hover and leave; every label stands inside the free region and no two collide, per viewport; the name at the object is read once; the stack is hidden until looked at; under the pin height no scroll cost; pinned, the track walks the four routes, a hover overrides, the end releases; every row names its own service, per language.
 
