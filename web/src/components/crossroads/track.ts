@@ -11,7 +11,15 @@
  * picture, it PLACES the camera. `scrollT` is the continuous position along
  * the flight, 0 at the map and k at stop k, and the row, the chips and the
  * camera are all read off it, so they cannot disagree about where the reader
- * is. The stills world reads only `scrollWay`, which is the nearest stop.
+ * is. The live world takes the position itself; the shell and the stills world
+ * take `nearestStop` of it, because a row lights and a picture changes at a
+ * stop and not at a fraction.
+ *
+ * There used to be a `scrollWay(y, band)` here, which was `nearestStop(scrollT(
+ * ...)) - 1` in one call, and it went when the shell started needing both
+ * halves of that from ONE reading: the row wants the stop and the camera wants
+ * the position, and a helper that threw the position away meant reading the
+ * scroll twice and letting the two disagree.
  */
 export const BAND_SVH = 30;
 
@@ -29,21 +37,17 @@ export function scrollT(y: number, band: number, ways = WAYS): number {
   return Math.min(ways, Math.max(0, y / band));
 }
 
-/** The stop nearest to t: 0 for the map, k for way k - 1. */
+/**
+ * The stop nearest to t: 0 for the map, k for way k - 1. Its caller takes one
+ * off it to get a way, or -1 for the map.
+ *
+ * The NEAREST stop rather than the band the reader is in, and that is the
+ * whole of what this rounds for: the row lights when the camera is more than
+ * halfway to it, the way the August glide named its destination the moment it
+ * left, so the camera arrives at a thing that is already named.
+ */
 export function nearestStop(t: number, ways = WAYS): number {
   return Math.min(ways, Math.max(0, Math.round(t)));
-}
-
-/**
- * The way the track has selected, or -1 for the map.
- *
- * The nearest stop rather than the band the reader is in: the row lights
- * when the camera is more than halfway to it, the way the August glide named
- * its destination the moment it left, so the camera arrives at a thing that
- * is already named.
- */
-export function scrollWay(y: number, band: number, ways = WAYS): number {
-  return nearestStop(scrollT(y, band, ways), ways) - 1;
 }
 
 /**

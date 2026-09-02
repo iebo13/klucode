@@ -75,8 +75,29 @@ export function LiveWorld({
    * holds NOW rather than against the ones the boot's closure captured when
    * the load began. A reader who hovered a row while the models were on the
    * wire arrives at that row.
+   *
+   * It is a FLAG and not a latch, which the boot's cleanup is what makes true.
+   * The scene is torn down and built again when `reduced` flips, which a
+   * reader can do mid-visit from their system settings, and a second boot that
+   * resolved into a `ready` already true would set it to the value it holds:
+   * React drops that, the three effects keyed on it never run, and the new
+   * camera would stand at the map with nothing told to it until the next
+   * scroll notch or hover.
    */
   const [ready, setReady] = useState(false);
+
+  /**
+   * The newest focus and reveal, for the moment a boot finishes.
+   *
+   * A ref rather than a dependency, because both change on every hover and a
+   * boot must not restart on one, and because the closure the boot captured
+   * holds whatever they were when the load began, which on a five second load
+   * is not what the reader is looking at.
+   */
+  const latest = useRef({ focus, revealed });
+  useEffect(() => {
+    latest.current = { focus, revealed };
+  });
 
   /**
    * The four candidates, allocated once and rewritten in place.
@@ -147,9 +168,14 @@ export function LiveWorld({
    * renderer. Verified by the bundle gate, which fails the build if any script
    * the page references carries three.js.
    *
-   * Nothing is told to the scene here. Everything it has to know on the way in
-   * arrives through the effects below, each of which carries `ready`: see the
-   * note on that state above.
+   * A finished boot is told at once where the track stands, which row is
+   * aimed at and whether the section has been looked at, and the effects below
+   * then own all three for the rest of the visit through `ready`. Both halves
+   * are needed and neither is redundant: the effects are what keep the scene
+   * in step with a reader who moved while it was loading, and these three
+   * calls are what make the FIRST frame the new scene draws the right one,
+   * which matters most on a re-boot, where there was already a place on the
+   * screen at a stop and the reader must not see it snap back to the map.
    */
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -190,6 +216,9 @@ export function LiveWorld({
         handleRef.current = started;
         canvas.dataset.scene = SCENE_MARKER;
         canvas.dataset.ready = 'true';
+        started.scroll(track.t);
+        started.aim(latest.current.focus);
+        if (latest.current.revealed) started.reveal();
         setReady(true);
       })
       .catch((error: unknown) => {
@@ -201,14 +230,21 @@ export function LiveWorld({
       cancelled = true;
       handle?.stop();
       handleRef.current = null;
-      // The three attributes this world writes straight onto the section, off
-      // again with it: left behind they would tell the suite, and anyone
-      // reading the DOM, that a loop that no longer exists is parked.
+      // Back to not-ready, so that the next boot's resolve is a CHANGE and the
+      // effects keyed on it run again. See the note on the state above for
+      // what a boot that resolves into a `ready` already true leaves behind.
+      setReady(false);
+      // The two the canvas carries and the three the section does, off again
+      // with the scene that wrote them: left behind they would tell the suite,
+      // and anyone reading the DOM, that a loop that no longer exists is
+      // parked and a canvas with no context on it is ready.
+      delete canvas.dataset.ready;
+      delete canvas.dataset.scene;
       delete section.dataset.parked;
       delete section.dataset.frames;
       delete section.dataset.ground;
     };
-  }, [lang, ordered, reduced, onFail, placeRef, sectionRef, stageRef, copyRef]);
+  }, [lang, ordered, reduced, track, onFail, placeRef, sectionRef, stageRef, copyRef]);
 
   /**
    * The camera follows the row. Hover and keyboard focus are the same input,
@@ -313,6 +349,11 @@ export function LiveWorld({
       if (overPanel(e.target)) {
         handle.pointerLeave();
         stage.dataset.hit = 'false';
+        // And the row an object had lit goes out, because the hand has left
+        // the place. A pointer jumping straight from an object onto the panel,
+        // which one coalesced move can do, would otherwise leave that row lit
+        // beside the row it landed on and light two of the four at once.
+        onHint(-1);
         return;
       }
       const [x, y] = at(e);

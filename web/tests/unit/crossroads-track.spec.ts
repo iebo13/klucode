@@ -5,7 +5,6 @@ import {
   WAYS,
   nearestStop,
   scrollT,
-  scrollWay,
   shownWays,
 } from '../../src/components/crossroads/track';
 
@@ -30,14 +29,20 @@ test('the row lights when the camera is nearer its stop than the last one', () =
   expect(nearestStop(0.5)).toBe(1);
   expect(nearestStop(3.6)).toBe(4);
   expect(nearestStop(9)).toBe(4);
-  expect(scrollWay(0, band)).toBe(-1);
-  expect(scrollWay(band / 2 - 1, band)).toBe(-1);
-  expect(scrollWay(band / 2 + 1, band)).toBe(0);
-  expect(scrollWay(band + 2, band)).toBe(0);
-  expect(scrollWay(2 * band + 2, band)).toBe(1);
-  expect(scrollWay(4 * band + 2, band)).toBe(3);
-  expect(scrollWay(9 * band, band)).toBe(3);
-  expect(scrollWay(100, 0)).toBe(-1);
+  // The pair the shell actually reads, in the order it reads it: one scroll
+  // position, the stop rounded off it, and the way one less than that. It used
+  // to be a scrollWay() of its own and is written out here instead, because a
+  // helper that took the position and returned only the way is what let the
+  // row and the camera be read from two different scrolls.
+  const way = (y: number) => nearestStop(scrollT(y, band)) - 1;
+  expect(way(0)).toBe(-1);
+  expect(way(band / 2 - 1)).toBe(-1);
+  expect(way(band / 2 + 1)).toBe(0);
+  expect(way(band + 2)).toBe(0);
+  expect(way(2 * band + 2)).toBe(1);
+  expect(way(4 * band + 2)).toBe(3);
+  expect(way(9 * band)).toBe(3);
+  expect(nearestStop(scrollT(100, 0)) - 1).toBe(-1);
 });
 
 test('the map names all four, a stop names its own, a hovered row names only itself', () => {

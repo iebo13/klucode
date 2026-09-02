@@ -467,6 +467,101 @@ test('the objects are live, and are the same weak input as the chips', async ({ 
   await expect(page).toHaveURL(/\/de\/leistungen\/#app$/);
 });
 
+test('a reduced-motion switch mid-visit boots a scene that knows where the last one stood', async ({
+  page,
+}) => {
+  // The one thing that tears the place down and builds it again inside a
+  // visit: `reduced` is a boot option, so a reader changing their system
+  // setting gets a second scene. What must not happen is the section snapping
+  // back to the map, which is what a second boot resolving into an unchanged
+  // `ready` did: React drops a state set to the value it holds, the effects
+  // keyed on it never run, and the new camera stands where it booted.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  await page.hover(row('capacity'));
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'capacity');
+  await settled(page);
+  // Where the chip for 03 stands with the camera at that stand. This is the
+  // assertion that has teeth: the chip's position is the new camera's own
+  // projection of the object's anchor, so it can only match if the second
+  // scene was told to aim at capacity.
+  const before = await page.locator(`${section} .crossroads-mark`).nth(2).boundingBox();
+  expect(before, 'the capacity chip has no box before the switch').not.toBeNull();
+  const frames = await page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator(section)).toHaveAttribute('data-reduced', 'true');
+  // The old loop is gone: its counter went with it, which is also how we know
+  // the cleanup ran and data-ready is the next boot's rather than the last's.
+  await expect
+    .poll(async () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1)), {
+      timeout: 15000,
+      message: 'the scene was never torn down',
+    })
+    .toBeLessThan(frames);
+
+  await expect(page.locator(canvas)).toHaveAttribute('data-ready', 'true', { timeout: 30000 });
+  await settled(page);
+  await expect(page.locator(section)).toHaveAttribute('data-parked', 'true');
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'capacity');
+
+  // One chip, the right one, and standing where it stood: the second scene
+  // arrived at the stand rather than at the map.
+  await expect(page.locator(`${section} .crossroads-mark[data-on="true"]`)).toHaveCount(1);
+  await expect(page.locator(`${section} .crossroads-mark`).nth(2)).toHaveAttribute(
+    'data-on',
+    'true',
+  );
+  const after = await page.locator(`${section} .crossroads-mark`).nth(2).boundingBox();
+  expect(after, 'the capacity chip has no box after the switch').not.toBeNull();
+  // Four pixels, because the two shots are the same pose reached two ways: the
+  // first glided to it and the second cut to it, and reduced motion holds the
+  // parallax at rest where the first had eased it to rest. At the map this
+  // chip stands about 290px to the right and 300px lower, so the bound is not
+  // close to being able to confuse the two.
+  expect(Math.abs(after!.x - before!.x), 'the second scene framed a different shot').toBeLessThan(
+    4,
+  );
+  expect(Math.abs(after!.y - before!.y), 'the second scene framed a different shot').toBeLessThan(
+    4,
+  );
+});
+
+test('a pointer leaving an object for the panel puts that row out', async ({ page }) => {
+  // A coalesced pointer move can go from an object straight onto the copy
+  // panel with no event in between. The panel branch used to return without
+  // clearing the hint, so the object's row stayed lit beside the row the
+  // pointer landed on and two of the four were lit at once.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  const anchor = await page.locator(`${section} .crossroads-mark`).nth(1).boundingBox();
+  expect(anchor, 'the app chip has no box to walk down from').not.toBeNull();
+  let found = -1;
+  for (let step = 0; step <= 30 && found < 0; step += 1) {
+    await page.mouse.move(anchor!.x, anchor!.y + step * 10);
+    if ((await page.getAttribute(`${section} .crossroads-stage`, 'data-hit')) === 'true') {
+      found = step * 10;
+    }
+  }
+  expect(found, 'no object was found under the pointer below the app chip').toBeGreaterThanOrEqual(
+    0,
+  );
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+
+  // Straight onto a row, in one move, which is the jump a real pointer makes.
+  await page.hover(row('care'));
+  await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
+    'data-focus',
+    'true',
+  );
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+  await expect(page.locator(`${section} .crossroads-stage`)).toHaveAttribute('data-hit', 'false');
+});
+
 test('hovering and leaving the section reports no console errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
