@@ -601,10 +601,18 @@ for name in SHOTS_WANTED:
     aspect = FREE / H
     cam_data.angle_y = math.radians(fov_for(shot["fit"][0], shot["fit"][1], aspect))
     # The junction's fan reaches within 48 px of the still's left edge, so its
-    # box is wider than a close-up's, but not the full width: at 0.98 the
-    # fade sat on the frame edge and the first column of pixels was at half
-    # alpha, a visible step once the still is letterboxed on a pinned stage.
-    box_mask.inputs["Size"].default_value = (0.94 if name == "junction" else 0.9, MASK_HEIGHT)
+    # box is wider than a close-up's and its fade is tighter: measured at 1x,
+    # the box at 0.94 with the wide blur left the first column at alpha 92 of
+    # 255, because the blur's soft zone is about 200 px wide and the box edge
+    # was 24 px in. A box at 0.92 (32 px in) with a blur of 64 fades from
+    # nothing at the frame to full about 64 px in, and the landing page's
+    # monitor starts at 48 px, so only its outermost strip is touched.
+    if name == "junction":
+        box_mask.inputs["Size"].default_value = (0.92, MASK_HEIGHT)
+        mask_blur.size_x = mask_blur.size_y = int(64 * SCALE)
+    else:
+        box_mask.inputs["Size"].default_value = (0.9, MASK_HEIGHT)
+        mask_blur.size_x = mask_blur.size_y = int(200 * SCALE)
     cam_data.dof.use_dof = DOF
     cam_data.dof.focus_distance = (look - pos).length
     cam_data.dof.aperture_fstop = shot["fstop"]
@@ -654,5 +662,13 @@ for name in SHOTS_WANTED:
     report[name] = {"frame": FRAME, "width": W, "height": H, "scale": SCALE, "camera": list(pos), "look": list(look), "fov_y": round(math.degrees(cam_data.angle_y), 2), "shift_x": round(cam_data.shift_x, 4), "marks": marks}
     print(f"rendered {name}: {report[name]}")
 
-with open(os.path.join(OUT, "anchors.json"), "w") as f:
-    json.dump(report, f, indent=2)
+# Merged into what is already there, so re-rendering one shot into a
+# directory of five keeps the other four's anchors.
+anchors_path = os.path.join(OUT, "anchors.json")
+merged = {}
+if os.path.exists(anchors_path):
+    with open(anchors_path) as f:
+        merged = json.load(f)
+merged.update(report)
+with open(anchors_path, "w") as f:
+    json.dump(merged, f, indent=2)
