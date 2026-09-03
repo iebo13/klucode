@@ -13,10 +13,12 @@
  *
  * Shoots the live scene by default and the five pre-rendered stills under
  * SHOOT_WORLD=stills, which turns WebGL off the way the browser suite does, so
- * the two worlds can be put side by side without two builds.
+ * the two worlds can be put side by side without two builds. `--flight` shoots
+ * the two frames between the stops instead, at 1440x900 only.
  *
  * Writes shots/<viewport>-<index>-<name>.png, with a `dark-` prefix under
- * `--dark`. The directory is gitignored.
+ * `--dark` and a `stills-` prefix under SHOOT_WORLD=stills. The directory is
+ * gitignored.
  *
  * The panel line it prints is the one the PIN query in index.tsx is set from:
  * pinned, the whole panel has to stand inside 100svh, so re-run this after a
@@ -36,15 +38,47 @@ const LANG = process.env.SHOOT_LANG ?? 'de';
 // pictures when it is refused, so refusing it is the whole of the switch. The
 // same script the browser suite installs, for the same reason.
 const STILLS = process.env.SHOOT_WORLD === 'stills';
+/**
+ * `--flight` shoots the frames BETWEEN the stops instead of the stops.
+ *
+ * The five stops are the two worlds' common ground and the only frames the
+ * stills ever had, so they are what a before and after is made of. What the
+ * live world added is the travel between them, and no shot of a stop shows
+ * it. The path puts the camera over the hub at every half band (see
+ * spline.ts), looking down the stroke it is about to fly, so 0.5 is the hub
+ * looking away down the stem at the website screen and 1.5 is the hub again
+ * looking down the upper arm at the app, with the website's monitor sliding
+ * out of frame behind the panel. Those two frames are the argument for the
+ * section being real time at all, which is why the tool can take them and why
+ * it takes them at one width: the flight is the same flight at every
+ * viewport, and three copies of it prove nothing.
+ */
+const FLIGHT = process.argv.includes('--flight');
 
-const VIEWPORTS = [
-  { name: '1024x736', width: 1024, height: 736 },
-  { name: '1440x900', width: 1440, height: 900 },
-  { name: '1920x1080', width: 1920, height: 1080 },
-];
+const VIEWPORTS = FLIGHT
+  ? [{ name: '1440x900', width: 1440, height: 900 }]
+  : [
+      { name: '1024x736', width: 1024, height: 736 },
+      { name: '1440x900', width: 1440, height: 900 },
+      { name: '1920x1080', width: 1920, height: 1080 },
+    ];
 
-/** The junction, then the four close-ups in the order the rows stand. */
-const SHOTS = ['junction', 'website', 'app', 'capacity', 'care'];
+/**
+ * What to shoot: either the junction and the four close-ups in the order the
+ * rows stand, each reached by hovering its row, or the two mid-flight frames,
+ * each reached by scrolling the track to a position between two stops. `at`
+ * is that position, in bands below the section's top, and it is the same
+ * number the page computes as `scrollT`.
+ */
+const SHOTS = FLIGHT
+  ? [
+      { name: 'flight-hub', at: 0.5 },
+      { name: 'flight-stem', at: 1.5 },
+    ]
+  : ['junction', 'website', 'app', 'capacity', 'care'].map((name) => ({ name }));
+
+/** A band, as a percentage of the viewport's height. BAND_SVH in src/components/crossroads/track.ts. */
+const BAND_SVH = 30;
 
 mkdirSync('shots', { recursive: true });
 
@@ -137,8 +171,35 @@ for (const viewport of VIEWPORTS) {
       `free ${box.stage[0] - box.reserve}px, ${box.still}`,
   );
 
-  for (const [i, name] of SHOTS.entries()) {
-    if (name === 'junction') {
+  for (const [i, shot] of SHOTS.entries()) {
+    const { name, at } = shot;
+    if (at !== undefined) {
+      // The track, not a row: the camera is placed by where the section's top
+      // stands relative to the viewport's, so the shot is taken by scrolling
+      // to it and waiting for the loop to park at the pose that position asks
+      // for. Nothing is hovered, so no row is lit and no chip is forced.
+      //
+      // The snap has to come off first, and this is the whole difficulty of
+      // shooting between the stops. globals.css puts `scroll-snap-type: y
+      // proximity` on the root while a pinned section is on the page, and a
+      // scrollTo is a finished scroll as far as the browser is concerned, so a
+      // half-band scroll is snapped straight back to the stop it left:
+      // measured here, half a band down the page had not moved at all and a
+      // band and a half down it had moved exactly one band. A reader's own
+      // gesture is snapped when it ends and not while it happens, so these
+      // positions are ones a reader rides through and cannot rest on, which is
+      // exactly what a picture of the travel should show.
+      await page.evaluate(
+        ({ bands, svh }) => {
+          const el = document.querySelector('#services');
+          document.documentElement.style.scrollSnapType = 'none';
+          const band = (window.innerHeight * svh) / 100;
+          const top = el.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: top + band * bands, behavior: 'instant' });
+        },
+        { bands: at, svh: BAND_SVH },
+      );
+    } else if (name === 'junction') {
       await page.mouse.move(5, 5);
     } else {
       await page.hover(`#services li[data-key="${name}"] a`);
@@ -169,7 +230,12 @@ for (const viewport of VIEWPORTS) {
         clashes,
       };
     });
-    const file = `shots/${DARK ? 'dark-' : ''}${viewport.name}-${String(i).padStart(2, '0')}-${name}.png`;
+    // The world is in the name, and it has to be: a stills run and a live run
+    // shoot the same five shots at the same three viewports, so without the
+    // prefix the second one silently overwrites the first and a before-and-
+    // after built from what is left compares a world with itself.
+    const prefix = `${STILLS ? 'stills-' : ''}${DARK ? 'dark-' : ''}`;
+    const file = `shots/${prefix}${viewport.name}-${String(i).padStart(2, '0')}-${name}.png`;
     // The VIEWPORT, not the section element. Pinned, the section is two and a
     // half viewports of which one and a half is the track's runway, so a shot
     // of the element is mostly empty ink and shows nothing a reader ever sees

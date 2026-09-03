@@ -212,8 +212,17 @@ export async function boot(
      * Everything the composer does after the scene is a full-resolution pass
      * over the frame, and the depth of field is the expensive one. At 1440x900
      * that is 1.30 megapixels a pass at a ratio of 1, 2.92 at 1.5 and 5.18 at 2,
-     * so the cap is the difference between one frame and four. Task 6 holds the
-     * frame rate this machine actually reaches.
+     * so the cap is the difference between one frame and four.
+     *
+     * What the cap buys, measured by tests/e2e/crossroads-flight.spec.ts on
+     * the machine the spec names (Intel Core Ultra 9 288V, Mesa 25.2, a
+     * 119.92Hz panel, so a vsync every 8.34ms): flying the whole track at
+     * 1440x900, a mean frame gap of 8.3ms on a plain screen, where the
+     * renderer draws at a ratio of 1 and misses no vsync at all, and 12.1ms on
+     * a retina one, where it draws at this cap of 1.5 with the 2x lightmaps
+     * up. Uncapped, that second case would be the 5.18 megapixel pass. 1.5
+     * therefore stays, and if the second number ever crosses 25ms it is this
+     * line that comes down to 1.25 and not the test's threshold that goes up.
      *
      * It is the same number assets.ts switches textures on, and deliberately so:
      * above it the 2x lightmaps are fetched, below it the 1x, and a renderer
