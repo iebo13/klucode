@@ -1,4 +1,5 @@
 {
-  "$comment": "Gzipped bytes of every script out/de/index.html references directly, last captured after the crossroads section stopped booting a scene and became five pre-rendered stills. Moving this number is a deliberate act: say why in the commit message.",
-  "eagerGzipBytes": 152731
+  "$comment": "Gzipped bytes of every script out/de/index.html references directly. Moving this number is a deliberate act: say why in the commit message. Moved on 3 September 2026 from 152731 to 154736, when the crossroads section started mounting the live scene. Measured by building the branch base (a97e49d) beside this one and diffing the eager scripts one for one: the [lang] page chunk 3663 to 5481 bytes (+1818, the shell's mode probe and world switch, the live world's seven effects and pointer handlers, and marks.ts, which both worlds now share and which used to be inline in index.tsx), webpack's runtime manifest 1699 to 1852 (+153, learning about the two chunks the page now imports dynamically), and +29 of module-id noise across the unchanged shared chunks. expectSceneChunk makes the deferred budget refuse a build where it found no three.js chunk and no scene chunk, because a budget that measures nothing is worse than no budget.",
+  "eagerGzipBytes": 154736,
+  "expectSceneChunk": true
 }

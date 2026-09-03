@@ -100,26 +100,41 @@ for (const shot of ORDER) {
 }
 console.log(`stills: ${kb(total)} in total`);
 
-// The poster: the strip is the band the four objects and their floor occupy,
-// the upright crop is the left half of the fan, where the landing page and
-// the dashboard stand. Both are fractions of the wide render.
+/**
+ * The poster's two pictures: the whole render, and the two monitors out of it.
+ *
+ * Measured by projecting each way's bounds through the poster camera, which
+ * is the map's camera in a 1600x1000 frame at a vertical field of 43.88
+ * degrees: on the K the website monitor occupies x 590 to 720 and y 92 to
+ * 220, the app's monitor and server x 972 to 1146 and y 60 to 233, the care
+ * rack and its cloud x 475 to 697 and y 767 to 1016, and the capacity desks
+ * x 1218 to 1504 and y 749 to 1119, which the render's own bottom edge
+ * already ends. The hub disc is at (642, 470).
+ *
+ * So the four of them together span y 60 to 1119, and no band shorter than
+ * the whole frame holds them: the fan's band from 0.2 to 0.716 of the height
+ * was cut for an arc of objects across the middle, and on the letter it lands
+ * on the hub and the strokes with not one object in it. The wide picture is
+ * therefore the render itself, which is what `sceneAlt` promises, four ways
+ * as a place.
+ *
+ * The upright crop keeps its 0.55 by 0.657 of the frame and moves to hold the
+ * two monitors whole, which is what `scenePhoneAlt` promises: from 0.27 of
+ * the width it runs x 432 to 1312, and from 0.02 of the height y 20 to 677,
+ * which contains both boxes above with room and reaches neither the cloud at
+ * 767 nor the desks at 749.
+ */
 const poster = path.join(POSTER, 'junction.png');
 if (!existsSync(poster)) throw new Error(`emit-stills: ${poster} is missing`);
 const pm = await sharp(poster).metadata();
 const strip = await sharp(poster)
-  .extract({
-    left: 0,
-    top: Math.round(pm.height * 0.2),
-    width: pm.width,
-    height: Math.round(pm.height * 0.516),
-  })
   .webp({ quality: 80 })
   .toFile(path.join(WEB, 'public', 'crossroads.webp'));
-console.log(`poster strip: ${strip.width}x${strip.height} ${kb(strip.size)}`);
+console.log(`poster wide: ${strip.width}x${strip.height} ${kb(strip.size)}`);
 const phone = await sharp(poster)
   .extract({
-    left: Math.round(pm.width * 0.05),
-    top: Math.round(pm.height * 0.13),
+    left: Math.round(pm.width * 0.27),
+    top: Math.round(pm.height * 0.02),
     width: Math.round(pm.width * 0.55),
     height: Math.round(pm.height * 0.657),
   })

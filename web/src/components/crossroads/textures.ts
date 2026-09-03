@@ -3,15 +3,22 @@ import type { SceneLabels } from './types';
 /**
  * The two mock interfaces, drawn on a 2D canvas.
  *
- * The site no longer imports this file: the homepage shows five pre-rendered
- * Blender stills, not a live scene, so nothing here ships to a visitor.
- * `tools/blender/capture-textures.mjs` compiles this module and calls
- * `drawLanding`, `drawDashboard` and `drawWorkScreen` on the built page (where
- * the site's own fonts are loaded) to produce the three PNGs
- * `tools/blender/crossroads.py` loads as screen textures when it renders the
- * stills. The drawing code stays here rather than moving into the capture
- * tool because it is still exercised by `tests/unit/crossroads-textures.spec.ts`,
- * which is what proves every word on a screen came from labels.ts.
+ * Drawn twice, from one file, which is the whole reason it is a file. The
+ * Blender pipeline compiles this module and calls `drawLanding`,
+ * `drawDashboard` and `drawWorkScreen` on the built page (where the site's own
+ * fonts are loaded) through `tools/blender/capture-textures.mjs`, to produce
+ * the three PNGs `tools/blender/crossroads.py` loads as screen textures when it
+ * renders the stills. And assets.ts calls the same three at runtime onto a
+ * canvas, so the live scene's screens are drawn in the reader's own language
+ * rather than in whichever one the bake was run with.
+ *
+ * It therefore ships, but only with the scene: assets.ts is imported by
+ * scene.ts and nothing above that seam imports either, so this arrives on the
+ * deferred chunk a browser fetches when it is about to draw a room, and never
+ * on the phone that is not.
+ *
+ * `tests/unit/crossroads-textures.spec.ts` hands these functions a recording
+ * stub, which is what proves every word on a screen came from labels.ts.
  */
 
 /**

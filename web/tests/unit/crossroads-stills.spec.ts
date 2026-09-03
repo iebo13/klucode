@@ -51,7 +51,31 @@ test('the junction names all four, and a close-up names only its own way', () =>
   }
 });
 
-test('at the junction the four labels stand left to right in the order of the rows', () => {
-  const xs = WAYS.map((way) => STILLS.junction.marks[way].x);
-  expect([...xs].sort((a, b) => a - b)).toEqual(xs);
+test('at the junction no two labels stand on top of each other', () => {
+  /**
+   * The property the chips need, and all of it.
+   *
+   * This used to assert the four anchors ran left to right in the order of
+   * the rows, which held on the fan because the fan was an arc across the
+   * frame. The floor plan is the mark's own K now, and from the map camera
+   * the far and near ends of the stem stand one above the other: measured on
+   * these stills the four run care, website, app, capacity across the screen,
+   * so an ordering test would fail on a scene that is perfectly readable.
+   *
+   * What actually matters is that two chips never land on the same spot. 60
+   * still pixels is a little over a chip's own height and comfortably under
+   * what the layouts give: the closest pair was 191 px on the fan stills and
+   * is 210 px on the K, website to app, both far side of the bar.
+   */
+  for (let a = 0; a < WAYS.length; a++) {
+    for (let b = a + 1; b < WAYS.length; b++) {
+      const p = STILLS.junction.marks[WAYS[a]!];
+      const q = STILLS.junction.marks[WAYS[b]!];
+      const apart = Math.hypot(p.x - q.x, p.y - q.y);
+      expect(
+        apart,
+        `${WAYS[a]} and ${WAYS[b]} stand ${Math.round(apart)} px apart`,
+      ).toBeGreaterThanOrEqual(60);
+    }
+  }
 });

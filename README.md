@@ -97,24 +97,60 @@ node tools/grade-portrait.mjs   # public/founder.webp, cropped and duotoned
 node tools/shoot-revento.mjs    # public/revento-*.webp, needs the app on :5173
 ```
 
-The crossroads section's five stills and its poster are a Blender pipeline
-instead, three scripts run from `web/` in order (see
-`docs/superpowers/specs/2026-09-02-crossroads-stills-design.md` section 3 for
-why they are pre-rendered rather than drawn live):
+The crossroads section is one Blender scene that leaves the file twice. On a
+laptop with WebGL it is drawn live, in three.js, on the KluCode K; where a
+browser cannot make a context it is five pre-rendered stills of the same place.
+Both come out of the same three scripts, run from `web/` in order. These are
+the stills and the poster:
 
 ```bash
 node tools/blender/capture-textures.mjs tools/blender/textures
 #   the three screen textures crossroads.py loads (needs a built, served site)
-blender -b -P tools/blender/crossroads.py -- --out tools/blender/renders --samples 128 --scale 2
+blender -b -P tools/blender/crossroads.py -- --out tools/blender/renders --samples 128 --scale 2 --shots junction,website,app,capacity,care
 blender -b -P tools/blender/crossroads.py -- --out tools/blender/poster --frame poster --samples 128
-#   the five free-frame stills and the wide poster frame, each with anchors.json
+#   the five free-frame stills and the wide poster frame, each with anchors.json, the K layout by default now
 node tools/blender/emit-stills.mjs --renders tools/blender/renders --poster tools/blender/poster
 #   public/crossroads/*.webp, public/crossroads*.webp, src/components/crossroads/stills.ts
 ```
 
-Both render directories are gitignored working output: what ships out of them
-is the WebP in `public/` and the anchors baked into `stills.ts`, and the emitter
-is the only thing that writes either.
+The same scene is also baked for the live version of the section, which is
+three more lines from `web/` and about half an hour of CPU:
+
+```bash
+blender -b -P tools/blender/crossroads.py -- --bake tools/blender/scene --bake-samples 128
+#   four lightmaps, the floor, four glTF bodies and scene.json, none of it committed
+node tools/blender/emit-scene.mjs --bake tools/blender/scene
+#   public/crossroads/scene/*, src/components/crossroads/scene-manifest.ts
+node tools/blender/viewer/serve.mjs & node tools/blender/viewer/shoot.mjs
+#   the six poses in a browser beside the Cycles renders, for judging the bake
+```
+
+Every render directory is gitignored working output: what ships out of them
+is the WebP and the glTF in `public/` and the numbers baked into `stills.ts`
+and `scene-manifest.ts`, and the emitters are the only things that write either.
+
+Looking at the section, and timing it, needs a built site on a server first
+(`npm run build`, then
+`python3 -m http.server 4173 --bind 127.0.0.1 --directory out &`):
+
+```bash
+node tools/shoot.mjs
+#   shots/*.png at 1024x736, 1440x900 and 1920x1080, and the boxes it measured
+#   --dark for the dark theme, --flight for the two frames between the stops,
+#   SHOOT_WORLD=stills for the fallback world on a browser that can draw
+node tools/fps.mjs
+#   the flight timed on this machine's graphics card, at pixel ratio 1 and 2
+CROSSROADS_GPU=1 npm run test:e2e -- --project=gpu
+#   the same measurement as a gate: mean under 17.5ms, 95th percentile under 25
+```
+
+The last two open a window on your desktop, and have to. Headless Chromium has
+no graphics card and draws WebGL through SwiftShader on the processor, where
+the flight measures a mean frame gap of 517.5ms against 8.3ms headed on this
+laptop, so a headless timing run would measure the processor and report it as
+the frame rate. That is why the `gpu` project does not exist unless
+`CROSSROADS_GPU` is set: `npm run test:e2e` on its own stays headless, silent
+and green in CI.
 
 ---
 
