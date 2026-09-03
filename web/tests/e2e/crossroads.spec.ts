@@ -37,8 +37,34 @@ const FADE = 800;
  * that finish in a second still finish in a second. What frame rate the scene
  * actually reaches is measured on a real GPU by Task 6's timing test.
  */
-test.beforeEach(() => {
+/**
+ * Which world the suite drives, and why CI drives only one of them.
+ *
+ * CROSSROADS_WORLD=stills refuses WebGL to every page before any of its own
+ * script runs, the way the stills tests below already do for themselves, and
+ * skips the tests that are about the live scene itself: its canvas, its
+ * frames, its objects under the pointer, its contexts. Everything else runs
+ * against the stills world, which decides, pins, snaps, rides, names and
+ * links exactly as the live one does, because the shell owns all of that and
+ * a world owns only its picture.
+ *
+ * CI sets it, because GitHub's runner cannot draw the scene at a speed a
+ * test can wait for. Measured on the 3 September runs: two cores, two
+ * workers, and SwiftShader drawing 1440x900 through the composer at about
+ * three seconds a frame, so every live-world test spent its 15 seconds at
+ * arrive() with four or five frames drawn and the section not yet revealed,
+ * while the same 51 passed here in five minutes. A wait long enough for that
+ * runner would be a suite of half an hour that measures the processor, which
+ * is the gpu project's argument again (see playwright.e2e.config.ts). So the
+ * live-world tests are a gate this machine runs, with `npm run test:e2e` and
+ * no variable, before anything is merged.
+ */
+const STILLS_ONLY = process.env.CROSSROADS_WORLD === 'stills';
+const NEEDS_LIVE = 'needs a machine that can draw the live scene: run without CROSSROADS_WORLD';
+
+test.beforeEach(async ({ page }) => {
   test.setTimeout(150_000);
+  if (STILLS_ONLY) await withoutWebGL(page);
 });
 
 /**
@@ -163,6 +189,7 @@ async function leaveStage(page: Page) {
 
 test.describe('the four ways are readable however the visitor arrives', () => {
   test('with the live scene', async ({ page }) => {
+    test.skip(STILLS_ONLY, NEEDS_LIVE);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
@@ -197,6 +224,7 @@ test.describe('the four ways are readable however the visitor arrives', () => {
   test('with a scene that will not load, which hands the section to the stills', async ({
     page,
   }) => {
+    test.skip(STILLS_ONLY, NEEDS_LIVE);
     // The one path scene.ts cannot be asked about from node: boot() reaches a
     // real WebGLRenderer before it awaits the place, so the failure has to be
     // provoked in a browser. Aborting one body is the honest version of a 404,
@@ -226,6 +254,7 @@ test.describe('the four ways are readable however the visitor arrives', () => {
   });
 
   test('with reduced motion, which is no longer a refusal', async ({ page }) => {
+    test.skip(STILLS_ONLY, NEEDS_LIVE);
     // It used to be one: the August scene answered a reduced-motion request by
     // not mounting, because the answer to "do not move things" is not to move
     // them. The scene answers it by standing still instead. It cuts between
@@ -349,6 +378,7 @@ for (const noWebGL of [false, true]) {
   test(`the view follows the pointer, and the keyboard is the same input (${noWebGL ? 'stills' : 'live'})`, async ({
     page,
   }) => {
+    test.skip(STILLS_ONLY && !noWebGL, NEEDS_LIVE);
     if (noWebGL) await withoutWebGL(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/de/');
@@ -430,6 +460,7 @@ test('the chips are live, and pointing at one leaves the camera alone', async ({
 });
 
 test('the objects are live, and are the same weak input as the chips', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // The half of the bond only a real scene has: the thing itself, under the
   // pointer, answering. The camera is asked what is at (x, y) and the row it
   // names lights, exactly as a chip's does.
@@ -470,6 +501,7 @@ test('the objects are live, and are the same weak input as the chips', async ({ 
 test('a reduced-motion switch mid-visit boots a scene that knows where the last one stood', async ({
   page,
 }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // The one thing that tears the place down and builds it again inside a
   // visit: `reduced` is a boot option, so a reader changing their system
   // setting gets a second scene. What must not happen is the section snapping
@@ -532,6 +564,7 @@ test('a reduced-motion switch mid-visit boots a scene that knows where the last 
 test('a reduced-motion flip while the scene is loading builds one scene, not two', async ({
   page,
 }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // The other half of the same switch, and the window is between the dynamic
   // import going out and boot() being called. A flip inside it tears the
   // effect down while the two chunks are still on the wire, so the run that
@@ -619,6 +652,7 @@ test('a reduced-motion flip while the scene is loading builds one scene, not two
 });
 
 test('a pointer leaving an object for the panel puts that row out', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // A coalesced pointer move can go from an object straight onto the copy
   // panel with no event in between. The panel branch used to return without
   // clearing the hint, so the object's row stayed lit beside the row the
@@ -652,6 +686,7 @@ test('a pointer leaving an object for the panel puts that row out', async ({ pag
 });
 
 test('a pointer the browser takes away puts the hand out', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // A finger on a wide tablet sends pointermove, and then pointercancel when
   // the browser takes the gesture over for a scroll. It never sends
   // pointerleave. Until the same handler heard both, the parallax, the cursor
@@ -748,6 +783,7 @@ for (const noWebGL of [false, true]) {
   test(`every object is named at itself, and no two names collide (${noWebGL ? 'stills' : 'live'})`, async ({
     page,
   }) => {
+    test.skip(STILLS_ONLY && !noWebGL, NEEDS_LIVE);
     // The bond a list beside a picture could not make: at the map all four
     // objects are on screen and none of them used to be named.
     //
@@ -801,8 +837,13 @@ test('the name at the object is read once, not twice', async ({ page }) => {
   await expect(page.locator(`${section} .crossroads-marks`)).toBeAttached();
 
   await expect(page.locator(`${section} .crossroads-marks`)).toHaveAttribute('aria-hidden', 'true');
-  // The canvas too: everything a reader can read or click is DOM.
-  await expect(page.locator(canvas)).toHaveAttribute('aria-hidden', 'true');
+  // The picture too: everything a reader can read or click is DOM. The canvas
+  // says so by its attribute, and the five stills by empty alt text inside a
+  // hidden stack (stills-world.tsx), which is why the heading count below is
+  // the assertion that holds in either world.
+  if ((await worldOf(page)) === 'live') {
+    await expect(page.locator(canvas)).toHaveAttribute('aria-hidden', 'true');
+  }
   // Once in the accessible tree, whatever the labels are drawing.
   await expect(
     page.getByRole('heading', { name: 'Website & Landingpage', exact: true }),
@@ -810,6 +851,7 @@ test('the name at the object is read once, not twice', async ({ page }) => {
 });
 
 test('the world is hidden until the section is looked at', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // The reveal is tied to the stage coming into view, not to the mount, which
   // happens four viewports before the reader arrives.
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -890,6 +932,7 @@ test('a laptop gets the ride too, and the panel rides the track to stay in view'
 });
 
 test('the canvas is the size of the stage after a resize, in both directions', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // The stage is a viewport tall for as long as there is a canvas in it, so
   // what changes its box is the window, and the buffer has to follow the box
   // and not the other way round. Until 3 September this test crossed the pin
@@ -959,6 +1002,7 @@ test('pinned, the track walks the four routes, a hover overrides, and the end re
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
+  const live = (await worldOf(page)) === 'live';
   await arrive(page);
   await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
   await expect(page.locator(`${section} .crossroads-stop`)).toHaveCount(5);
@@ -1008,11 +1052,14 @@ test('pinned, the track walks the four routes, a hover overrides, and the end re
     drawn.push(await frames());
   }
   // Every stop cost the camera frames, which is what tells a flight from five
-  // pictures: a crossfade would have drawn none of them.
-  for (let i = 1; i < drawn.length; i += 1) {
-    expect(drawn[i]!, `stop ${i} drew no frames (${drawn.join(', ')})`).toBeGreaterThan(
-      drawn[i - 1]!,
-    );
+  // pictures: a crossfade would have drawn none of them. The stills world has
+  // no counter to read, and the row and the stop above are what its walk is.
+  if (live) {
+    for (let i = 1; i < drawn.length; i += 1) {
+      expect(drawn[i]!, `stop ${i} drew no frames (${drawn.join(', ')})`).toBeGreaterThan(
+        drawn[i - 1]!,
+      );
+    }
   }
 
   // Where the panel fits, the ride moves nothing: at the last stop it stands
@@ -1101,6 +1148,7 @@ test('pinned, a scroll that ends past a stop settles back onto the stop', async 
 });
 
 test('a still page costs no frames, and a scroll gets them', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // The whole reason the loop parks. A section a reader has stopped looking at
   // is a section that costs a laptop's battery nothing, and the only way to
   // say that from outside is to watch the counter not move.
@@ -1130,6 +1178,7 @@ test('a still page costs no frames, and a scroll gets them', async ({ page }) =>
 });
 
 test('a lost context comes back without the reader touching anything', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // A browser takes the context away when it wants to: another tab asks for
   // one and the cap is reached, the machine sleeps, the driver resets. The
   // browser clears the drawing buffer on the way out and three.js builds
@@ -1185,6 +1234,7 @@ test('a lost context comes back without the reader touching anything', async ({ 
 });
 
 test('both themes paint the world in the section own ink', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
   // The scene is full bleed and the ink hero lands on its first pixel, so the
   // world's ground and the section's background have to be the same colour or
   // the page gets a hard line across it. three.js holds its own copy of that

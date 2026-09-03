@@ -110,8 +110,20 @@ jobs:
       # worst failure modes (a sticky stage painting over the section below, a
       # pinned track that never releases at its last stop, a label overlapping
       # another) are invisible to a typecheck and to every check-*.mjs script.
+      #
+      # In the stills world only. This runner has no graphics card and draws
+      # WebGL through SwiftShader on two cores, and on 3 September that was
+      # about three seconds a frame at 1440x900: every test about the live
+      # scene ran out its waits with four or five frames drawn, while the same
+      # suite passed on a laptop in five minutes. CROSSROADS_WORLD=stills
+      # refuses WebGL to every page and skips those tests, so what runs here
+      # is the section's shell (the pin, the track, the ride, the rows, the
+      # names) over the five renders, and the live scene is gated on a machine
+      # that can draw it, with a plain `npm run test:e2e` before a merge.
       - name: Browser tests
         run: npm run test:e2e
+        env:
+          CROSSROADS_WORLD: stills
 
       # The site is served from a subpath on GitHub Pages, which is where
       # static exports usually break — and the breakage is invisible in a

@@ -20,7 +20,10 @@ scene's frame rate actually is cannot be measured headless, because headless
 Chromium draws WebGL on the processor, so the timing test is opted into with
 `CROSSROADS_GPU=1 npm run test:e2e -- --project=gpu`, which opens a real
 window on a real graphics card. A plain `npm run test:e2e` stays headless and
-runs everything else.
+runs everything else, and it is the gate before a merge: CI runs the same
+suite with `CROSSROADS_WORLD=stills`, which refuses WebGL to every page and
+skips the tests about the live scene itself, because GitHub's runner draws
+the scene at about three seconds a frame and no test can wait for that.
 
 ```bash
 # from this directory (web/) — or from the repo root, whose package.json
@@ -157,6 +160,7 @@ scripts/
 tests/
   unit/                    the pure suite (test:unit): no browser, no build, fast enough to run on every save
   e2e/                     the browser suite (test:e2e), driven against the built export rather than a dev server
+                           CROSSROADS_WORLD=stills, which CI sets, refuses WebGL and skips the tests about the live scene itself
                            crossroads-flight.spec.ts is the frame-time measurement, headed, and exists only under CROSSROADS_GPU=1
 ```
 
