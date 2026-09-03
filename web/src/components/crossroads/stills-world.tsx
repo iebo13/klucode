@@ -42,8 +42,9 @@ import { nearestStop } from './track';
  *
  * The render's own 808x998 is the free region beside the panel at 1440x900
  * with the section standing at its own height, which is what it was framed
- * for. The pin makes the stage shorter than that, so at both pinned widths the
- * picture is letterboxed rather than exact.
+ * for. The pin makes the stage a viewport tall, and since 3 September every
+ * viewport with a world pins, so the picture is scaled to the stage rather
+ * than exact everywhere.
  */
 function fit(reserve: number, stageW: number, stageH: number) {
   const freeW = Math.max(0, stageW - reserve);

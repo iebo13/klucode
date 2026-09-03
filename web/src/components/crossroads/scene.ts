@@ -571,24 +571,24 @@ export async function boot(
     invalidate();
 
     /**
-     * Two ways to hear that the canvas has changed size, and both are needed.
+     * Two ways to hear that the canvas has changed size, and both are kept.
      *
-     * The observer is the one that matters, because the stage's box changes
-     * without the window changing at all. The web fonts landing reflow the
-     * panel and the rows, and an unpinned stage is exactly as tall as they
-     * make it. Pinning is the case with teeth: globals.css gives a pinned
-     * stage 100svh and an unpinned one the section's own height, which at 1440
-     * wide is 900 against 976. Worse, the window event and the flip are not
-     * even in step. The window listener runs during the browser's resize
-     * steps, which is BEFORE the media query change React learns the flip
-     * from, so on the notch that crosses the PIN floor it measures the stage
-     * the old rule was still sizing and no second event ever arrives to
-     * correct it.
+     * The observer reports the stage's own box, which is the thing the buffer
+     * has to match. Until 3 September it was the one that mattered: a stage
+     * under the pin floor was as tall as the panel and the rows made it, the
+     * web fonts landing reflowed both, and crossing the floor flipped the
+     * stage between the section's own height and 100svh with the window
+     * listener running BEFORE the media query change React learned the flip
+     * from, so it measured the old box and no second event arrived to correct
+     * it. A world now always brings the track, so the stage is a viewport tall
+     * whenever there is a canvas and today only the window changes its box.
+     * The observer stays because the element is the one that knows its box
+     * and watching it costs nothing.
      *
-     * The window listener stays as the reserve. A ResizeObserver reports the
-     * element's own box, so a change that leaves the box alone and moves what
-     * is drawn into it, a devicePixelRatio that changes when the window is
-     * dragged to another screen, is the window's to report and not the box's.
+     * The window listener stays as the reserve. A change that leaves the box
+     * alone and moves what is drawn into it, a devicePixelRatio that changes
+     * when the window is dragged to another screen, is the window's to report
+     * and not the box's.
      */
     const stageWatch = new ResizeObserver(resize);
     stageWatch.observe(host);

@@ -10,7 +10,7 @@ import type { Lang } from '@/lib/routes';
 import { LiveWorld } from './live-world';
 import type { Metrics } from './marks';
 import { StillsWorld } from './stills-world';
-import { BAND_SVH, nearestStop, scrollT } from './track';
+import { BAND_SVH, WAYS, nearestStop, scrollT } from './track';
 import type { ServiceKey, Way } from './types';
 
 /**
@@ -42,35 +42,14 @@ const inOrder = (ways: readonly Way[]): Way[] =>
  * it the panel would cover the picture, so there is no picture and the price
  * board carries the section on its own.
  *
- * There used to be a height half: `(min-height: 46rem)`, because the section
- * was a stage fixed at 100svh with the panel inside it, and on a 1366x768
- * laptop the panel was taller than the stage and clipped a price. Height is
- * PIN's question now, and it answers it differently: a short laptop gets a
- * world like any other, it just does not get the track.
+ * Width only, and it has been otherwise twice. There used to be a height half,
+ * `(min-height: 46rem)`, because the section was a stage fixed at 100svh with
+ * the panel inside it, and on a 1366x768 laptop the panel was taller than the
+ * stage and clipped a price. Then there was a second query, PIN, at `(min-height:
+ * 55rem)`, which gave a short viewport the world but not the track. It went
+ * on 3 September: see the note on `pinned` below for what took its place.
  */
 const ROOM = '(min-width: 64rem)';
-
-/**
- * The room the TRACK needs, on top of ROOM: a viewport tall enough for the
- * copy panel to stand inside a pinned stage, under the fixed header.
- *
- * Measured rather than chosen, and the arithmetic is the whole of it. At 1440
- * wide with the pinned paddings the German panel is 768px tall (English 740),
- * globals.css clears the header capsule with 5.5rem above it and leaves 1rem
- * below, so a pinned stage needs 768 + 88 + 16 = 872px. The smallest whole rem
- * that holds that is 55 (880px), which leaves 8px of slack for a copy change
- * to eat before anything is clipped.
- *
- * That pins 1440x900 and 1920x1080 and leaves 1536x864 and 1366x768 unpinned,
- * where the section is its own height and behaves exactly as it did before the
- * track: hover-driven, no stops, no scroll cost. Two earlier numbers were
- * wrong in the same way and are worth naming, because the mistake is easy to
- * repeat: 51rem was the panel with no room for anything around it, and 53rem
- * was the panel plus its paddings with no room for the header standing over
- * it. A floor that does not hold its own contents pins the one viewport that
- * cannot show them.
- */
-const PIN = '(min-width: 64rem) and (min-height: 55rem)';
 
 /**
  * Where the poster stops being a strip and becomes the upright crop.
@@ -108,8 +87,8 @@ type StopKey = 'junction' | ServiceKey;
  *
  * Once, and the cache is the point rather than a saving. A context is a
  * scarce resource: a browser caps how many one page may hold at a time and
- * drops the oldest when it is reached. worldFor() below runs on every ROOM,
- * PIN and STRIP change, which is every frame of a window drag, so probing
+ * drops the oldest when it is reached. worldFor() below runs on every ROOM
+ * and STRIP change, which is every frame of a window drag, so probing
  * each time would spend the whole allowance in a second and take the scene's
  * own context with it.
  *
@@ -194,7 +173,6 @@ export type WorldProps = {
   track: TrackRef;
   reduced: boolean;
   revealed: boolean;
-  pinned: boolean;
   metrics: RefObject<Metrics>;
   sectionRef: RefObject<HTMLElement | null>;
   stageRef: RefObject<HTMLDivElement | null>;
@@ -304,8 +282,6 @@ export function Crossroads({
    * them look at anything.
    */
   const [hinted, setHinted] = useState(-1);
-  /** Whether the track is running: ROOM and a viewport tall enough for PIN. */
-  const [pinned, setPinned] = useState(false);
   /** The way the track has scrolled to, or -1 for the junction. */
   const [scrollWayNow, setScrollWayNow] = useState(-1);
   /**
@@ -317,6 +293,29 @@ export function Crossroads({
   const [reduced, setReduced] = useState(false);
 
   const enhanced = world !== 'board';
+
+  /**
+   * Whether the track is running, which since 3 September is whenever a world
+   * is up. The name survives because globals.css and the browser suite speak
+   * of the pinned state, and it is a state of the stage rather than of the
+   * picture in it.
+   *
+   * There used to be a height floor here, `(min-height: 55rem)`, measured so
+   * that the pinned German panel, 768px tall at 1440 wide, stood under the
+   * 88px header clearance with 16px below it. It left 1536x864 and 1366x768
+   * unpinned, which is every laptop: a 1366x768 screen has about 650px of
+   * viewport once the browser's own chrome is off it, and a 1920x1080 at 125%
+   * is 1536 by about 740. So the section the flight was built for scrolled
+   * past like any other on the machines most readers own, and the owner's
+   * word on 3 September was that it must never do that. The floor went, and
+   * the panel rides the track instead: the scroll effect below publishes the
+   * track's position over its length as --crossroads-ride, and globals.css
+   * translates the panel up by its own overflow times that, from standing
+   * under the header at the map to standing on the bottom padding at the last
+   * stop. Where the panel fits, the overflow is negative and the ride moves
+   * nothing, so a tall viewport is exactly as it was.
+   */
+  const pinned = enhanced;
 
   // Sorted once, and everything downstream reads this: the scene's four
   // bodies, the rows, the labels and the numbering. The prop's own order is
@@ -355,31 +354,27 @@ export function Crossroads({
   /** Where the section is standing. It carries it as data-stop for both worlds. */
   const stop: StopKey = (aim >= 0 ? ORDER[aim] : undefined) ?? 'junction';
 
-  // Decided on the client and re-decided when ROOM, PIN or CALM flips, because
-  // rotating a tablet, dragging a window or changing a system setting crosses
-  // those lines in both directions. Watching the queries themselves rather
-  // than a second copy of them is the point: the two cannot be given
+  // Decided on the client and re-decided when ROOM, STRIP or CALM flips,
+  // because rotating a tablet, dragging a window or changing a system setting
+  // crosses those lines in both directions. Watching the queries themselves
+  // rather than a second copy of them is the point: the two cannot be given
   // different numbers.
   useEffect(() => {
     const room = window.matchMedia(ROOM);
-    const pin = window.matchMedia(PIN);
     const strip = window.matchMedia(STRIP);
     const calm = window.matchMedia(CALM);
     const decide = () => {
       const next = worldFor();
       setWorld(next === 'live' && sceneFailed.current ? 'stills' : next);
-      setPinned(next !== 'board' && pin.matches);
       setPhoneCrop(!strip.matches);
       setReduced(calm.matches);
     };
     decide();
     room.addEventListener('change', decide);
-    pin.addEventListener('change', decide);
     strip.addEventListener('change', decide);
     calm.addEventListener('change', decide);
     return () => {
       room.removeEventListener('change', decide);
-      pin.removeEventListener('change', decide);
       strip.removeEventListener('change', decide);
       calm.removeEventListener('change', decide);
     };
@@ -442,11 +437,10 @@ export function Crossroads({
     document.fonts?.ready.then(measure).catch(() => undefined);
     window.addEventListener('resize', measure, { passive: true });
     return () => window.removeEventListener('resize', measure);
-    // `pinned` is in here because pinning changes the stage from the section's
-    // own height to 100svh, `world` because the two worlds put different
-    // things in the stage, and `lang` and `ordered` because the names in the
-    // chips are what `half` and `tall` measure.
-  }, [enhanced, world, ordered, lang, pinned]);
+    // `world` is in here because the two worlds put different things in the
+    // stage, and `lang` and `ordered` because the names in the chips are what
+    // `half` and `tall` measure.
+  }, [enhanced, world, ordered, lang]);
 
   /**
    * The reveal: the world fades up, once, when the section first comes into
@@ -472,15 +466,16 @@ export function Crossroads({
   /**
    * The track's input. The section's top scrolls above the viewport's top by
    * `y`; where that falls along the flight selects the way. Read on scroll and
-   * on resize, passive, and only while pinned: unpinned, the track's position
-   * stays 0 and its way -1, and the section behaves as it did before the
-   * track, which is hover-driven and its own height.
+   * on resize, passive, and only while pinned: without a world the track's
+   * position stays 0 and its way -1, and the board is its own height.
    *
-   * Two things come out of one reading, and that is the whole reason `scrollT`
-   * exists: the row and the chips take the NEAREST STOP, which is a number
-   * that changes four times in the whole ride and belongs in React, and the
-   * camera takes the CONTINUOUS position, which changes on every notch and is
-   * published straight to the world. Read separately they could disagree about
+   * Three things come out of one reading, and that is the whole reason
+   * `scrollT` exists: the row and the chips take the NEAREST STOP, which is a
+   * number that changes four times in the whole ride and belongs in React,
+   * the camera takes the CONTINUOUS position, which changes on every notch and
+   * is published straight to the world, and the panel takes the same position
+   * over the track's length as a custom property, which globals.css turns
+   * into how far it has risen. Read separately they could disagree about
    * where the reader is standing.
    */
   useEffect(() => {
@@ -503,6 +498,12 @@ export function Crossroads({
       const t = scrollT(1 - section.getBoundingClientRect().top, band);
       setScrollWayNow(nearestStop(t) - 1);
       track.publish(t);
+      // The panel's ride, 0 at the map and 1 at the last stop. A style write on
+      // the section rather than a render, because it changes on every notch
+      // the way the camera does, and the arithmetic that turns it into pixels
+      // is CSS's: only the panel knows its own height. See the ride rule on
+      // .crossroads-copy in globals.css.
+      section.style.setProperty('--crossroads-ride', String(t / WAYS));
     };
     read();
     window.addEventListener('scroll', read, { passive: true });
@@ -510,6 +511,7 @@ export function Crossroads({
     return () => {
       window.removeEventListener('scroll', read);
       window.removeEventListener('resize', read);
+      section.style.removeProperty('--crossroads-ride');
     };
   }, [pinned, track]);
 
@@ -538,7 +540,6 @@ export function Crossroads({
     track,
     reduced,
     revealed,
-    pinned,
     metrics,
     sectionRef,
     stageRef,

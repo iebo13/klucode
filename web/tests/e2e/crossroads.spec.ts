@@ -823,38 +823,81 @@ test('the world is hidden until the section is looked at', async ({ page }) => {
   await expect(page.locator(section)).toHaveAttribute('data-revealed', 'true');
 });
 
-test('under the pin height the section is its own height and costs no scroll', async ({ page }) => {
-  await page.setViewportSize({ width: 1366, height: 640 });
-  await page.goto('/de/');
-  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'false');
-  const seen = await page.evaluate(() => {
-    const sec = document.querySelector('#services') as HTMLElement;
-    const stage = document.querySelector('.crossroads-stage') as HTMLElement;
-    return {
-      height: sec.offsetHeight / window.innerHeight,
-      position: getComputedStyle(stage).position,
-      stops: document.querySelectorAll('#services .crossroads-stop').length,
-    };
-  });
-  // Measured: the section is 972px here, which is 1.52 of this short viewport
-  // and the height of the panel plus its padding. Pinned it would be 2.5
-  // viewports of track, so the bound is what tells the two apart.
-  expect(seen.height, 'the section is a track rather than its own height').toBeLessThan(2);
-  expect(seen.position).not.toBe('sticky');
-  expect(seen.stops).toBe(0);
-});
-
-test('the canvas is the size of the stage after the pin flips, with no second window event', async ({
+test('a laptop gets the ride too, and the panel rides the track to stay in view', async ({
   page,
 }) => {
-  // The stage's box changes without a window resize behind it. Crossing the
-  // PIN floor is the case with teeth: globals.css makes a pinned stage 100svh
-  // and an unpinned one the section's own height, and the two are hundreds of
-  // pixels apart. The window listener runs during the browser's resize steps,
-  // which is before the media query change React learns the flip from, so it
-  // measures the stage the OLD rule was sizing and there is no second event
-  // afterwards to correct it. What the reader gets is one frame's worth of
-  // picture stretched over a taller box until they resize the window again.
+  // 1366x640 is a 1366x768 laptop once the browser's own chrome is off the
+  // screen, and 1366x768 is the most common laptop screen there is. Measured:
+  // the pinned German panel is 768px tall and stands under 88px of header
+  // clearance with 16px below it, so it wants an 872px viewport and this one
+  // is 232px short. Until 3 September a height floor left every such viewport
+  // unpinned, and the section scrolled past like any other on the machines
+  // most readers own. The owner's word was that it must never do that.
+  await page.setViewportSize({ width: 1366, height: 640 });
+  await page.goto('/de/');
+  await arrive(page);
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+  await expect(page.locator(`${section} .crossroads-stop`)).toHaveCount(5);
+
+  const top = await page.evaluate(() => {
+    const sec = document.querySelector('#services') as HTMLElement;
+    return sec.getBoundingClientRect().top + window.scrollY;
+  });
+  const band = 640 * 0.3;
+  const panel = () =>
+    page.evaluate(() => {
+      const box = document.querySelector('.crossroads-copy')!.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom };
+    });
+  const scrollTo = (y: number) =>
+    page.evaluate((to) => window.scrollTo({ top: to, behavior: 'instant' }), y);
+
+  // At the head of the track the panel stands under the header exactly as it
+  // does on a tall viewport, and its foot is below the fold. Two pixels of
+  // tolerance: the scroll lands two pixels into the track and the snap may or
+  // may not pull it back.
+  await scrollTo(Math.ceil(top) + 2);
+  await settled(page);
+  const head = await panel();
+  expect(Math.abs(head.top - 88), 'the panel does not stand under the header').toBeLessThanOrEqual(
+    3,
+  );
+  expect(head.bottom, 'the panel fits, so there is nothing to test here').toBeGreaterThan(640);
+
+  // At the last stop the stage has held for the whole ride, the camera stands
+  // at the last way, and the panel has risen by exactly its overflow: its foot
+  // stands on the bottom padding and the last row is in view.
+  await scrollTo(Math.ceil(top) + 4 * band + 2);
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'care');
+  await settled(page);
+  const stageTop = await page.evaluate(
+    () => document.querySelector('.crossroads-stage')!.getBoundingClientRect().top,
+  );
+  expect(Math.abs(stageTop), 'the stage did not hold at the last stop').toBeLessThan(3);
+  const end = await panel();
+  expect(Math.abs(end.bottom - (640 - 16)), 'the panel foot is not on the bottom padding').toBeLessThanOrEqual(3); // prettier-ignore
+  const last = await page.locator(row('care')).boundingBox();
+  expect(last, 'the last row has no box').not.toBeNull();
+  expect(last!.y + last!.height, 'the last row is below the fold').toBeLessThanOrEqual(640 - 16);
+
+  // Halfway along the track the panel is halfway up: the ride is the track's
+  // position over its length, and nothing else.
+  await scrollTo(Math.ceil(top) + 2 * band + 2);
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'app');
+  await settled(page);
+  const mid = await panel();
+  expect(Math.abs(mid.top - (head.top + end.top) / 2), 'the panel is not halfway').toBeLessThanOrEqual(3); // prettier-ignore
+});
+
+test('the canvas is the size of the stage after a resize, in both directions', async ({ page }) => {
+  // The stage is a viewport tall for as long as there is a canvas in it, so
+  // what changes its box is the window, and the buffer has to follow the box
+  // and not the other way round. Until 3 September this test crossed the pin
+  // floor instead, because that flipped the stage between 100svh and the
+  // section's own height with no window event in step with it. The floor is
+  // gone and every world brings the track, so a resize is the case that is
+  // left, and it is checked shrinking and growing because a buffer that only
+  // ever grew would pass the first half and stretch on the second.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
   await arrive(page);
@@ -891,22 +934,24 @@ test('the canvas is the size of the stage after the pin flips, with no second wi
 
   fits(await sizing(), 'pinned');
 
-  // 860 is under the 55rem pin floor and 1440 is over the 64rem room floor, so
-  // this unpins the section and keeps the world. Measured here: the stage goes
-  // from 900 tall to 976, which is the panel and the layout's own padding.
-  await page.setViewportSize({ width: 1440, height: 860 });
-  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'false');
+  // 700 is a laptop's worth of viewport under the same width, and the section
+  // stays pinned there since 3 September: the stage is 700 tall and the buffer
+  // has to be too.
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
   await settled(page);
-  const unpinned = await sizing();
-  expect(unpinned.boxH, 'the unpinned stage is no taller than the viewport').toBeGreaterThan(860);
-  fits(unpinned, 'unpinned');
+  const shorter = await sizing();
+  expect(shorter.boxH, 'the stage is not a viewport tall').toBe(700);
+  fits(shorter, 'shorter');
 
-  // And back, because the flip has to be followed in both directions: pinned
-  // again the stage is a viewport tall and the canvas has to come back down.
+  // And back, because the change has to be followed in both directions: the
+  // stage is 900 again and the canvas has to grow with it.
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
   await settled(page);
-  fits(await sizing(), 'pinned again');
+  const taller = await sizing();
+  expect(taller.boxH, 'the stage is not a viewport tall').toBe(900);
+  fits(taller, 'taller again');
 });
 
 test('pinned, the track walks the four routes, a hover overrides, and the end releases', async ({
@@ -969,6 +1014,17 @@ test('pinned, the track walks the four routes, a hover overrides, and the end re
       drawn[i - 1]!,
     );
   }
+
+  // Where the panel fits, the ride moves nothing: at the last stop it stands
+  // where it stood at the map. The laptop test below is the one where it
+  // rises, and this is the assertion that keeps the ride from being applied
+  // to a panel that has nowhere to go.
+  const atEnd = await page.evaluate(
+    () => document.querySelector('.crossroads-copy')!.getBoundingClientRect().top,
+  );
+  expect(Math.abs(atEnd - panel.top), 'the panel moved on a viewport it fits').toBeLessThanOrEqual(
+    2,
+  );
 
   // A hover overrides the track, and letting go returns to the track's row.
   await page.hover(row('website'));

@@ -607,8 +607,9 @@
 
    Everything else here is the panel making room for that: its own padding, the
    rows' and the two top margins under them all come down, which is what buys
-   the header its band without pushing the pin floor up a size. See the PIN
-   comment in index.tsx for the panel this leaves and the floor it sets. */
+   the header its band without pushing the panel's foot further down the
+   viewport. Where the foot is still below the fold, the panel rides: see the
+   transform on .crossroads-copy below. */
 [data-pinned='true'] .crossroads-layout {
   padding-top: 5.5rem;
   padding-bottom: 1rem;
@@ -620,6 +621,33 @@
      The two are one decision written twice: see the note on the unpinned rule
      above, where the bleed is 1.5rem because the padding is. */
   margin-left: -1.25rem;
+  /* The ride, on the owner's word of 3 September that the section must never
+     scroll past without the flight.
+
+     Standing under the header clearance with 1rem below it, the German panel
+     wants 768 + 88 + 16 = 872px of viewport, the English one 844. The first
+     build answered a shorter viewport with a height floor at 55rem, and the
+     floor unpinned every laptop: a 1366x768 screen is about 650px of viewport
+     once the browser's own chrome is off it, a 1920x1080 at 125% is 1536 by
+     about 740, and on both the section the flight was built for scrolled past
+     like any other. So the panel moves instead of the floor.
+
+     Its overflow is what it is taller than the viewport less the two paddings,
+     100% being its own height, and the translate is that overflow times
+     --crossroads-ride, which index.tsx sets to the track's position over its
+     length: 0 at the map, 1 at the last stop. min() clamps a negative overflow
+     to none, so where the panel fits, as it does at 1440x900, the ride moves
+     nothing and the panel stands exactly where it stood. Where it does not,
+     it stands under the header at the map with its foot below the fold and
+     rises with the flight until its foot stands on the bottom padding at the
+     last stop, so the last row and the link are in view exactly when the
+     camera is standing at the last way. Measured at 1366x640: 232px, which is
+     58px a stop.
+
+     No transition, on purpose. It is tied to the scroll the way the camera is,
+     and a reader who asked for less motion gets a panel that moves only when
+     their own hand does. */
+  transform: translateY(calc(min(0px, 100svh - 5.5rem - 100% - 1rem) * var(--crossroads-ride, 0)));
 }
 
 [data-pinned='true'] .crossroads-way {

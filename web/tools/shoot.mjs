@@ -20,9 +20,10 @@
  * `--dark` and a `stills-` prefix under SHOOT_WORLD=stills. The directory is
  * gitignored.
  *
- * The panel line it prints is the one the PIN query in index.tsx is set from:
- * pinned, the whole panel has to stand inside 100svh, so re-run this after a
- * copy change to the rows and check the number against the query.
+ * The panel line it prints is what the ride in globals.css has to absorb:
+ * pinned, the panel stands inside 100svh where it fits and rides the track
+ * where it does not, so re-run this after a copy change to the rows to see
+ * what each viewport is left with.
  */
 import { mkdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
