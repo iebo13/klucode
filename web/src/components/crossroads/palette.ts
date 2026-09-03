@@ -1,13 +1,18 @@
 /**
- * The scene's colours, as the numbers three.js wants.
+ * The scene's colours, as plain numeric literals.
+ *
+ * Not imported by the site any more: the homepage shows five pre-rendered
+ * Blender stills, so this file ships nothing. It stays as the record
+ * `web/scripts/check-scene-palette.mjs` checks against the tokens, and as the
+ * reference for `tools/blender/crossroads.py`'s own copy of these colours,
+ * which the gate does not yet check (a follow-up, not in this pass).
  *
  * Hex literals rather than an import of tokens.json: a JSON module imports as
  * one object and does not tree-shake per key, so importing it would ship the
- * whole token file, oklch metadata and all, to every visitor.
- *
- * The trailing comment on each line is load-bearing.
- * web/scripts/check-scene-palette.mjs parses it and fails the build the moment
- * a number stops matching the token it names.
+ * whole token file, oklch metadata and all, to every visitor. The trailing
+ * comment on each line is load-bearing regardless of who reads the file:
+ * check-scene-palette.mjs parses it and fails the build the moment a number
+ * stops matching the token it names.
  */
 export const PALETTE = {
   background: 0x1c201c, // stone.950
@@ -31,7 +36,7 @@ export const PALETTE = {
   metalDark: 0x5c605c, // stone.700
   // Scene furniture, and the reason color.scene exists. A desk, a person, a
   // cloud and a status lamp are not brand roles, so they are deliberately not
-  // emitted as CSS variables: nothing outside this canvas can reach them.
+  // emitted as CSS variables: nothing outside this file can reach them.
   wood: 0x8a6440, // scene.wood
   people: 0x46708f, // scene.people
   /**
@@ -39,7 +44,7 @@ export const PALETTE = {
    * a swatch: what matters is what it renders as.
    *
    * The cloud sits at y 4.85 and the key light hangs at y 7, so of everything
-   * on the floor it is the object closest to the lamp. Sampled off the canvas,
+   * on the floor it is the object closest to the lamp. Sampled off the render,
    * #CFDCEA came back #C9C7BF: the brightest thing in the scene by some way,
    * brighter than the dashboard two lanes over, which is the one surface here
    * that is supposed to pull the eye. It also arrived warm, the key having

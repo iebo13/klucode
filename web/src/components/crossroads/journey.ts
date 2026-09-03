@@ -1,131 +1,185 @@
-import type { Shot } from './types';
+import type { Vector3 } from 'three';
+
+import type { CameraState } from './types';
 
 /**
- * The choreography, with no three.js in it.
+ * The choreography, with no renderer in it.
  *
- * This file replaces progress.ts, which mapped a scroll position to a camera
- * position along a track of six stops. The track is gone. The section is an
- * ordinary height, the camera idles at the junction, and it glides to a way's
- * close-up when that way's row is hovered or focused. So what is left to
- * decide is small: where the camera is partway through a glide, and how far
- * each object has built since the section came into view. Both are functions
- * of time rather than of scroll, and both are pure, which is why they can be
- * tested with no GPU, no canvas and no browser.
- *
- * Why the pin went, in one paragraph, since this file is where it used to be
- * argued for. Scroll-driven, the four stops were four instants in 1,800px of
- * travel and the rest was transit, in which the open row and the framed
- * object disagreed for two thirds of every move. The enhanced state showed
- * ONE detail at a time where the phone fallback showed all four. The mount
- * floor of 1024x736 excluded every phone, every portrait tablet and the most
- * common Windows laptop. And it cost eighteen wheel notches to read what
- * fits on one screen. NN/g's strongest warning about scroll-jacking is
- * scroll-jacking combined with text the reader has to read, and the section
- * was exactly that, on the section with the prices. Hover-driven, the reader
- * spends no scroll, the details are always open, keyboard focus is the same
- * input as the pointer, and the craft survives.
+ * Two kinds of camera motion and one hand. A GLIDE is what a hovered or
+ * focused row asks for: smoothstep from wherever the camera is to the way's
+ * pose over GLIDE_MS, and back to the track's own position when the row is
+ * let go. A SETTLE is how the camera follows the track between glides: an
+ * exponential ease towards the flight's position at the current scroll, so a
+ * wheel notch reads as travel rather than as a cut. The hand is a parallax
+ * offset in the camera's own screen plane and a light on the floor, both
+ * eased with the same settle. Every function here is pure or writes only
+ * into the object it is handed, which is why the unit suite needs no GPU.
  */
 
 export const clamp01 = (t: number): number => (t < 0 ? 0 : t > 1 ? 1 : t);
 
-/** Smoothstep. Eases both ends of every camera move. */
+/** Smoothstep. Eases both ends of every glide. */
 export const smooth = (t: number): number => t * t * (3 - 2 * t);
 
 /**
- * How long a glide between two shots takes, in milliseconds.
- *
- * Long enough that the camera reads as travelling through a place rather
- * than cutting, short enough that a pointer sweeping down four rows arrives
- * before the reader's eye has moved on. Measured against the 40svh a move used
- * to take at a normal wheel pace, which was about this.
+ * How long a glide between two poses takes. Long enough that the camera
+ * reads as travelling through a place rather than cutting, short enough that
+ * a pointer sweeping down four rows arrives before the eye has moved on. The
+ * August scene measured it against the 40svh a move used to take at a
+ * normal wheel pace, which was about this.
  */
 export const GLIDE_MS = 720;
 
-/** How long one object takes to build, from drawing to solid. */
-export const BUILD_MS = 900;
-
-/** How much later each successive object starts building than the one before. */
-export const BUILD_STAGGER_MS = 160;
+/** Time constant of every pointer-driven ease, in milliseconds. */
+export const SETTLE_MS = 140;
 
 /**
- * The shot for a way, or the junction for anything that is not one.
- *
- * Found by focus rather than by index, so this never assumes way k's shot
- * sits at position k + 1 in the array. A way this scene does not have gets
- * the junction, which is the honest answer to it: nothing framed that is not
- * there.
+ * Time constant of the camera following the track. Shorter than the hand's:
+ * the scroll is the reader's own motion and a camera that lags it by more
+ * than a few frames feels like it is being dragged.
  */
-export function shotFor(way: number, shots: readonly Shot[]): Shot {
-  const own = shots.find((s) => s.focus === way);
-  if (own !== undefined) return own;
-  const junction = shots.find((s) => s.focus < 0);
-  if (junction === undefined) {
-    throw new Error(`crossroads: no junction shot among ${shots.length} shots`);
-  }
-  return junction;
-}
+export const SCROLL_TAU_MS = 90;
+
+/** Time constant of the cursor light going out. Three of these is 95% gone. */
+export const LIGHT_FADE_MS = 100;
+
+/**
+ * How far the camera may stand from its pose in its own screen plane, in
+ * world units, with the pointer at the edge of the stage. Half a unit at a
+ * standoff of nine to thirteen is about two and a half degrees of pan:
+ * enough to move the floor behind the subject, not enough to move the
+ * subject out of frame, which crossroads-framing.spec.ts holds.
+ */
+export const PARALLAX_X = 0.5;
+export const PARALLAX_Y = 0.25;
+
+/** Closer than this to its target, an eased value has arrived. */
+export const SETTLED = 1e-3;
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
-const lerp3 = (
-  a: readonly [number, number, number],
-  b: readonly [number, number, number],
-  t: number,
-): [number, number, number] => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+/** `from` into `out`, every field. */
+export function copyState(from: CameraState, out: CameraState): CameraState {
+  out.pos.copy(from.pos);
+  out.look.copy(from.look);
+  out.fitH = from.fitH;
+  out.fitV = from.fitV;
+  out.fstop = from.fstop;
+  return out;
+}
 
-/**
- * The shot part way between two shots. Position, look point and both
- * half-angles all interpolate, so a move between two shots with different
- * lenses is one continuous change rather than a cut. `focus` is the
- * destination's throughout: the label at the object hands over when the
- * glide starts, and the camera arrives at the thing already named.
- */
-export function blend(from: Shot, to: Shot, t: number): Shot {
-  return {
-    focus: to.focus,
-    pos: lerp3(from.pos, to.pos, t),
-    look: lerp3(from.look, to.look, t),
-    fitH: lerp(from.fitH, to.fitH, t),
-    fitV: lerp(from.fitV, to.fitV, t),
-  };
+/** `from` towards `to` by `t`, into `out`. `out` may be `from`. */
+export function blend(
+  from: CameraState,
+  to: CameraState,
+  t: number,
+  out: CameraState,
+): CameraState {
+  out.pos.lerpVectors(from.pos, to.pos, t);
+  out.look.lerpVectors(from.look, to.look, t);
+  out.fitH = lerp(from.fitH, to.fitH, t);
+  out.fitV = lerp(from.fitV, to.fitV, t);
+  out.fstop = lerp(from.fstop, to.fstop, t);
+  return out;
 }
 
 /**
- * Where the camera is at `now`, on a glide that left `from` for `to` at
- * `startedAt`. `done` once it has arrived, which is what tells the loop it
- * can park.
+ * Where the camera is at `now` on a glide that left `from` for `to` at
+ * `startedAt`, into `out`. True once it has arrived, which is what tells the
+ * loop it can park. `to` may move while the glide runs (the track scrolls
+ * under a returning camera): the glide is towards wherever `to` is now.
  */
 export function glideAt(
-  from: Shot,
-  to: Shot,
+  from: CameraState,
+  to: CameraState,
   startedAt: number,
   now: number,
+  out: CameraState,
   duration: number = GLIDE_MS,
-): { shot: Shot; done: boolean } {
+): boolean {
   const raw = duration <= 0 ? 1 : clamp01((now - startedAt) / duration);
-  return { shot: blend(from, to, smooth(raw)), done: raw >= 1 };
+  blend(from, to, smooth(raw), out);
+  return raw >= 1;
 }
 
 /**
- * How solid way `lane` is at `now`, 0 to 1, given the reveal began at
- * `revealedAt`. Way 0 starts at once and each later way `stagger` after the
- * one before it, so the four resolve in the order they stand, left to right.
+ * One step of an exponential ease from `current` towards `target`, `dtMs`
+ * after the last one. The residual after any total time is exp(-time / tau)
+ * however the time was sliced into frames, so a parked loop that wakes up
+ * late does not jump and a fast loop does not crawl.
  */
-export function buildAt(
-  now: number,
-  revealedAt: number,
-  lane: number,
-  duration: number = BUILD_MS,
-  stagger: number = BUILD_STAGGER_MS,
-): number {
-  return clamp01((now - revealedAt - lane * stagger) / duration);
+export function settle(current: number, target: number, dtMs: number, tauMs = SETTLE_MS): number {
+  if (dtMs <= 0) return current;
+  return current + (target - current) * (1 - Math.exp(-dtMs / tauMs));
 }
 
-/** When the last of `ways` objects has finished building, relative to the reveal. */
-export function buildDone(
-  ways: number,
-  duration: number = BUILD_MS,
-  stagger: number = BUILD_STAGGER_MS,
-): number {
-  return Math.max(0, ways - 1) * stagger + duration;
+export const isSettled = (current: number, target: number): boolean =>
+  Math.abs(target - current) < SETTLED;
+
+/** `state` eased towards `target` in place, every field. */
+export function settleState(
+  state: CameraState,
+  target: CameraState,
+  dtMs: number,
+  tauMs: number,
+): void {
+  const k = dtMs <= 0 ? 0 : 1 - Math.exp(-dtMs / tauMs);
+  state.pos.lerp(target.pos, k);
+  state.look.lerp(target.look, k);
+  state.fitH = lerp(state.fitH, target.fitH, k);
+  state.fitV = lerp(state.fitV, target.fitV, k);
+  state.fstop = lerp(state.fstop, target.fstop, k);
+}
+
+export const stateSettled = (state: CameraState, target: CameraState): boolean =>
+  state.pos.distanceToSquared(target.pos) < SETTLED * SETTLED &&
+  state.look.distanceToSquared(target.look) < SETTLED * SETTLED &&
+  isSettled(state.fitH, target.fitH) &&
+  isSettled(state.fitV, target.fitV) &&
+  isSettled(state.fstop, target.fstop);
+
+const clampUnit = (v: number): number => (v < -1 ? -1 : v > 1 ? 1 : v);
+
+/**
+ * Where the camera stands off its pose for a pointer at (px, py), each in
+ * [-1, 1] across the stage. Screen y grows downward and the camera's up does
+ * not, which is the minus sign.
+ */
+export function parallaxOf(px: number, py: number): [number, number] {
+  return [clampUnit(px) * PARALLAX_X + 0, -clampUnit(py) * PARALLAX_Y + 0];
+}
+
+/**
+ * `pos` moved `dx` to the camera's right and `dy` up, in the screen plane of
+ * a camera at `pos` looking at `look`, into `out`. The subject stays framed
+ * and everything at another depth moves behind it, which is what parallax is.
+ */
+export function offsetPosition(
+  pos: Vector3,
+  look: Vector3,
+  dx: number,
+  dy: number,
+  out: Vector3,
+): Vector3 {
+  out.copy(pos);
+  if (dx === 0 && dy === 0) return out;
+  let fx = look.x - pos.x;
+  let fy = look.y - pos.y;
+  let fz = look.z - pos.z;
+  const fl = Math.hypot(fx, fy, fz) || 1;
+  fx /= fl;
+  fy /= fl;
+  fz /= fl;
+  // right = forward x world up, which for a camera looking down -z is +x.
+  let rx = -fz;
+  let rz = fx;
+  const rl = Math.hypot(rx, rz) || 1;
+  rx /= rl;
+  rz /= rl;
+  // up = right x forward.
+  const ux = -rz * fy;
+  const uy = rz * fx - rx * fz;
+  const uz = rx * fy;
+  out.set(pos.x + rx * dx + ux * dy, pos.y + uy * dy, pos.z + rz * dx + uz * dy);
+  return out;
 }

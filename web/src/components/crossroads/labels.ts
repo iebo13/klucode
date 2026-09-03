@@ -6,6 +6,19 @@
  * localise.
  *
  * House copy rule applies here as everywhere: no em dash, no semicolon.
+ *
+ * These strings are drawn twice, in two places, and both are on purpose. The
+ * Blender pipeline draws them offline onto the screen textures the stills bake
+ * in: `tools/blender/capture-textures.mjs` reads this module (compiled with
+ * `tsc`) to draw them, and `tools/blender/crossroads.py` reads the PNGs it
+ * produces. The live scene draws them again at runtime, per language, which is
+ * how the English page gets English screens rather than the German ones the
+ * bake happened to be run with.
+ *
+ * So this module DOES ship, and it ships the way the renderer does: fetched
+ * with `./scene` in one Promise.all by live-world.tsx, deferred, only where a
+ * scene mounts. A static import would put both languages' mock copy into First
+ * Load JS for every visitor, including every phone, which never mounts one.
  */
 import type { Lang } from '@/lib/routes';
 

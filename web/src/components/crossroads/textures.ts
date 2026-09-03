@@ -1,6 +1,27 @@
 import type { SceneLabels } from './types';
 
 /**
+ * The two mock interfaces, drawn on a 2D canvas.
+ *
+ * Drawn twice, from one file, which is the whole reason it is a file. The
+ * Blender pipeline compiles this module and calls `drawLanding`,
+ * `drawDashboard` and `drawWorkScreen` on the built page (where the site's own
+ * fonts are loaded) through `tools/blender/capture-textures.mjs`, to produce
+ * the three PNGs `tools/blender/crossroads.py` loads as screen textures when it
+ * renders the stills. And assets.ts calls the same three at runtime onto a
+ * canvas, so the live scene's screens are drawn in the reader's own language
+ * rather than in whichever one the bake was run with.
+ *
+ * It therefore ships, but only with the scene: assets.ts is imported by
+ * scene.ts and nothing above that seam imports either, so this arrives on the
+ * deferred chunk a browser fetches when it is about to draw a room, and never
+ * on the phone that is not.
+ *
+ * `tests/unit/crossroads-textures.spec.ts` hands these functions a recording
+ * stub, which is what proves every word on a screen came from labels.ts.
+ */
+
+/**
  * The slice of a 2D canvas context the builders use.
  *
  * Declared here rather than taken from the DOM type so the unit suite can hand
@@ -66,7 +87,12 @@ export function drawLanding(g: Ctx, l: SceneLabels['landing']) {
   g.fillText(l.brand, 56, 43);
   g.fillStyle = '#6a706a';
   g.font = `400 24px ${BODY}`;
-  l.nav.forEach((t, i) => g.fillText(t, 720 + i * 160, 43));
+  // Right-aligned, 160px apart, ending 36px short of the pill. Laid out from
+  // the left at fixed steps, the third word ran under the pill: "Über uns"
+  // starts at 1040 and is 110px wide, and the pill starts at 1120.
+  g.textAlign = 'right';
+  l.nav.forEach((t, i) => g.fillText(t, 1084 - (l.nav.length - 1 - i) * 160, 43));
+  g.textAlign = 'left';
   g.fillStyle = '#356c5b';
   roundRect(g, 1120, 24, 116, 40, 20);
   g.fill();

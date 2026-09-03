@@ -1,8 +1,32 @@
 // The key union is owned by the content files, which is why it is imported
 // rather than declared again here. Two copies of a closed set drift.
+import type { Vector3 } from 'three';
+
 import type { ServiceKey } from '@/content/types';
 
 export type { ServiceKey };
+
+/** A point or a direction as the pipeline writes it into JSON and the manifest. */
+export type Vec3 = readonly [number, number, number];
+
+/**
+ * One camera pose as the pipeline exports it: where it stands, what it looks
+ * at, the half-angles it must cover (see fovFor in camera.ts) and its
+ * aperture as an f-stop, which post.ts turns into a depth of field.
+ */
+export type Pose = { pos: Vec3; look: Vec3; fitH: number; fitV: number; fstop: number };
+
+/** The camera as the runtime moves it: the same five things with live vectors, rewritten in place every frame. */
+export type CameraState = {
+  pos: Vector3;
+  look: Vector3;
+  fitH: number;
+  fitV: number;
+  fstop: number;
+};
+
+/** Where one way's name belongs on screen, in CSS pixels inside the view. `front` is false behind the lens. */
+export type Mark = { x: number; y: number; front: boolean };
 
 /** One way, as the scene needs it. A projection of Service, not a copy of it. */
 export type Way = {
@@ -11,133 +35,6 @@ export type Way = {
   price: string;
   priceNote: string;
   forWhom: string;
-};
-
-/**
- * One camera position: the junction, or the close-up of one way.
- *
- * It was a Stop, with an `at` saying where on the scroll track it sat. The
- * track is gone: the camera glides from wherever it is to whichever shot the
- * reader's pointer or keyboard has asked for, and nothing about a shot says
- * when. See journey.ts for the glide.
- *
- * Positions are number tuples rather than Vector3 on purpose: it keeps the
- * choreography out of three.js, which is what lets the whole of journey.ts be
- * unit-tested with no GPU, no canvas and no browser.
- */
-export type Shot = {
-  /** Index of the way this shot looks at, or -1 for the junction. */
-  focus: number;
-  pos: [number, number, number];
-  look: [number, number, number];
-  /**
-   * The half-angles this shot has to cover, in degrees, horizontally and
-   * vertically. Not a field of view: the field of view is worked out from
-   * these and the aspect the canvas actually has, in scene.ts.
-   *
-   * A PerspectiveCamera's fov is VERTICAL, so one number gives a narrow column
-   * far less horizontal room than a wide one, and this canvas ranges from
-   * 470px wide to 980px. A single fov either cropped the office in half on a
-   * laptop or, set wide enough not to, pushed every object so far away that the
-   * dashboard could not be read on any screen. Two half-angles say what the
-   * shot must contain and let each viewport spend its own aspect on satisfying
-   * both.
-   */
-  fitH: number;
-  fitV: number;
-};
-
-/**
- * Where one way's name belongs on screen, in CSS pixels inside the view.
- *
- * The bond between a row and the thing it describes. Before this the number,
- * the name and the price sat 200px to the right of the object in a list that
- * brightened one line at a time, and in the establishing shot all four objects
- * were on screen with none of them named.
- *
- * Pixels rather than a Vector3, because the consumer is a CSS transform and
- * the projection is the scene's business.
- *
- * `front` is the one thing only the scene can answer: whether the anchor is in
- * front of the lens at all. Behind it the perspective divide mirrors the point
- * onto the screen, which is how an object standing behind you ends up with a
- * label in the middle of the frame.
- *
- * Whether the label FITS is deliberately not decided here. That question is
- * about a box of text whose width is a font metric, and the scene has no idea
- * how wide „01 Individuelle Web-Anwendung" is in Schibsted Grotesk at 14px in
- * this reader's browser. The scene said it did for one draft, using the anchor
- * and a padding constant, and the result was a chip sliding a third of itself
- * under the copy panel while the anchor was still comfortably clear of it.
- */
-export type Mark = { x: number; y: number; front: boolean };
-
-/** What boot() hands back. The component talks to the scene only through this. */
-export type Handle = {
-  /**
-   * Glide to the close-up of way `way`, or back to the junction for -1.
-   *
-   * Asking for the shot the camera is already on, or already gliding to, is
-   * a no-op. Asking for another one mid-glide starts a new glide from where
-   * the camera is, so a pointer sweeping down the four rows never snaps.
-   */
-  aim(way: number): void;
-  /**
-   * Starts the build: the four drawings become the four objects, one after
-   * another. Called once, when the section first comes into view. Calling it
-   * again does nothing, and the objects never go back to being drawings.
-   */
-  reveal(): void;
-  /** The way the camera is on or gliding to, or -1 for the junction. */
-  focus(): number;
-  /**
-   * Where each way's label belongs, in the order the ways were handed over.
-   *
-   * The returned array is the scene's own and is rewritten in place on every
-   * call. Read it, do not keep it.
-   */
-  marks(): readonly Mark[];
-  /** How many of the four ways are finished, 0 to 4. A count, not a fraction. */
-  built(): number;
-  /**
-   * Repaints the world's ground: the background the fan stands in and the fog
-   * that swallows the far end of the floor, which are the same colour by
-   * definition.
-   *
-   * It exists because the scene is FULL BLEED and the ink slab above it is
-   * not. The canvas runs to the viewport edges and the hero sits directly on
-   * top of it, so any difference between the scene's background and
-   * --kc-inkSurface draws a hard horizontal line across the page at the
-   * boundary. A hex literal cannot track that: ink is one value in the light
-   * scheme and a darker one in dark, and three.js does not read CSS.
-   */
-  setGround(colour: string): void;
-  /** Cancels the loop, drops listeners, disposes every GPU resource. */
-  stop(): void;
-};
-
-export type BootOptions = {
-  /**
-   * The copy panel, so the camera knows which part of the canvas it may not
-   * compose into. Null-tolerant: a scene with nothing standing on it composes
-   * centrally, which is what every shot was solved for before the stage went
-   * full bleed.
-   */
-  panel?: HTMLElement | null;
-  /**
-   * The colour the world stands in, as anything `THREE.Color` accepts —
-   * in practice the `rgb(...)` string getComputedStyle hands back for the
-   * section's own background. Defaults to PALETTE.background, which is what
-   * every shot was lit and fogged against. See Handle.setGround.
-   */
-  ground?: string;
-  /**
-   * Called after every drawn frame. The labels follow the camera, and the
-   * camera now moves on its own clock rather than on the scroll, so the
-   * component has to be told when there is something new to place rather
-   * than asking on every scroll event.
-   */
-  onFrame?: () => void;
 };
 
 /**
@@ -170,4 +67,52 @@ export type SceneLabels = {
     chartNote: string;
     rows: readonly (readonly [string, string])[];
   };
+};
+
+/**
+ * What boot() resolves to.
+ *
+ * The whole of what the component may do to the scene, and the whole of what
+ * it may ask it. Nothing else in the section imports three.js, so this is the
+ * seam: everything above it is DOM and everything below it is a renderer.
+ */
+export type Handle = {
+  /** Glide to way `way`'s pose, or back to the track's position for -1. The same way twice is a no-op. */
+  aim(way: number): void;
+  /** The track's position: 0 the map, k stop k, fractions between. The camera settles onto the flight there. */
+  scroll(t: number): void;
+  /** The section has come into view. Called once; later calls do nothing. */
+  reveal(): void;
+  /**
+   * The pointer is at (x, y) in CSS pixels inside the view. Returns the way
+   * under it, or -1. Also aims the parallax and the cursor light.
+   */
+  pointer(x: number, y: number): number;
+  /** The pointer has left the stage. Parallax and light ease to rest. */
+  pointerLeave(): void;
+  /** Where each way's label belongs this frame, in the order the ways were handed over. Rewritten in place. */
+  marks(): readonly Mark[];
+  /** The ink the world stands in: anything THREE.Color accepts, in practice the section's computed background. */
+  setBackground(css: string): void;
+  /** True while the loop is parked: nothing moving, no frame scheduled. */
+  parked(): boolean;
+  /** Frames drawn since boot. The browser suite reads it through the component. */
+  frames(): number;
+  /** Cancels the loop, drops listeners, disposes every GPU resource. */
+  stop(): void;
+};
+
+export type BootOptions = {
+  /** The copy panel, so the camera composes into what is left of the view. */
+  panel: HTMLElement | null;
+  ways: readonly Way[];
+  labels: SceneLabels;
+  /** The section's computed background. */
+  background: string;
+  /** prefers-reduced-motion: the camera cuts between stops, no glide, no parallax, no light. */
+  reduced: boolean;
+  /** `asset` from lib/base-path. */
+  url: (path: string) => string;
+  /** After every drawn frame, and once more when the loop parks. */
+  onFrame: () => void;
 };

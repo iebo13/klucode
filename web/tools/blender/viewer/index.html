@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>the crossroads, live beside the render</title>
+    <!--
+      Bare specifiers, answered from node_modules rather than a bundle: the
+      compiled modules under _build/ are the site's own sources, so they ask
+      for `three` exactly as the site does.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/node_modules/three/build/three.module.js",
+          "three/examples/jsm/": "/node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+    <!--
+      The mock client's three families, the same faces and weights
+      tools/blender/capture-textures.mjs fetches and for the same reason: the
+      screens in the render are set in them, so a viewer drawing them in this
+      machine's fallback face would be comparing type as well as light. This
+      is a manual tool on a developer's machine, not the site, which never
+      asks Google for a font.
+    -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    />
+    <style>
+      body {
+        margin: 0;
+        background: #1c201c;
+        color: #a8ada9;
+        font:
+          13px/1.5 ui-monospace,
+          monospace;
+      }
+      header {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        height: 60px;
+        padding: 0 16px;
+        box-sizing: border-box;
+      }
+      /*
+        Exactly the size crossroads.py renders the full frame at, so the live
+        picture and the Cycles one are the same composition: 1440 by 998 with
+        the copy panel's 632 px reserve on the left.
+      */
+      #view {
+        display: block;
+        width: 1440px;
+        height: 998px;
+      }
+      #cycles {
+        display: block;
+        width: 1440px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <label for="pose">pose</label>
+      <select id="pose">
+        <option value="junction">1 junction</option>
+        <option value="hub">2 hub</option>
+        <option value="website">3 website</option>
+        <option value="app">4 app</option>
+        <option value="capacity">5 capacity</option>
+        <option value="care">6 care</option>
+      </select>
+      <span id="note"
+        >keys 1 to 6 switch. The Cycles render of the same pose is under the canvas.</span
+      >
+    </header>
+    <canvas id="view" width="1440" height="998"></canvas>
+    <img id="cycles" alt="the same pose, rendered in Cycles" />
+    <script type="module" src="/tools/blender/viewer/viewer.js"></script>
+  </body>
+</html>

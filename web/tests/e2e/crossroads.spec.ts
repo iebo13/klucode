@@ -1,82 +1,288 @@
 import { expect, test, type Page } from '@playwright/test';
 
-/** Makes every WebGL context request fail, the way a locked-down browser does. */
+const section = '#services';
+const canvas = `${section} canvas.crossroads-canvas`;
+const stills = `${section} img.crossroads-still`;
+const shown = `${stills}[data-on="true"]`;
+
+const row = (key: string) => `${section} li[data-key="${key}"] a`;
+const mark = (page: Page, i: number) =>
+  page.locator(`${section} .crossroads-mark`).nth(i).locator('.crossroads-mark-box');
+const KEYS = ['website', 'app', 'capacity', 'care'] as const;
+
+/** Every width a world mounts at, from the floor to a big desktop. */
+const SIZES = [
+  { width: 1024, height: 736 },
+  { width: 1440, height: 900 },
+  { width: 1920, height: 1080 },
+];
+
+/** The stills' crossfade is 500ms and the label fade 200ms. Long enough for both. */
+const FADE = 800;
+
+/**
+ * Playwright's 30 seconds is the stills suite's budget, and it is not this
+ * one's.
+ *
+ * Headless Chromium has no GPU: it draws WebGL through SwiftShader on the CPU,
+ * and every pass the composer runs is a full frame of software rasterisation.
+ * Measured here at 1440x900, one frame costs about 250ms, a boot (four glTF
+ * bodies, five textures, a studio bake and the first frame) about 5 seconds,
+ * and a glide three or four frames. The label test walks five stops at three
+ * viewports with a boot at each, which is a couple of minutes of honest work
+ * and nothing to do with a hang.
+ *
+ * Raised for every test in the file rather than for the slow ones, because a
+ * timeout is a bound on a hang and not a performance assertion, and the ones
+ * that finish in a second still finish in a second. What frame rate the scene
+ * actually reaches is measured on a real GPU by Task 6's timing test.
+ */
+/**
+ * Which world the suite drives, and why CI drives only one of them.
+ *
+ * CROSSROADS_WORLD=stills refuses WebGL to every page before any of its own
+ * script runs, the way the stills tests below already do for themselves, and
+ * skips the tests that are about the live scene itself: its canvas, its
+ * frames, its objects under the pointer, its contexts. Everything else runs
+ * against the stills world, which decides, pins, snaps, rides, names and
+ * links exactly as the live one does, because the shell owns all of that and
+ * a world owns only its picture.
+ *
+ * CI sets it, because GitHub's runner cannot draw the scene at a speed a
+ * test can wait for. Measured on the 3 September runs: two cores, two
+ * workers, and SwiftShader drawing 1440x900 through the composer at about
+ * three seconds a frame, so every live-world test spent its 15 seconds at
+ * arrive() with four or five frames drawn and the section not yet revealed,
+ * while the same 51 passed here in five minutes. A wait long enough for that
+ * runner would be a suite of half an hour that measures the processor, which
+ * is the gpu project's argument again (see playwright.e2e.config.ts). So the
+ * live-world tests are a gate this machine runs, with `npm run test:e2e` and
+ * no variable, before anything is merged.
+ */
+const STILLS_ONLY = process.env.CROSSROADS_WORLD === 'stills';
+const NEEDS_LIVE = 'needs a machine that can draw the live scene: run without CROSSROADS_WORLD';
+
+test.beforeEach(async ({ page }) => {
+  test.setTimeout(150_000);
+  if (STILLS_ONLY) await withoutWebGL(page);
+});
+
+/**
+ * Turns WebGL off for a page, before any of its own script runs.
+ *
+ * The August route, and it is a route rather than a browser flag because the
+ * component's question is exactly this one: `canvas.getContext('webgl')`
+ * answering null is what a browser with the renderer disabled looks like from
+ * inside a page, and it is what the stills world exists for. Every other
+ * context type is handed back untouched, because the poster and the label
+ * measurements still want 2d.
+ */
 async function withoutWebGL(page: Page) {
   await page.addInitScript(() => {
     const real = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (
-      this: HTMLCanvasElement,
-      type: string,
-      ...rest: unknown[]
-    ) {
-      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null;
-      return (real as unknown as (...a: unknown[]) => unknown).apply(this, [type, ...rest]);
-    } as typeof real;
+    function refuseWebGL(this: HTMLCanvasElement, type: string, options?: unknown) {
+      if (type.toLowerCase().includes('webgl')) return null;
+      return real.call(this, type as '2d', options as CanvasRenderingContext2DSettings);
+    }
+    HTMLCanvasElement.prototype.getContext =
+      refuseWebGL as typeof HTMLCanvasElement.prototype.getContext;
   });
 }
 
-const section = '#services';
-const canvas = `${section} canvas[data-scene="kc-crossroads"]`;
+/** Which world this page decided on. Waits for the decision, which is a client effect. */
+async function worldOf(page: Page): Promise<'live' | 'stills'> {
+  await expect(page.locator(section)).toHaveAttribute('data-world', /^(live|stills)$/, {
+    timeout: 15000,
+  });
+  return (await page.locator(section).getAttribute('data-world')) === 'live' ? 'live' : 'stills';
+}
 
 /**
- * Scrolls the section into view and waits for the reveal to finish.
+ * How long the render loop has to be quiet before a move counts as over.
  *
- * The scene boots when the component mounts and builds its four objects when
- * the section first comes into view, so a test that wants to see the finished
- * place has to arrive at it. 'instant', because globals.css sets
- * scroll-behavior: smooth on html and a smooth scroll leaves the observer
- * watching the hero for a while.
+ * A single reading of data-parked is not enough, and the reason is worth
+ * writing down because it looks like a flake and is not. A pointer moving onto
+ * a row draws a frame of its own before React has committed anything: the
+ * stage's pointermove tells the scene the hand has gone to the panel, the
+ * scene draws one frame and parks. So for a few milliseconds after a hover the
+ * section says parked with the PREVIOUS row's camera, and a test that reads
+ * there reads the shot before the one it asked for. Measured on this machine:
+ * that frame lands about 20ms after the hover and the aim's first frame about
+ * 15ms after it.
+ *
+ * 300ms, against a frame that costs about 250ms here (headless Chromium draws
+ * through SwiftShader) and a requestAnimationFrame that is scheduled within
+ * 16ms of the aim. So a loop that is still parked 300ms later has nothing
+ * pending, and one that is mid-glide has drawn in between and moved the count.
  */
-async function arrive(page: Page) {
-  await expect(page.locator(canvas)).toBeAttached();
-  await page.evaluate(() => {
-    document.querySelector('#services')?.scrollIntoView({ block: 'start', behavior: 'instant' });
-  });
-  await expect(page.locator(section)).toHaveAttribute('data-built', '4', { timeout: 6000 });
+const QUIET = 300;
+
+/**
+ * Waits until the scene has stopped moving, and returns at once in the stills
+ * world, which has no loop to park.
+ */
+async function settled(page: Page) {
+  const state = () =>
+    page.locator(section).evaluate((el) => ({
+      parked: el.dataset.parked ?? 'absent',
+      frames: Number(el.dataset.frames ?? -1),
+    }));
+  if ((await state()).parked === 'absent') return;
+  await expect
+    .poll(
+      async () => {
+        const before = await state();
+        if (before.parked !== 'true') return false;
+        await page.waitForTimeout(QUIET);
+        const after = await state();
+        return after.parked === 'true' && after.frames === before.frames;
+      },
+      { timeout: 15000, message: 'the render loop never stopped moving' },
+    )
+    .toBe(true);
 }
 
-/** The glide is 720ms and the label fade 200ms. Long enough for both. */
-const GLIDE = 1000;
+/**
+ * Scrolls the section's top to the viewport's top and waits for the world to
+ * be up, revealed and still.
+ *
+ * window.scrollTo rather than scrollIntoView, because html carries
+ * scroll-padding-top: 5.5rem for the fixed header and scrollIntoView honours
+ * it: the section would land 88px down, which is the junction plus a bit and
+ * not the top of the track. 'instant', because globals.css sets
+ * scroll-behavior: smooth and a smooth scroll leaves the observer watching the
+ * hero for a while.
+ *
+ * The 15 second waits are the live world's. Headless Chromium draws WebGL
+ * through SwiftShader on the CPU, which is real rendering and slow rendering:
+ * a frame at 1440x900 costs about a third of a second here, and the place is
+ * four glTF bodies, five textures and a studio bake before the first one.
+ */
+async function arrive(page: Page) {
+  if ((await worldOf(page)) === 'live') {
+    await expect(page.locator(canvas)).toHaveAttribute('data-ready', 'true', { timeout: 15000 });
+  } else {
+    await expect(page.locator(shown)).toBeAttached();
+  }
+  await page.evaluate(() => {
+    const el = document.querySelector('#services');
+    if (el)
+      window.scrollTo({
+        top: el.getBoundingClientRect().top + window.scrollY,
+        behavior: 'instant',
+      });
+  });
+  await expect(page.locator(section)).toHaveAttribute('data-revealed', 'true', { timeout: 15000 });
+  await settled(page);
+}
 
-const row = (key: string) => `${section} li[data-key="${key}"] a`;
-const KEYS = ['website', 'app', 'capacity', 'care'] as const;
+/**
+ * Leaves the rows and the chips without leaving the page.
+ *
+ * The stage is the whole section, so a pointer at the top left corner is still
+ * inside it; what it is outside is the list and every chip, and both of those
+ * hand the aim back on the way out.
+ */
+async function leaveStage(page: Page) {
+  await page.mouse.move(10, 10);
+}
 
 test.describe('the four ways are readable however the visitor arrives', () => {
-  test('with a scene', async ({ page }) => {
+  test('with the live scene', async ({ page }) => {
+    test.skip(STILLS_ONLY, NEEDS_LIVE);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
-    await expect(page.locator(canvas)).toBeAttached();
     await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'true');
+    await expect(page.locator(section)).toHaveAttribute('data-world', 'live');
+    await arrive(page);
+    // One canvas, marked as this scene's, and no still anywhere in the page:
+    // the two worlds are alternatives and never both mounted.
+    await expect(page.locator(canvas)).toHaveAttribute('data-scene', 'kc-crossroads');
+    await expect(page.locator(stills)).toHaveCount(0);
+    // At rest at the top of the track the camera is on the map, and the map is
+    // where all four objects are on screen and all four are named.
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+    await expect(page.locator(`${section} .crossroads-mark[data-on="true"]`)).toHaveCount(4);
   });
 
-  test('with reduced motion', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/de/');
-    await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
-    await expect(page.locator(`${section} canvas`)).toHaveCount(0);
-    await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
-  });
-
-  test('without WebGL', async ({ page }) => {
+  test('with stills, where the browser cannot make a WebGL context', async ({ page }) => {
     await withoutWebGL(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
-    await expect(page.locator(`${section} canvas`)).toHaveCount(0);
+    await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'true');
+    await expect(page.locator(section)).toHaveAttribute('data-world', 'stills');
+    await expect(page.locator(canvas)).toHaveCount(0);
+    // Five renders in the page, one showing, and at rest it is the junction.
+    await expect(page.locator(stills)).toHaveCount(5);
+    await expect(page.locator(shown)).toHaveCount(1);
+    await expect(page.locator(shown)).toHaveAttribute('data-key', 'junction');
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+  });
+
+  test('with a scene that will not load, which hands the section to the stills', async ({
+    page,
+  }) => {
+    test.skip(STILLS_ONLY, NEEDS_LIVE);
+    // The one path scene.ts cannot be asked about from node: boot() reaches a
+    // real WebGLRenderer before it awaits the place, so the failure has to be
+    // provoked in a browser. Aborting one body is the honest version of a 404,
+    // a dropped connection or a texture that will not decode, and what the
+    // reader must get out of it is the stills, silently.
+    const warnings: string[] = [];
+    const thrown: string[] = [];
+    page.on('console', (m) => {
+      if (m.type() === 'warning') warnings.push(m.text());
+    });
+    page.on('pageerror', (e) => thrown.push(String(e)));
+    await page.route('**/crossroads/scene/website.glb', (route) => route.abort());
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/de/');
+
+    await expect(page.locator(section)).toHaveAttribute('data-world', 'stills', { timeout: 20000 });
+    await expect(page.locator(shown)).toHaveCount(1);
+    await expect(page.locator(canvas)).toHaveCount(0);
+    await expect
+      .poll(
+        () => warnings.filter((w) => w.startsWith('crossroads: the scene did not start')).length,
+        { timeout: 10000, message: 'the failed boot said nothing to the console' },
+      )
+      .toBeGreaterThan(0);
+    // A failure that reaches a visitor as a stack trace is a failure twice.
+    expect(thrown, 'the failed boot threw at the page').toEqual([]);
+  });
+
+  test('with reduced motion, which is no longer a refusal', async ({ page }) => {
+    test.skip(STILLS_ONLY, NEEDS_LIVE);
+    // It used to be one: the August scene answered a reduced-motion request by
+    // not mounting, because the answer to "do not move things" is not to move
+    // them. The scene answers it by standing still instead. It cuts between
+    // stops rather than gliding, the stage does not lean under the hand and no
+    // pool of light follows it, so this reader gets the same place as everyone
+    // else and none of the travel.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/de/');
+    await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
+    await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'true');
+    await expect(page.locator(section)).toHaveAttribute('data-reduced', 'true');
+    await expect(page.locator(section)).toHaveAttribute('data-world', 'live');
+    await arrive(page);
+    await expect(page.locator(`${section} .crossroads-mark[data-on="true"]`)).toHaveCount(4);
   });
 
   test('on a phone', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
-    await expect(page.locator(`${section} canvas`)).toHaveCount(0);
+    await expect(page.locator(stills)).toHaveCount(0);
+    await expect(page.locator(canvas)).toHaveCount(0);
     await expect(page.locator(`${section} li[data-key="care"]`)).toContainText('90');
     // A phone gets a picture, and it gets the UPRIGHT CROP.
     //
     // It used to get nothing: the poster is a 1600px strip, at 327px wide it is
-    // about 100px tall, and at that size nothing in it is identifiable, so it
+    // about 105px tall, and at that size nothing in it is identifiable, so it
     // was hidden below `sm` and the section had no image at all on the device
     // most visitors use. The upright crop is the same render cut down to the
     // landing page and the dashboard, at about three times that width. The
@@ -94,13 +300,16 @@ test.describe('the four ways are readable however the visitor arrives', () => {
   });
 
   // 800 wide is too narrow for the panel to stand beside the world, so no
-  // scene, and wide enough for the strip to be a picture, so the strip.
+  // world, and wide enough for the strip to be a picture, so the strip.
   test('on a narrow laptop, too narrow for the panel and the world', async ({ page }) => {
     await page.setViewportSize({ width: 800, height: 900 });
     await page.goto('/de/');
     await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
-    await expect(page.locator(`${section} canvas`)).toHaveCount(0);
+    await expect(page.locator(stills)).toHaveCount(0);
+    await expect(page.locator(canvas)).toHaveCount(0);
     await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
+    // No world at all, so the attribute that names one is not written.
+    expect(await page.getAttribute(section, 'data-world')).toBeNull();
     const poster = page.locator(`${section} img`);
     await expect(poster).toBeVisible();
     await expect(poster).toHaveJSProperty(
@@ -108,17 +317,6 @@ test.describe('the four ways are readable however the visitor arrives', () => {
       `${new URL('/crossroads.webp', page.url()).href}`,
     );
     await expect(poster).toHaveAttribute('alt', /vier Wege/);
-  });
-
-  // The most common Windows laptop viewport. It used to get the fallback,
-  // because the section was a stage fixed at 100svh and the panel did not fit
-  // in 640px. The section is its own height now and there is nothing to fit.
-  test('on a short laptop, which used to be excluded', async ({ page }) => {
-    await page.setViewportSize({ width: 1366, height: 640 });
-    await page.goto('/de/');
-    await expect(page.locator(`${section} li[data-key]`)).toHaveCount(4);
-    await expect(page.locator(canvas)).toBeAttached();
-    await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'true');
   });
 
   test('with JavaScript switched off entirely', async ({ browser }) => {
@@ -148,27 +346,6 @@ test('the fallback is not a dimmed copy of the enhanced state', async ({ page })
   }
 });
 
-test('the section is not pinned and costs the reader no scroll', async ({ page }) => {
-  // The whole of the change. It was a 300svh track with a sticky stage: three
-  // viewports of scrolling to read what fits on one.
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/de/');
-  await expect(page.locator(canvas)).toBeAttached();
-  const seen = await page.evaluate(() => {
-    const sec = document.querySelector('#services') as HTMLElement;
-    const stage = document.querySelector('.crossroads-stage') as HTMLElement;
-    return {
-      height: sec.offsetHeight / window.innerHeight,
-      position: getComputedStyle(stage).position,
-      sticky: document.querySelectorAll('#services [style*="sticky"], #services .crossroads-track')
-        .length,
-    };
-  });
-  expect(seen.height, 'the section is taller than a viewport and a half').toBeLessThan(1.5);
-  expect(seen.position).not.toBe('sticky');
-  expect(seen.sticky).toBe(0);
-});
-
 test('every row is a link to its own card, with every detail open', async ({ page }) => {
   // Four objects, four services, four detail pages, and nothing used to be
   // clickable. And the enhanced state showed one detail at a time where the
@@ -189,50 +366,355 @@ test('every row is a link to its own card, with every detail open', async ({ pag
   expect(top, 'the prices start more than two viewports down').toBeLessThan(900 * 2);
 });
 
-test('the camera follows the pointer, and the keyboard is the same input', async ({ page }) => {
+/**
+ * The same body against both worlds, because it is the same contract.
+ *
+ * A row under the pointer or holding keyboard focus aims the picture at its
+ * way, letting go hands it back to the track, and every step of it is written
+ * in attributes rather than in pixels: which is what makes it the same test
+ * whether the picture is a camera or a crossfade.
+ */
+for (const noWebGL of [false, true]) {
+  test(`the view follows the pointer, and the keyboard is the same input (${noWebGL ? 'stills' : 'live'})`, async ({
+    page,
+  }) => {
+    test.skip(STILLS_ONLY && !noWebGL, NEEDS_LIVE);
+    if (noWebGL) await withoutWebGL(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/de/');
+    await arrive(page);
+
+    await page.hover(row('app'));
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'app');
+    await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+    await expect(mark(page, 1)).toHaveAttribute('data-focus', 'true');
+    await settled(page);
+    if (noWebGL) await expect(page.locator(shown)).toHaveAttribute('data-key', 'app');
+
+    // Sweeping to another row hands over without a gap.
+    await page.hover(row('care'));
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'care');
+    await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute(
+      'data-focus',
+      'false',
+    );
+    await settled(page);
+
+    // Leaving the list returns to the junction, because at the top of the track
+    // the junction is what the scroll is on.
+    await leaveStage(page);
+    await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+    await settled(page);
+
+    // Keyboard: focus a row, tab to the next, tab out.
+    await page.locator(row('capacity')).focus();
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'capacity');
+    await expect(page.locator(`${section} li[data-key="capacity"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await page.keyboard.press('Tab');
+    await expect(page.locator(section)).toHaveAttribute('data-stop', 'care');
+    await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await expect(page.locator(`${section} li[data-key="capacity"]`)).toHaveAttribute(
+      'data-focus',
+      'false',
+    );
+    await page.keyboard.press('Tab');
+    await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
+  });
+}
+
+test('the chips are live, and pointing at one leaves the camera alone', async ({ page }) => {
+  // The thing four objects on one picture finally makes possible: the name
+  // standing at the object IS the row. Pointing at it lights the row and the
+  // chip, and clicking it opens the same card the row opens.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
   await arrive(page);
 
-  const mark = (i: number) =>
-    page.locator(`${section} .crossroads-mark`).nth(i).locator('.crossroads-mark-box');
-
-  await page.hover(row('app'));
+  await mark(page, 1).hover();
   await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute('data-focus', 'true');
-  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
-  await expect(mark(1)).toHaveAttribute('data-focus', 'true');
+  await expect(mark(page, 1)).toHaveAttribute('data-focus', 'true');
+  // And the camera stays where it was. A chip that flew the picture to its own
+  // close-up moved itself out from under the pointer that touched it, which
+  // is a control that leaves rather than a control.
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+  await settled(page);
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
 
-  // Sweeping to another row hands over without a gap.
+  await mark(page, 1).click();
+  await expect(page).toHaveURL(/\/de\/leistungen\/#app$/);
+});
+
+test('the objects are live, and are the same weak input as the chips', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // The half of the bond only a real scene has: the thing itself, under the
+  // pointer, answering. The camera is asked what is at (x, y) and the row it
+  // names lights, exactly as a chip's does.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  // Down from the chip's anchor in 10px steps until the stage says there is
+  // something under the hand. The anchor is where the label's own transform
+  // puts it, which is the point on the object the render chose, so the object
+  // is a short way below it: measured at the three widths, the hit is between
+  // 0 and 40px down. Walked rather than assumed, because the exact pixel is
+  // the camera's business and moves with a pose.
+  const anchor = await page.locator(`${section} .crossroads-mark`).nth(1).boundingBox();
+  expect(anchor, 'the app chip has no box to walk down from').not.toBeNull();
+  let found = -1;
+  for (let step = 0; step <= 30 && found < 0; step += 1) {
+    await page.mouse.move(anchor!.x, anchor!.y + step * 10);
+    if ((await page.getAttribute(`${section} .crossroads-stage`, 'data-hit')) === 'true') {
+      found = step * 10;
+    }
+  }
+  expect(found, 'no object was found under the pointer below the app chip').toBeGreaterThanOrEqual(
+    0,
+  );
+
+  await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute('data-focus', 'true');
+  // The camera is left alone, on the same ruling the chips are: a reader
+  // exploring the place with the pointer must be able to look at a thing
+  // without being flown somewhere by having brushed it.
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(page).toHaveURL(/\/de\/leistungen\/#app$/);
+});
+
+test('a reduced-motion switch mid-visit boots a scene that knows where the last one stood', async ({
+  page,
+}) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // The one thing that tears the place down and builds it again inside a
+  // visit: `reduced` is a boot option, so a reader changing their system
+  // setting gets a second scene. What must not happen is the section snapping
+  // back to the map, which is what a second boot resolving into an unchanged
+  // `ready` did: React drops a state set to the value it holds, the effects
+  // keyed on it never run, and the new camera stands where it booted.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  await page.hover(row('capacity'));
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'capacity');
+  await settled(page);
+  // Where the chip for 03 stands with the camera at that stand. This is the
+  // assertion that has teeth: the chip's position is the new camera's own
+  // projection of the object's anchor, so it can only match if the second
+  // scene was told to aim at capacity.
+  const before = await page.locator(`${section} .crossroads-mark`).nth(2).boundingBox();
+  expect(before, 'the capacity chip has no box before the switch').not.toBeNull();
+  const frames = await page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator(section)).toHaveAttribute('data-reduced', 'true');
+  // The old loop is gone: its counter went with it, which is also how we know
+  // the cleanup ran and data-ready is the next boot's rather than the last's.
+  await expect
+    .poll(async () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1)), {
+      timeout: 15000,
+      message: 'the scene was never torn down',
+    })
+    .toBeLessThan(frames);
+
+  await expect(page.locator(canvas)).toHaveAttribute('data-ready', 'true', { timeout: 30000 });
+  await settled(page);
+  await expect(page.locator(section)).toHaveAttribute('data-parked', 'true');
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'capacity');
+
+  // One chip, the right one, and standing where it stood: the second scene
+  // arrived at the stand rather than at the map.
+  await expect(page.locator(`${section} .crossroads-mark[data-on="true"]`)).toHaveCount(1);
+  await expect(page.locator(`${section} .crossroads-mark`).nth(2)).toHaveAttribute(
+    'data-on',
+    'true',
+  );
+  const after = await page.locator(`${section} .crossroads-mark`).nth(2).boundingBox();
+  expect(after, 'the capacity chip has no box after the switch').not.toBeNull();
+  // Four pixels, because the two shots are the same pose reached two ways: the
+  // first glided to it and the second cut to it, and reduced motion holds the
+  // parallax at rest where the first had eased it to rest. At the map this
+  // chip stands about 290px to the right and 300px lower, so the bound is not
+  // close to being able to confuse the two.
+  expect(Math.abs(after!.x - before!.x), 'the second scene framed a different shot').toBeLessThan(
+    4,
+  );
+  expect(Math.abs(after!.y - before!.y), 'the second scene framed a different shot').toBeLessThan(
+    4,
+  );
+});
+
+test('a reduced-motion flip while the scene is loading builds one scene, not two', async ({
+  page,
+}) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // The other half of the same switch, and the window is between the dynamic
+  // import going out and boot() being called. A flip inside it tears the
+  // effect down while the two chunks are still on the wire, so the run that
+  // is already dead reaches its .then holding `boot` and calls it anyway, and
+  // boot() makes a WebGLRenderer and bakes the studio before its first await.
+  // Two renderers on one canvas share the one GL context and keep two state
+  // caches of it, and both draw until the dead one is stopped. React's
+  // StrictMode does exactly this on every dev mount (reactStrictMode is on in
+  // next.config.mjs), and a `reduced` flip during a load does it in the build
+  // that ships, which is what this drives.
+  //
+  // The window is a couple of hundred milliseconds on this machine, which is
+  // not something a test can aim at, so it is widened rather than raced: every
+  // script chunk the page asks for is held for a second before it is served,
+  // which puts a whole second between the canvas mounting and the scene module
+  // landing. The flip goes out as soon as the canvas is attached.
+  await page.route('**/_next/static/chunks/**', async (route) => {
+    await new Promise((served) => setTimeout(served, 1000));
+    await route.continue();
+  });
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+
+  // Two counters, installed before any of the page's own script runs. The
+  // first counts the boots that STARTED: a WebGLRenderer asks the canvas it
+  // was handed for a context as its first act, so one context on this canvas
+  // is one boot. The shell's own capability probe is not counted, because it
+  // asks a detached canvas of its own (hasWebGL in index.tsx). The second
+  // counts the boots that FINISHED, which is what writes data-ready, and the
+  // document is what the observer watches because at this point there is not
+  // yet a body to hang it on.
+  await page.addInitScript(() => {
+    const counts = { contexts: 0, ready: 0 };
+    (window as unknown as { __boots: typeof counts }).__boots = counts;
+    const real = HTMLCanvasElement.prototype.getContext;
+    function counted(this: HTMLCanvasElement, type: string, options?: unknown) {
+      if (type.toLowerCase().includes('webgl') && this.classList.contains('crossroads-canvas')) {
+        counts.contexts += 1;
+      }
+      return real.call(this, type as '2d', options as CanvasRenderingContext2DSettings);
+    }
+    HTMLCanvasElement.prototype.getContext =
+      counted as typeof HTMLCanvasElement.prototype.getContext;
+    new MutationObserver((records) => {
+      for (const record of records) {
+        const el = record.target as HTMLElement;
+        if (el.classList.contains('crossroads-canvas') && el.dataset.ready === 'true') {
+          counts.ready += 1;
+        }
+      }
+    }).observe(document, { attributes: true, subtree: true, attributeFilter: ['data-ready'] });
+  });
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await expect(page.locator(canvas)).toBeAttached({ timeout: 30000 });
+  // Before the first frame, which is the whole point: a flip after the scene
+  // is up is the mid-visit switch the test above already covers.
+  await expect(page.locator(canvas)).not.toHaveAttribute('data-ready', 'true');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator(section)).toHaveAttribute('data-reduced', 'true');
+  await arrive(page);
+
+  const boots = await page.evaluate(
+    () => (window as unknown as { __boots: { contexts: number; ready: number } }).__boots,
+  );
+  expect(boots.contexts, 'two renderers were built on the one canvas').toBe(1);
+  expect(boots.ready, 'more than one boot finished on the one canvas').toBe(1);
+
+  // And the counter only ever climbs. It is written from whichever handle the
+  // component is holding, so a second loop drawing into the same canvas
+  // reports its own count through the same attribute and the number falls.
+  const frames = () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
+  let last = await frames();
+  for (let i = 0; i < 8; i += 1) {
+    await page.waitForTimeout(100);
+    const now = await frames();
+    expect(
+      now,
+      'the frame counter went backwards after the scene was ready',
+    ).toBeGreaterThanOrEqual(last);
+    last = now;
+  }
+  expect(errors, 'the boot threw at the page').toEqual([]);
+});
+
+test('a pointer leaving an object for the panel puts that row out', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // A coalesced pointer move can go from an object straight onto the copy
+  // panel with no event in between. The panel branch used to return without
+  // clearing the hint, so the object's row stayed lit beside the row the
+  // pointer landed on and two of the four were lit at once.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  const anchor = await page.locator(`${section} .crossroads-mark`).nth(1).boundingBox();
+  expect(anchor, 'the app chip has no box to walk down from').not.toBeNull();
+  let found = -1;
+  for (let step = 0; step <= 30 && found < 0; step += 1) {
+    await page.mouse.move(anchor!.x, anchor!.y + step * 10);
+    if ((await page.getAttribute(`${section} .crossroads-stage`, 'data-hit')) === 'true') {
+      found = step * 10;
+    }
+  }
+  expect(found, 'no object was found under the pointer below the app chip').toBeGreaterThanOrEqual(
+    0,
+  );
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+
+  // Straight onto a row, in one move, which is the jump a real pointer makes.
   await page.hover(row('care'));
   await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
     'data-focus',
     'true',
   );
-  await expect(page.locator(`${section} li[data-key="app"]`)).toHaveAttribute(
-    'data-focus',
-    'false',
-  );
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+  await expect(page.locator(`${section} .crossroads-stage`)).toHaveAttribute('data-hit', 'false');
+});
 
-  // Leaving the list returns to the junction.
-  await page.mouse.move(10, 10);
-  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
+test('a pointer the browser takes away puts the hand out', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // A finger on a wide tablet sends pointermove, and then pointercancel when
+  // the browser takes the gesture over for a scroll. It never sends
+  // pointerleave. Until the same handler heard both, the parallax, the cursor
+  // light and whichever row the finger was over all stayed where the finger
+  // had been, with no pointer left on the page to put them out.
+  //
+  // The cancel is dispatched rather than gestured, because Playwright's touch
+  // emulation does not produce the browser's own takeover. What is asserted is
+  // the section's answer to the event, and the handler does not ask where an
+  // event came from.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
 
-  // Keyboard: focus a row, tab to the next, tab out.
-  await page.locator(row('capacity')).focus();
-  await expect(page.locator(`${section} li[data-key="capacity"]`)).toHaveAttribute(
-    'data-focus',
-    'true',
-  );
-  await page.keyboard.press('Tab');
-  await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
-    'data-focus',
-    'true',
-  );
-  await expect(page.locator(`${section} li[data-key="capacity"]`)).toHaveAttribute(
-    'data-focus',
-    'false',
-  );
-  await page.keyboard.press('Tab');
+  // Onto an object, found the way the test above finds one: down from the app
+  // chip until the stage says something is under the pointer.
+  const anchor = await page.locator(`${section} .crossroads-mark`).nth(1).boundingBox();
+  expect(anchor, 'the app chip has no box to walk down from').not.toBeNull();
+  let found = false;
+  for (let step = 0; step <= 30 && !found; step += 1) {
+    await page.mouse.move(anchor!.x, anchor!.y + step * 10);
+    found = (await page.getAttribute(`${section} .crossroads-stage`, 'data-hit')) === 'true';
+  }
+  expect(found, 'no object was found under the pointer below the app chip').toBe(true);
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+
+  await page.locator(`${section} .crossroads-stage`).dispatchEvent('pointercancel');
+  await expect(page.locator(`${section} .crossroads-stage`)).toHaveAttribute('data-hit', 'false');
   await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
 });
 
@@ -247,40 +729,23 @@ test('hovering and leaving the section reports no console errors', async ({ page
   await arrive(page);
   for (const key of KEYS) {
     await page.hover(row(key));
-    await page.waitForTimeout(120);
+    await settled(page);
   }
-  await page.mouse.move(10, 10);
-  await page.waitForTimeout(GLIDE);
+  await leaveStage(page);
+  await settled(page);
+
+  // And through the track, which is the other half of what the loop does.
+  const top = await page
+    .locator(section)
+    .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+  for (let stop = 1; stop <= 4; stop += 1) {
+    await page.evaluate(
+      (y) => window.scrollTo({ top: y, behavior: 'instant' }),
+      Math.ceil(top) + stop * 900 * 0.3 + 2,
+    );
+    await settled(page);
+  }
   expect(errors).toEqual([]);
-});
-
-test('the canvas is the whole stage and swallows no input', async ({ page }) => {
-  // Full bleed, which is the answer to „3D in a box". The canvas was 640x796
-  // inside a 1425x900 stage, 40% of the section, with the section's own aurora
-  // and grain either side of a hard rectangle: a video embedded in a slide.
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/de/');
-  await expect(page.locator(canvas)).toBeAttached();
-
-  const seen = await page.evaluate(() => {
-    const stage = document.querySelector('.crossroads-stage') as HTMLElement;
-    const c = document.querySelector('.crossroads-stage canvas') as HTMLCanvasElement;
-    const s = stage.getBoundingClientRect();
-    const r = c.getBoundingClientRect();
-    return {
-      gapW: Math.round(s.width - r.width),
-      gapH: Math.round(s.height - r.height),
-      pointer: getComputedStyle(c).pointerEvents,
-      aurora: document.querySelectorAll('#services .ink-aurora').length,
-    };
-  });
-  expect(seen.gapW, 'the canvas does not fill the stage').toBe(0);
-  expect(seen.gapH, 'the canvas does not fill the stage').toBe(0);
-  // aria-hidden and nothing listening, so it should not be taking events either.
-  expect(seen.pointer, 'the canvas is still swallowing pointer events').toBe('none');
-  // The wash belongs to the fallback. Over a full-bleed scene it is the thing
-  // that made two different darks meet at a rectangle edge.
-  expect(seen.aurora, 'the aurora is still painted over the scene').toBe(0);
 });
 
 /** Which labels are showing, and whether any of them collide or stray. */
@@ -288,150 +753,524 @@ async function labels(page: Page) {
   return page.evaluate(() => {
     const stage = document.querySelector('.crossroads-stage')!.getBoundingClientRect();
     const panel = document.querySelector('.crossroads-copy')!.getBoundingClientRect();
-    const shown = [...document.querySelectorAll<HTMLElement>('.crossroads-mark')]
+    const shownMarks = [...document.querySelectorAll<HTMLElement>('.crossroads-mark')]
       .map((el, i) => ({ n: i, el }))
       .filter(({ el }) => el.dataset.on === 'true')
       .map(({ n, el }) => ({ n, r: el.firstElementChild!.getBoundingClientRect() }));
     const clashes: string[] = [];
-    for (let a = 0; a < shown.length; a += 1) {
-      for (let b = a + 1; b < shown.length; b += 1) {
-        const one = shown[a]!.r;
-        const two = shown[b]!.r;
+    for (let a = 0; a < shownMarks.length; a += 1) {
+      for (let b = a + 1; b < shownMarks.length; b += 1) {
+        const one = shownMarks[a]!.r;
+        const two = shownMarks[b]!.r;
         const over =
           Math.max(0, Math.min(one.right, two.right) - Math.max(one.left, two.left)) *
           Math.max(0, Math.min(one.bottom, two.bottom) - Math.max(one.top, two.top));
-        if (over > 0) clashes.push(`${shown[a]!.n} and ${shown[b]!.n}`);
+        if (over > 0) clashes.push(`${shownMarks[a]!.n} and ${shownMarks[b]!.n}`);
       }
     }
     return {
-      on: shown.map((m) => m.n),
+      on: shownMarks.map((m) => m.n),
       clashes,
-      // A label under the panel is a label nobody can read, and the scene
-      // is supposed to have already refused to show it.
-      hidden: shown.filter((m) => m.r.left < panel.right).length,
-      outside: shown.filter((m) => m.r.right > stage.right || m.r.top < stage.top).length,
+      // A label under the panel is a label nobody can read, and the layout is
+      // supposed to have already refused to show it.
+      hidden: shownMarks.filter((m) => m.r.left < panel.right).length,
+      outside: shownMarks.filter((m) => m.r.right > stage.right || m.r.top < stage.top).length,
     };
   });
 }
 
-test('every object is named at itself, and no two names collide', async ({ page }) => {
-  // The bond a list beside a canvas could not make: in the establishing shot
-  // all four objects were on screen and none of them was named.
-  //
-  // Overlap is the failure this device actually has. The four labels stand
-  // about 195px apart at the wide shot and „01 Website & Landingpage" is
-  // 205px wide, so ways 01 and 02 sat on top of each other until LANES grew a
-  // per-lane screen offset. Asserted here rather than in the framing suite
-  // because a label's width is a font metric, which needs a browser.
-  for (const size of [
-    { width: 1024, height: 736 },
-    { width: 1440, height: 900 },
-    { width: 1920, height: 1080 },
-  ]) {
-    await page.setViewportSize(size);
-    await page.goto('/de/');
-    await arrive(page);
-    await page.waitForTimeout(300);
+for (const noWebGL of [false, true]) {
+  test(`every object is named at itself, and no two names collide (${noWebGL ? 'stills' : 'live'})`, async ({
+    page,
+  }) => {
+    test.skip(STILLS_ONLY && !noWebGL, NEEDS_LIVE);
+    // The bond a list beside a picture could not make: at the map all four
+    // objects are on screen and none of them used to be named.
+    //
+    // Overlap is the failure this device actually has. At 1440x900 the anchors
+    // for 01 and 02 are about 170 screen pixels apart and the two chips are 208
+    // and 245 wide, so they sat on top of each other until the placement
+    // started lifting a chip clear of its neighbour. Asserted here rather than
+    // against the anchors, because a label's width is a font metric and needs a
+    // browser, and asserted in BOTH worlds because the two produce their
+    // candidates from different places (a render's baked anchors against a live
+    // projection) and hand them to the same rules.
+    if (noWebGL) await withoutWebGL(page);
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      await page.goto('/de/');
+      await arrive(page);
+      await leaveStage(page);
+      await settled(page);
+      if (noWebGL) await page.waitForTimeout(FADE);
 
-    // The junction names all four, which is the whole point of it.
-    const idle = await labels(page);
-    expect(idle.clashes, `labels overlap at the junction on ${size.width}`).toEqual([]);
-    expect(idle.hidden, `a label is behind the panel at the junction on ${size.width}`).toBe(0);
-    expect(idle.outside, `a label is off the stage at the junction on ${size.width}`).toBe(0);
-    expect(idle.on, `wrong labels at the junction on ${size.width}`).toEqual([0, 1, 2, 3]);
+      // The map names all four, which is the whole point of it.
+      const idle = await labels(page);
+      expect(idle.clashes, `labels overlap at the junction on ${size.width}`).toEqual([]);
+      expect(idle.hidden, `a label is behind the panel at the junction on ${size.width}`).toBe(0);
+      expect(idle.outside, `a label is off the stage at the junction on ${size.width}`).toBe(0);
+      expect(idle.on, `wrong labels at the junction on ${size.width}`).toEqual([0, 1, 2, 3]);
 
-    // A close-up names the one it is standing at and hides the rest.
-    for (const [i, key] of KEYS.entries()) {
-      await page.hover(row(key));
-      await page.waitForTimeout(GLIDE);
-      const seen = await labels(page);
-      expect(seen.clashes, `labels overlap at ${key} on ${size.width}`).toEqual([]);
-      expect(seen.hidden, `a label is behind the panel at ${key}`).toBe(0);
-      expect(seen.outside, `a label is off the stage at ${key}`).toBe(0);
-      expect(seen.on, `wrong labels at ${key} on ${size.width}`).toEqual([i]);
+      // A stop names the one it is standing at and hides the rest.
+      for (const [i, key] of KEYS.entries()) {
+        await page.hover(row(key));
+        await expect(page.locator(section)).toHaveAttribute('data-stop', key);
+        await settled(page);
+        if (noWebGL) await page.waitForTimeout(FADE);
+        const seen = await labels(page);
+        expect(seen.clashes, `labels overlap at ${key} on ${size.width}`).toEqual([]);
+        expect(seen.hidden, `a label is behind the panel at ${key} on ${size.width}`).toBe(0);
+        expect(seen.outside, `a label is off the stage at ${key} on ${size.width}`).toBe(0);
+        expect(seen.on, `wrong labels at ${key} on ${size.width}`).toEqual([i]);
+      }
+      await leaveStage(page);
     }
-    await page.mouse.move(10, 10);
-  }
-});
+  });
+}
 
 test('the name at the object is read once, not twice', async ({ page }) => {
   // The label layer is aria-hidden, so a screen reader hears each of the four
   // names from its row and nowhere else, and a crawler indexes it once. That
-  // is the whole of what „no floating names" was protecting.
+  // is the whole of what "no floating names" was protecting.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
-  await expect(page.locator(canvas)).toBeAttached();
+  await expect(page.locator(`${section} .crossroads-marks`)).toBeAttached();
 
   await expect(page.locator(`${section} .crossroads-marks`)).toHaveAttribute('aria-hidden', 'true');
+  // The picture too: everything a reader can read or click is DOM. The canvas
+  // says so by its attribute, and the five stills by empty alt text inside a
+  // hidden stack (stills-world.tsx), which is why the heading count below is
+  // the assertion that holds in either world.
+  if ((await worldOf(page)) === 'live') {
+    await expect(page.locator(canvas)).toHaveAttribute('aria-hidden', 'true');
+  }
   // Once in the accessible tree, whatever the labels are drawing.
   await expect(
     page.getByRole('heading', { name: 'Website & Landingpage', exact: true }),
   ).toHaveCount(1);
 });
 
-test('the four are drawings until the section is looked at, then they build', async ({ page }) => {
-  // The reveal is tied to the section coming into view, not to the boot,
-  // which can happen four viewports before the reader arrives, and not to a
-  // scroll position, which is the coupling this section no longer has.
+test('the world is hidden until the section is looked at', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // The reveal is tied to the stage coming into view, not to the mount, which
+  // happens four viewports before the reader arrives.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
-  await expect(page.locator(canvas)).toBeAttached();
-  await page.waitForTimeout(400);
-  await expect(page.locator(section)).toHaveAttribute('data-built', '0');
+  await expect(page.locator(canvas)).toHaveAttribute('data-ready', 'true', { timeout: 15000 });
+  await expect(page.locator(section)).toHaveAttribute('data-revealed', 'false');
+  const hidden = await page.locator(canvas).evaluate((el) => getComputedStyle(el).opacity);
+  expect(hidden, 'the world is already there before the reader arrives').toBe('0');
+
   await arrive(page);
-  await expect(page.locator(section)).toHaveAttribute('data-built', '4');
+  await expect(page.locator(section)).toHaveAttribute('data-revealed', 'true');
 });
 
-test('a still page costs no frames, and a hover still gets them', async ({ page }) => {
-  // The loop runs exactly as long as something is moving. After the reveal
-  // and between hovers the page costs no frames at all, which is the only
-  // permanent cost this section could impose on a page whose pitch is that
-  // it costs the visitor nothing.
-  //
-  // Every rAF on the page is counted, not just the scene's, because that is
-  // the number that matters and because a minified callback cannot be told
-  // apart from another one.
-  await page.addInitScript(() => {
-    const w = window as unknown as { __raf: number };
-    w.__raf = 0;
-    const real = window.requestAnimationFrame.bind(window);
-    window.requestAnimationFrame = (cb: FrameRequestCallback) =>
-      real((t) => {
-        w.__raf += 1;
-        cb(t);
-      });
-  });
-  const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
+test('a laptop gets the ride too, and the panel rides the track to stay in view', async ({
+  page,
+}) => {
+  // 1366x640 is a 1366x768 laptop once the browser's own chrome is off the
+  // screen, and 1366x768 is the most common laptop screen there is. Measured:
+  // the pinned German panel is 768px tall and stands under 88px of header
+  // clearance with 16px below it, so it wants an 872px viewport and this one
+  // is 232px short. Until 3 September a height floor left every such viewport
+  // unpinned, and the section scrolled past like any other on the machines
+  // most readers own. The owner's word was that it must never do that.
+  await page.setViewportSize({ width: 1366, height: 640 });
+  await page.goto('/de/');
+  await arrive(page);
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+  await expect(page.locator(`${section} .crossroads-stop`)).toHaveCount(5);
 
+  const top = await page.evaluate(() => {
+    const sec = document.querySelector('#services') as HTMLElement;
+    return sec.getBoundingClientRect().top + window.scrollY;
+  });
+  const band = 640 * 0.3;
+  const panel = () =>
+    page.evaluate(() => {
+      const box = document.querySelector('.crossroads-copy')!.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom };
+    });
+  const scrollTo = (y: number) =>
+    page.evaluate((to) => window.scrollTo({ top: to, behavior: 'instant' }), y);
+
+  // At the head of the track the panel stands under the header exactly as it
+  // does on a tall viewport, and its foot is below the fold. Two pixels of
+  // tolerance: the scroll lands two pixels into the track and the snap may or
+  // may not pull it back.
+  await scrollTo(Math.ceil(top) + 2);
+  await settled(page);
+  const head = await panel();
+  expect(Math.abs(head.top - 88), 'the panel does not stand under the header').toBeLessThanOrEqual(
+    3,
+  );
+  expect(head.bottom, 'the panel fits, so there is nothing to test here').toBeGreaterThan(640);
+
+  // At the last stop the stage has held for the whole ride, the camera stands
+  // at the last way, and the panel has risen by exactly its overflow: its foot
+  // stands on the bottom padding and the last row is in view.
+  await scrollTo(Math.ceil(top) + 4 * band + 2);
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'care');
+  await settled(page);
+  const stageTop = await page.evaluate(
+    () => document.querySelector('.crossroads-stage')!.getBoundingClientRect().top,
+  );
+  expect(Math.abs(stageTop), 'the stage did not hold at the last stop').toBeLessThan(3);
+  const end = await panel();
+  expect(Math.abs(end.bottom - (640 - 16)), 'the panel foot is not on the bottom padding').toBeLessThanOrEqual(3); // prettier-ignore
+  const last = await page.locator(row('care')).boundingBox();
+  expect(last, 'the last row has no box').not.toBeNull();
+  expect(last!.y + last!.height, 'the last row is below the fold').toBeLessThanOrEqual(640 - 16);
+
+  // Halfway along the track the panel is halfway up: the ride is the track's
+  // position over its length, and nothing else.
+  await scrollTo(Math.ceil(top) + 2 * band + 2);
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'app');
+  await settled(page);
+  const mid = await panel();
+  expect(Math.abs(mid.top - (head.top + end.top) / 2), 'the panel is not halfway').toBeLessThanOrEqual(3); // prettier-ignore
+});
+
+test('the canvas is the size of the stage after a resize, in both directions', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // The stage is a viewport tall for as long as there is a canvas in it, so
+  // what changes its box is the window, and the buffer has to follow the box
+  // and not the other way round. Until 3 September this test crossed the pin
+  // floor instead, because that flipped the stage between 100svh and the
+  // section's own height with no window event in step with it. The floor is
+  // gone and every world brings the track, so a resize is the case that is
+  // left, and it is checked shrinking and growing because a buffer that only
+  // ever grew would pass the first half and stretch on the second.
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/de/');
   await arrive(page);
-  await page.waitForTimeout(GLIDE);
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
 
-  const count = () => page.evaluate(() => (window as unknown as { __raf: number }).__raf);
-  const before = await count();
-  await page.waitForTimeout(1000);
-  expect((await count()) - before, 'the loop is still running with nothing to draw').toBeLessThan(
-    5,
+  /**
+   * The drawing buffer against the box it is drawn for.
+   *
+   * The ratio is read off the width rather than assumed, because it is
+   * whatever the renderer settled on: window.devicePixelRatio capped at
+   * RETINA, 1 on this headless machine and 1.5 on a retina screen. The
+   * height is then the assertion, and one pixel of slack is
+   * renderer.setSize's own floor.
+   */
+  const sizing = () =>
+    page.evaluate(() => {
+      const c = document.querySelector('#services canvas.crossroads-canvas') as HTMLCanvasElement;
+      const stage = document.querySelector('.crossroads-stage') as HTMLElement;
+      return {
+        bufferW: c.width,
+        bufferH: c.height,
+        boxW: stage.clientWidth,
+        boxH: stage.clientHeight,
+      };
+    });
+  const fits = (seen: Awaited<ReturnType<typeof sizing>>, where: string) => {
+    const ratio = seen.bufferW / seen.boxW;
+    expect(ratio, `nothing to divide: a ${seen.bufferW} buffer on a ${seen.boxW} stage ${where}`).toBeGreaterThan(0); // prettier-ignore
+    expect(
+      Math.abs(seen.bufferH - seen.boxH * ratio),
+      `the canvas is ${seen.bufferW}x${seen.bufferH} for a ${seen.boxW}x${seen.boxH} stage ${where}`,
+    ).toBeLessThanOrEqual(1);
+  };
+
+  fits(await sizing(), 'pinned');
+
+  // 700 is a laptop's worth of viewport under the same width, and the section
+  // stays pinned there since 3 September: the stage is 700 tall and the buffer
+  // has to be too.
+  await page.setViewportSize({ width: 1440, height: 700 });
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+  await settled(page);
+  const shorter = await sizing();
+  expect(shorter.boxH, 'the stage is not a viewport tall').toBe(700);
+  fits(shorter, 'shorter');
+
+  // And back, because the change has to be followed in both directions: the
+  // stage is 900 again and the canvas has to grow with it.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+  await settled(page);
+  const taller = await sizing();
+  expect(taller.boxH, 'the stage is not a viewport tall').toBe(900);
+  fits(taller, 'taller again');
+});
+
+test('pinned, the track walks the four routes, a hover overrides, and the end releases', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  const live = (await worldOf(page)) === 'live';
+  await arrive(page);
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+  await expect(page.locator(`${section} .crossroads-stop`)).toHaveCount(5);
+
+  // The panel stands under the header capsule and inside the viewport, which
+  // is what the pinned paddings and the PIN floor are for. The first build
+  // parked the panel at 16px with the fixed capsule sitting on its eyebrow for
+  // the whole ride: 5.5rem is the clearance the root already uses for anchors,
+  // and the floor is the panel plus that plus the padding under it.
+  const panel = await page.evaluate(() => {
+    const box = document.querySelector('.crossroads-copy')!.getBoundingClientRect();
+    return { top: box.top, bottom: box.bottom, height: box.height };
+  });
+  expect(panel.top, 'the panel is under the fixed header capsule').toBeGreaterThanOrEqual(88);
+  expect(panel.bottom, 'the panel runs past the bottom of the pinned stage').toBeLessThanOrEqual(
+    900,
   );
 
-  // Parked is only correct if it restarts. The canvas is captured before and
-  // after a hover, so identical pixels mean aim() reached a loop that never
-  // woke up.
-  const idle = await page.locator(`${section} canvas`).screenshot();
-  await page.hover(row('capacity'));
-  await page.waitForTimeout(GLIDE);
-  const aimed = await page.locator(`${section} canvas`).screenshot();
-  expect(aimed.equals(idle), 'a parked loop did not restart on aim()').toBe(false);
+  const top = await page.evaluate(() => {
+    const sec = document.querySelector('#services') as HTMLElement;
+    return sec.getBoundingClientRect().top + window.scrollY;
+  });
+  const band = 900 * 0.3;
+  const stageTop = () =>
+    page.evaluate(() => document.querySelector('.crossroads-stage')!.getBoundingClientRect().top);
+  const frames = () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
 
-  // And stop() has to work from either state. Crossing below the mount query
-  // fires the scene's own resize listener, which asks for a frame, and flips
-  // data-enhanced, which tears the scene down: a cancel with a frame pending.
-  await page.setViewportSize({ width: 800, height: 900 });
-  await expect(page.locator(section)).toHaveAttribute('data-enhanced', 'false');
-  await page.waitForTimeout(300);
-  expect(errors, 'tearing down a scene with a frame pending threw').toEqual([]);
+  // The junction, then each stop in turn: the row lights, the camera flies and
+  // the stage holds. The two pixels are the snap's: the section's top is a
+  // fractional page offset and a scroll position is a whole pixel, so an exact
+  // boundary is the one place the answer is ambiguous.
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
+  await expect(page.locator(section)).toHaveAttribute('data-stop', 'junction');
+  const drawn = [await frames()];
+  for (const [i, key] of KEYS.entries()) {
+    await page.evaluate(
+      (y) => window.scrollTo({ top: y, behavior: 'instant' }),
+      Math.ceil(top) + (i + 1) * band + 2,
+    );
+    await expect(page.locator(`${section} li[data-key="${key}"]`)).toHaveAttribute(
+      'data-focus',
+      'true',
+    );
+    await expect(page.locator(section)).toHaveAttribute('data-stop', key);
+    await settled(page);
+    expect(Math.abs(await stageTop()), `the stage moved at stop ${i + 1}`).toBeLessThan(2);
+    drawn.push(await frames());
+  }
+  // Every stop cost the camera frames, which is what tells a flight from five
+  // pictures: a crossfade would have drawn none of them. The stills world has
+  // no counter to read, and the row and the stop above are what its walk is.
+  if (live) {
+    for (let i = 1; i < drawn.length; i += 1) {
+      expect(drawn[i]!, `stop ${i} drew no frames (${drawn.join(', ')})`).toBeGreaterThan(
+        drawn[i - 1]!,
+      );
+    }
+  }
+
+  // Where the panel fits, the ride moves nothing: at the last stop it stands
+  // where it stood at the map. The laptop test below is the one where it
+  // rises, and this is the assertion that keeps the ride from being applied
+  // to a panel that has nowhere to go.
+  const atEnd = await page.evaluate(
+    () => document.querySelector('.crossroads-copy')!.getBoundingClientRect().top,
+  );
+  expect(Math.abs(atEnd - panel.top), 'the panel moved on a viewport it fits').toBeLessThanOrEqual(
+    2,
+  );
+
+  // A hover overrides the track, and letting go returns to the track's row.
+  await page.hover(row('website'));
+  await expect(page.locator(`${section} li[data-key="website"]`)).toHaveAttribute(
+    'data-focus',
+    'true',
+  );
+  await leaveStage(page);
+  await expect(page.locator(`${section} li[data-key="care"]`)).toHaveAttribute(
+    'data-focus',
+    'true',
+  );
+
+  // Past the last stop the track runs out and the stage scrolls away.
+  await page.evaluate(
+    (y) => window.scrollTo({ top: y, behavior: 'instant' }),
+    Math.ceil(top) + 6 * band,
+  );
+  expect(await stageTop(), 'the stage did not release').toBeLessThan(-100);
+});
+
+test('pinned, a scroll that ends past a stop settles back onto the stop', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+
+  // Where the five stops stand, measured from the section's own top rather
+  // than assumed from BAND_SVH, so this reads the same track the reader gets.
+  const { top, stops } = await page.evaluate(() => {
+    const sec = document.querySelector('#services') as HTMLElement;
+    const secTop = sec.getBoundingClientRect().top + window.scrollY;
+    return {
+      top: secTop,
+      stops: [...document.querySelectorAll('#services .crossroads-stop')].map(
+        (el) => el.getBoundingClientRect().top + window.scrollY - secTop,
+      ),
+    };
+  });
+  expect(stops.length, 'the track has five stops').toBe(5);
+
+  const sectionTop = () =>
+    page.evaluate(() => document.querySelector('#services')!.getBoundingClientRect().top);
+
+  /**
+   * What the stops' negative scroll-margin is for, and the only thing that
+   * looks at it.
+   *
+   * html carries scroll-padding-top: 5.5rem for the fixed header, which insets
+   * the snapport by 88px, and .crossroads-stop cancels it with
+   * scroll-margin-top: -5.5rem so a stop lands at the raw top instead of 88px
+   * down. Landed, the section's top is exactly minus the stop's offset; drop
+   * the scroll margin and it is 88px more than that, which is the pinned stage
+   * hanging under the header with the panel's last row cut off.
+   *
+   * Two stops rather than all five: one is not enough to tell a snap from an
+   * offset that happens to match, and the two chosen are a whole band apart.
+   * 40px past the stop, which is inside proximity's pull at this viewport, and
+   * an instant scroll, because Chromium snaps once a programmatic scroll ends.
+   */
+  for (const [k, offset] of stops.entries()) {
+    if (k !== 1 && k !== 3) continue;
+    await page.evaluate(
+      (y) => window.scrollTo({ top: y, behavior: 'instant' }),
+      Math.round(top + offset) + 40,
+    );
+    await expect
+      .poll(async () => Math.abs((await sectionTop()) + offset), {
+        timeout: 1000,
+        message: `stop ${k} did not settle at the top of the viewport`,
+      })
+      .toBeLessThanOrEqual(2);
+  }
+});
+
+test('a still page costs no frames, and a scroll gets them', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // The whole reason the loop parks. A section a reader has stopped looking at
+  // is a section that costs a laptop's battery nothing, and the only way to
+  // say that from outside is to watch the counter not move.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+  const frames = () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
+
+  const atRest = await frames();
+  await page.waitForTimeout(800);
+  expect(await frames(), 'the parked loop drew a frame with nothing happening').toBe(atRest);
+
+  // Half a band, which is a camera in the middle of a stroke rather than at a
+  // stop, so the flight is definitely moving.
+  const top = await page
+    .locator(section)
+    .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+  await page.evaluate(
+    (y) => window.scrollTo({ top: y, behavior: 'instant' }),
+    Math.ceil(top) + 900 * 0.15,
+  );
+  await expect
+    .poll(frames, { timeout: 3000, message: 'a scroll drew no frames' })
+    .toBeGreaterThan(atRest);
+  await settled(page);
+  await expect(page.locator(section)).toHaveAttribute('data-parked', 'true');
+});
+
+test('a lost context comes back without the reader touching anything', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // A browser takes the context away when it wants to: another tab asks for
+  // one and the cap is reached, the machine sleeps, the driver resets. The
+  // browser clears the drawing buffer on the way out and three.js builds
+  // itself again on the way back in, but the loop is PARKED, which is where
+  // the section spends most of a visit, so nothing asks for the frame that
+  // would fill the blank stage. Until this was wired the reader got an empty
+  // section until they happened to scroll or move the pointer.
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+  const frames = () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
+  const parked = await frames();
+
+  const what = await page.evaluate(async () => {
+    const c = document.querySelector('#services canvas.crossroads-canvas') as HTMLCanvasElement;
+    // getContext hands back the context that is already on the canvas rather
+    // than making a second one, so this is the scene's own context.
+    const gl = c.getContext('webgl2') ?? c.getContext('webgl');
+    const ext = gl?.getExtension('WEBGL_lose_context');
+    if (!ext) return 'this browser does not offer WEBGL_lose_context';
+    const lost = new Promise<string>((told) => {
+      c.addEventListener('webglcontextlost', () => told('lost'), { once: true });
+      setTimeout(() => told('the browser never said the context was lost'), 10000);
+    });
+    const back = new Promise<string>((told) => {
+      c.addEventListener('webglcontextrestored', () => told('restored'), { once: true });
+      setTimeout(() => told('the browser never gave the context back'), 10000);
+    });
+    ext.loseContext();
+    const said = await lost;
+    if (said !== 'lost') return said;
+    // A whole task between the two, and it is required rather than polite.
+    // Resolving a promise inside the lost listener puts the continuation in
+    // the microtask checkpoint that runs while the event is still being
+    // dispatched, and Chromium only allows a restore once the dispatch is
+    // over: asking there answers "WebGL: INVALID_OPERATION: restoreContext:
+    // context restoration not allowed" and nothing comes back.
+    await new Promise((done) => setTimeout(done, 200));
+    ext.restoreContext();
+    return await back;
+  });
+  expect(what, 'the context could not be taken away and given back').toBe('restored');
+
+  // Nothing is hovered and nothing is scrolled between the restore and this
+  // poll, which is the whole assertion: the frame is the restore's own.
+  await expect
+    .poll(frames, { timeout: 10000, message: 'the restored context drew nothing' })
+    .toBeGreaterThan(parked);
+  await settled(page);
+  expect(errors, 'the restore threw at the page').toEqual([]);
+});
+
+test('both themes paint the world in the section own ink', async ({ page }) => {
+  test.skip(STILLS_ONLY, NEEDS_LIVE);
+  // The scene is full bleed and the ink hero lands on its first pixel, so the
+  // world's ground and the section's background have to be the same colour or
+  // the page gets a hard line across it. three.js holds its own copy of that
+  // colour, which is why a theme switch is a repaint here and a stylesheet
+  // everywhere else on the site.
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  const ink = () =>
+    page.locator(section).evaluate((el) => ({
+      ground: el.dataset.ground ?? 'absent',
+      painted: getComputedStyle(el).backgroundColor,
+    }));
+  const dark = await ink();
+  expect(dark.ground, 'the scene is standing in a colour the section is not').toBe(dark.painted);
+
+  // The site's own control writes data-theme onto <html>. Set here rather than
+  // clicked, because this is about the scene following the attribute and not
+  // about where the button is.
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = 'light';
+  });
+  const painted = await page
+    .locator(section)
+    .evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(painted, 'the two themes paint the same ink, so nothing was tested').not.toBe(
+    dark.painted,
+  );
+  await expect
+    .poll(async () => (await ink()).ground, {
+      timeout: 5000,
+      message: 'the scene kept the ground it booted with after a theme switch',
+    })
+    .toBe(painted);
 });
 
 for (const lang of ['de', 'en'] as const) {
@@ -439,6 +1278,23 @@ for (const lang of ['de', 'en'] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/${lang}/`);
     await arrive(page);
+
+    // The map's four chips, in THIS language. A chip's width is a font metric,
+    // so the lift that separates 01 and 02 is a different sum in each one:
+    // measured at 1440, the four are 208, 245, 183 and 170 pixels wide in
+    // German and 208, 208, 199 and 223 in English. Both need the lift and only
+    // German was ever checked for a clash.
+    //
+    // The screens inside the world are drawn in this language too, from
+    // LABELS[lang] through textures.ts, and nothing here asserts a pixel of
+    // that: tests/unit/crossroads-textures.spec.ts holds it by recording every
+    // string the drawing calls fillText with.
+    const named = await labels(page);
+    expect(named.on, `wrong labels at the junction in ${lang}`).toEqual([0, 1, 2, 3]);
+    expect(named.clashes, `labels overlap at the junction in ${lang}`).toEqual([]);
+    expect(named.hidden, `a label is behind the panel in ${lang}`).toBe(0);
+    expect(named.outside, `a label is off the stage in ${lang}`).toBe(0);
+
     // The same four keys in the same order in both languages, because the
     // component sorts by ORDER before anything reads the ways. en.ts lists
     // them differently and this is the test that says so on purpose.
@@ -449,6 +1305,8 @@ for (const lang of ['de', 'en'] as const) {
         'data-key',
         key,
       );
+      await expect(page.locator(section)).toHaveAttribute('data-stop', key);
+      await settled(page);
     }
   });
 }

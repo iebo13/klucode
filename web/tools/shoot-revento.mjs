@@ -16,9 +16,9 @@
  * on written approval and keep their diagram until it arrives.
  *
  * A script rather than a folder of PNGs somebody dragged in, for the same
- * reason tools/shoot-poster.mjs is a script: an asset nobody can regenerate is
- * an asset that goes stale silently, and the moment the app's own design moves
- * the site is showing a product that no longer exists.
+ * reason tools/blender/emit-stills.mjs is a script: an asset nobody can
+ * regenerate is an asset that goes stale silently, and the moment the app's
+ * own design moves the site is showing a product that no longer exists.
  *
  * WHAT IS AND IS NOT IN FRAME
  * ---------------------------

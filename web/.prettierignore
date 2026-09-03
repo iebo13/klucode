@@ -5,3 +5,8 @@ public
 src/app/tokens.css
 test-results
 playwright-report
+tools/blender/renders/
+tools/blender/poster/
+tools/blender/textures/
+tools/blender/scene/
+tools/blender/viewer/_build/
