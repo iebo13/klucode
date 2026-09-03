@@ -19,7 +19,10 @@ export default defineConfig({
   use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:4173' },
   projects: [
     // Everything but the frame-time measurement, headless, and that is the
-    // suite: `npm run test:e2e` opens no window and runs no benchmark.
+    // suite: `npm run test:e2e` opens no window and runs no benchmark. Under
+    // CROSSROADS_WORLD=stills, which is how CI runs it, the suite refuses
+    // WebGL to every page and skips the tests about the live scene itself:
+    // see the note on STILLS_ONLY in tests/e2e/crossroads.spec.ts.
     { name: 'chromium', testIgnore: /crossroads-flight/ },
     /**
      * The frame-time measurement, headed, opted in with CROSSROADS_GPU=1.

@@ -149,8 +149,12 @@ no graphics card and draws WebGL through SwiftShader on the processor, where
 the flight measures a mean frame gap of 517.5ms against 8.3ms headed on this
 laptop, so a headless timing run would measure the processor and report it as
 the frame rate. That is why the `gpu` project does not exist unless
-`CROSSROADS_GPU` is set: `npm run test:e2e` on its own stays headless, silent
-and green in CI.
+`CROSSROADS_GPU` is set: `npm run test:e2e` on its own stays headless and
+silent. The same processor is why CI runs that suite with
+`CROSSROADS_WORLD=stills`, which refuses WebGL to every page and skips the
+tests about the live scene itself: GitHub's runner drew it at about three
+seconds a frame, and the live-world tests are a gate this machine runs
+before a merge.
 
 ---
 
