@@ -187,8 +187,16 @@ export function LiveWorld({
     let handle: Handle | null = null;
 
     Promise.all([import('./scene'), import('./labels')])
-      .then(([{ boot }, { LABELS }]) =>
-        boot(canvas, stage, {
+      .then(([{ boot }, { LABELS }]) => {
+        // Nothing is built for a run that is already over. boot() makes a
+        // WebGLRenderer and bakes the studio before its first await, so
+        // calling it here would put a second renderer on the same canvas: one
+        // GL context with two state caches drawing over each other until the
+        // dead one's stop() lands. The two ways in are a `reduced` flip while
+        // the chunks are on the wire, and every dev mount, because StrictMode
+        // is on (next.config.mjs) and mounts each effect twice.
+        if (cancelled) return null;
+        return boot(canvas, stage, {
           // The copy panel is standing on the left of the canvas, and the
           // camera composes into what is left of it.
           panel: copyRef.current,
@@ -202,9 +210,12 @@ export function LiveWorld({
           reduced,
           url: asset,
           onFrame: () => placeRef.current(),
-        }),
-      )
+        });
+      })
       .then((started) => {
+        // Nothing was built, because the run was already over when the chunks
+        // landed. Nothing to stop and nothing to tell.
+        if (started === null) return;
         // A boot that finishes after the component has gone still owns a
         // context, a composer and four loaded models. The cleanup below could
         // not stop it, because at the moment it ran there was nothing to stop.
@@ -377,10 +388,17 @@ export function LiveWorld({
 
     stage.addEventListener('pointermove', move, { passive: true });
     stage.addEventListener('pointerleave', leave);
+    // And pointercancel, which is how a touch ends when the browser takes the
+    // gesture over for a scroll. A finger dragging the page on a wide tablet
+    // sends pointermove and then pointercancel and never pointerleave, so
+    // without this the parallax, the cursor light and a lit row all stay where
+    // the finger was and stay there, with no pointer left to put them out.
+    stage.addEventListener('pointercancel', leave);
     stage.addEventListener('click', click);
     return () => {
       stage.removeEventListener('pointermove', move);
       stage.removeEventListener('pointerleave', leave);
+      stage.removeEventListener('pointercancel', leave);
       stage.removeEventListener('click', click);
       stage.dataset.hit = 'false';
     };

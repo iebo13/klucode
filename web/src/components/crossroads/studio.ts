@@ -10,8 +10,10 @@
  * What it buys is a gradient across every bevel and every cylinder, a
  * highlight that moves with the camera, and a shadowed side lit by the room
  * rather than black. What it does not touch: the screens, which are
- * MeshBasicMaterial and ignore it, and the floor, whose roughness of 0.97
- * takes almost nothing from it.
+ * MeshBasicMaterial and ignore it, and the floor, which is roughness 0.9 and
+ * is handed envMapIntensity 0 (assets.ts), so it takes exactly nothing from
+ * this rather than almost nothing. The floor is a baked picture, and a
+ * softbox reflected across it would be a light the bake never saw.
  */
 import {
   BackSide,

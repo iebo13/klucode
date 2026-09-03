@@ -226,121 +226,139 @@ export async function loadScene(opts: LoadOptions): Promise<Loaded> {
     throw failure.reason;
   }
 
-  const floorTexture = await floorJob;
-  floorTexture.colorSpace = SRGBColorSpace;
-  // flipY stays at its default of true. PlaneGeometry's v = 1 edge lands at
-  // -z once the plane is laid down, which is where the bake's v = 1 row is:
-  // crossroads.py gives the floor UVs from (0, 0) at the near left corner,
-  // and Blender writes a PNG top row first, so the flip is what puts them
-  // back the same way round.
-  const fade = registry.track(radialFade());
-  const floorMaterial = registry.track(
-    new MeshStandardMaterial({
-      color: PALETTE.floor,
-      roughness: 0.9,
-      metalness: 0,
-      emissive: 0xffffff,
-      emissiveMap: floorTexture,
-      emissiveIntensity: FLOOR.scale,
-      alphaMap: fade,
-      transparent: true,
-    }),
-  );
-  // Nothing from the studio on the floor: it is a baked picture, and a
-  // reflection of a softbox across it would be a second light source the bake
-  // never saw.
-  floorMaterial.envMapIntensity = 0;
-  const floor = new Mesh(
-    registry.track(new PlaneGeometry(LAYOUT.floorSize, LAYOUT.floorSize)),
-    floorMaterial,
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.y = 0;
+  /**
+   * And the dressing is guarded too, for the same reason the load is.
+   *
+   * Everything below builds on what has just arrived: the radial fade is a
+   * 2D canvas, the two mock screens are two more, and the pass over each
+   * body's meshes reads the manifest's tags. A browser that refuses a 2D
+   * context throws in the middle of a registry that is already holding four
+   * glTF trees, five textures and a floor material, and the rejection would
+   * walk out of loadScene with nothing left holding a reference to any of
+   * them. The shell answers a rejected load by dropping to the stills and
+   * warning once (index.tsx), which it can only do cleanly if the place it
+   * is dropping frees itself on the way out.
+   */
+  try {
+    const floorTexture = await floorJob;
+    floorTexture.colorSpace = SRGBColorSpace;
+    // flipY stays at its default of true. PlaneGeometry's v = 1 edge lands at
+    // -z once the plane is laid down, which is where the bake's v = 1 row is:
+    // crossroads.py gives the floor UVs from (0, 0) at the near left corner,
+    // and Blender writes a PNG top row first, so the flip is what puts them
+    // back the same way round.
+    const fade = registry.track(radialFade());
+    const floorMaterial = registry.track(
+      new MeshStandardMaterial({
+        color: PALETTE.floor,
+        roughness: 0.9,
+        metalness: 0,
+        emissive: 0xffffff,
+        emissiveMap: floorTexture,
+        emissiveIntensity: FLOOR.scale,
+        alphaMap: fade,
+        transparent: true,
+      }),
+    );
+    // Nothing from the studio on the floor: it is a baked picture, and a
+    // reflection of a softbox across it would be a second light source the bake
+    // never saw.
+    floorMaterial.envMapIntensity = 0;
+    const floor = new Mesh(
+      registry.track(new PlaneGeometry(LAYOUT.floorSize, LAYOUT.floorSize)),
+      floorMaterial,
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
 
-  const screenMaterials = new Map<ScreenKind, MeshBasicMaterial>();
-  const screenMaterial = (kind: ScreenKind): MeshBasicMaterial => {
-    const had = screenMaterials.get(kind);
-    if (had) return had;
-    const canvas = document.createElement('canvas');
-    const size =
-      kind === 'landing' ? LANDING_SIZE : kind === 'dashboard' ? DASHBOARD_SIZE : WORK_SIZE;
-    canvas.width = size[0];
-    canvas.height = size[1];
-    const g = canvas.getContext('2d');
-    if (!g) throw new Error(`crossroads: this browser gave no 2D context for the ${kind} screen`);
-    if (kind === 'landing') drawLanding(g, opts.labels.landing);
-    else if (kind === 'dashboard') drawDashboard(g, opts.labels.dashboard);
-    else drawWorkScreen(g);
-    const texture = registry.track(new CanvasTexture(canvas));
-    texture.colorSpace = SRGBColorSpace;
-    // The UVs came out of a glTF, whose v runs down from the top left, and
-    // the canvas is drawn the same way down from its own top left.
-    texture.flipY = false;
-    // toneMapped false, and a white that is exactly 1.0: the bloom's
-    // threshold sits five per cent above it on purpose (post.ts).
-    const material = registry.track(new MeshBasicMaterial({ map: texture, toneMapped: false }));
-    screenMaterials.set(kind, material);
-    return material;
-  };
+    const screenMaterials = new Map<ScreenKind, MeshBasicMaterial>();
+    const screenMaterial = (kind: ScreenKind): MeshBasicMaterial => {
+      const had = screenMaterials.get(kind);
+      if (had) return had;
+      const canvas = document.createElement('canvas');
+      const size =
+        kind === 'landing' ? LANDING_SIZE : kind === 'dashboard' ? DASHBOARD_SIZE : WORK_SIZE;
+      canvas.width = size[0];
+      canvas.height = size[1];
+      const g = canvas.getContext('2d');
+      if (!g) throw new Error(`crossroads: this browser gave no 2D context for the ${kind} screen`);
+      if (kind === 'landing') drawLanding(g, opts.labels.landing);
+      else if (kind === 'dashboard') drawDashboard(g, opts.labels.dashboard);
+      else drawWorkScreen(g);
+      const texture = registry.track(new CanvasTexture(canvas));
+      texture.colorSpace = SRGBColorSpace;
+      // The UVs came out of a glTF, whose v runs down from the top left, and
+      // the canvas is drawn the same way down from its own top left.
+      texture.flipY = false;
+      // toneMapped false, and a white that is exactly 1.0: the bloom's
+      // threshold sits five per cent above it on purpose (post.ts).
+      const material = registry.track(new MeshBasicMaterial({ map: texture, toneMapped: false }));
+      screenMaterials.set(kind, material);
+      return material;
+    };
 
-  const emitterMaterial = registry.track(
-    new MeshBasicMaterial({
-      color: new Color(PALETTE.status).multiplyScalar(EMITTER_GAIN),
-      toneMapped: false,
-    }),
-  );
+    const emitterMaterial = registry.track(
+      new MeshBasicMaterial({
+        color: new Color(PALETTE.status).multiplyScalar(EMITTER_GAIN),
+        toneMapped: false,
+      }),
+    );
 
-  const ways: LoadedWay[] = [];
-  for (const job of wayJobs) {
-    const key = job.key;
-    const way = WAYS[key];
-    const group = await job.scene;
-    const lightmap = await job.lightmap;
-    lightmap.colorSpace = SRGBColorSpace;
-    // The UVs came out of a glTF, so v runs down from the top left, which is
-    // the row order the PNG is stored in: no flip.
-    lightmap.flipY = false;
-    // The lightmap unwrap is always the second UV layer (join_way in
-    // crossroads.py), so it arrives as TEXCOORD_1 and reads from channel 1.
-    lightmap.channel = 1;
+    const ways: LoadedWay[] = [];
+    for (const job of wayJobs) {
+      const key = job.key;
+      const way = WAYS[key];
+      const group = await job.scene;
+      const lightmap = await job.lightmap;
+      lightmap.colorSpace = SRGBColorSpace;
+      // The UVs came out of a glTF, so v runs down from the top left, which is
+      // the row order the PNG is stored in: no flip.
+      lightmap.flipY = false;
+      // The lightmap unwrap is always the second UV layer (join_way in
+      // crossroads.py), so it arrives as TEXCOORD_1 and reads from channel 1.
+      lightmap.channel = 1;
 
-    const screens: Mesh[] = [];
-    const emitters: Mesh[] = [];
-    group.traverse((o) => {
-      if (!(o instanceof Mesh)) return;
-      const tag = tagOf(o);
-      if (tag.startsWith('screen:')) {
-        o.material = screenMaterial(tag.slice('screen:'.length) as ScreenKind);
-        screens.push(o);
-      } else if (tag === 'emitter') {
-        o.material = emitterMaterial;
-        emitters.push(o);
-      } else if (o.material instanceof MeshStandardMaterial) {
-        o.material.lightMap = lightmap;
-        o.material.lightMapIntensity = way.lightScale * LAMBERT;
-        o.material.envMap = opts.environment;
-        o.material.envMapIntensity = ENVIRONMENT_INTENSITY;
-        // One function for every body in the scene, not one closure each, so
-        // three.js sees one program cache key and compiles the clamp once.
-        o.material.onBeforeCompile = clipAtWhite;
-        o.material.needsUpdate = true;
-      }
-    });
+      const screens: Mesh[] = [];
+      const emitters: Mesh[] = [];
+      group.traverse((o) => {
+        if (!(o instanceof Mesh)) return;
+        const tag = tagOf(o);
+        if (tag.startsWith('screen:')) {
+          o.material = screenMaterial(tag.slice('screen:'.length) as ScreenKind);
+          screens.push(o);
+        } else if (tag === 'emitter') {
+          o.material = emitterMaterial;
+          emitters.push(o);
+        } else if (o.material instanceof MeshStandardMaterial) {
+          o.material.lightMap = lightmap;
+          o.material.lightMapIntensity = way.lightScale * LAMBERT;
+          o.material.envMap = opts.environment;
+          o.material.envMapIntensity = ENVIRONMENT_INTENSITY;
+          // One function for every body in the scene, not one closure each, so
+          // three.js sees one program cache key and compiles the clamp once.
+          o.material.onBeforeCompile = clipAtWhite;
+          o.material.needsUpdate = true;
+        }
+      });
 
-    ways.push({
-      key,
-      group,
-      box: new Box3(
-        new Vector3(way.bounds.min[0], way.bounds.min[1], way.bounds.min[2]),
-        new Vector3(way.bounds.max[0], way.bounds.max[1], way.bounds.max[2]),
-      ),
-      anchor: new Vector3(way.anchor[0], way.anchor[1], way.anchor[2]),
-      screens,
-      emitters,
-    });
+      ways.push({
+        key,
+        group,
+        box: new Box3(
+          new Vector3(way.bounds.min[0], way.bounds.min[1], way.bounds.min[2]),
+          new Vector3(way.bounds.max[0], way.bounds.max[1], way.bounds.max[2]),
+        ),
+        anchor: new Vector3(way.anchor[0], way.anchor[1], way.anchor[2]),
+        screens,
+        emitters,
+      });
+    }
+
+    return { floor, ways, dispose: () => registry.disposeAll() };
+  } catch (error) {
+    registry.disposeAll();
+    throw error;
   }
-
-  return { floor, ways, dispose: () => registry.disposeAll() };
 }
 
 /** Every geometry and material a loaded glTF brought with it, so dispose() can free them. */

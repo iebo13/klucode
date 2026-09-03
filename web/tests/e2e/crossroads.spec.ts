@@ -529,6 +529,95 @@ test('a reduced-motion switch mid-visit boots a scene that knows where the last 
   );
 });
 
+test('a reduced-motion flip while the scene is loading builds one scene, not two', async ({
+  page,
+}) => {
+  // The other half of the same switch, and the window is between the dynamic
+  // import going out and boot() being called. A flip inside it tears the
+  // effect down while the two chunks are still on the wire, so the run that
+  // is already dead reaches its .then holding `boot` and calls it anyway, and
+  // boot() makes a WebGLRenderer and bakes the studio before its first await.
+  // Two renderers on one canvas share the one GL context and keep two state
+  // caches of it, and both draw until the dead one is stopped. React's
+  // StrictMode does exactly this on every dev mount (reactStrictMode is on in
+  // next.config.mjs), and a `reduced` flip during a load does it in the build
+  // that ships, which is what this drives.
+  //
+  // The window is a couple of hundred milliseconds on this machine, which is
+  // not something a test can aim at, so it is widened rather than raced: every
+  // script chunk the page asks for is held for a second before it is served,
+  // which puts a whole second between the canvas mounting and the scene module
+  // landing. The flip goes out as soon as the canvas is attached.
+  await page.route('**/_next/static/chunks/**', async (route) => {
+    await new Promise((served) => setTimeout(served, 1000));
+    await route.continue();
+  });
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+
+  // Two counters, installed before any of the page's own script runs. The
+  // first counts the boots that STARTED: a WebGLRenderer asks the canvas it
+  // was handed for a context as its first act, so one context on this canvas
+  // is one boot. The shell's own capability probe is not counted, because it
+  // asks a detached canvas of its own (hasWebGL in index.tsx). The second
+  // counts the boots that FINISHED, which is what writes data-ready, and the
+  // document is what the observer watches because at this point there is not
+  // yet a body to hang it on.
+  await page.addInitScript(() => {
+    const counts = { contexts: 0, ready: 0 };
+    (window as unknown as { __boots: typeof counts }).__boots = counts;
+    const real = HTMLCanvasElement.prototype.getContext;
+    function counted(this: HTMLCanvasElement, type: string, options?: unknown) {
+      if (type.toLowerCase().includes('webgl') && this.classList.contains('crossroads-canvas')) {
+        counts.contexts += 1;
+      }
+      return real.call(this, type as '2d', options as CanvasRenderingContext2DSettings);
+    }
+    HTMLCanvasElement.prototype.getContext =
+      counted as typeof HTMLCanvasElement.prototype.getContext;
+    new MutationObserver((records) => {
+      for (const record of records) {
+        const el = record.target as HTMLElement;
+        if (el.classList.contains('crossroads-canvas') && el.dataset.ready === 'true') {
+          counts.ready += 1;
+        }
+      }
+    }).observe(document, { attributes: true, subtree: true, attributeFilter: ['data-ready'] });
+  });
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await expect(page.locator(canvas)).toBeAttached({ timeout: 30000 });
+  // Before the first frame, which is the whole point: a flip after the scene
+  // is up is the mid-visit switch the test above already covers.
+  await expect(page.locator(canvas)).not.toHaveAttribute('data-ready', 'true');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator(section)).toHaveAttribute('data-reduced', 'true');
+  await arrive(page);
+
+  const boots = await page.evaluate(
+    () => (window as unknown as { __boots: { contexts: number; ready: number } }).__boots,
+  );
+  expect(boots.contexts, 'two renderers were built on the one canvas').toBe(1);
+  expect(boots.ready, 'more than one boot finished on the one canvas').toBe(1);
+
+  // And the counter only ever climbs. It is written from whichever handle the
+  // component is holding, so a second loop drawing into the same canvas
+  // reports its own count through the same attribute and the number falls.
+  const frames = () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
+  let last = await frames();
+  for (let i = 0; i < 8; i += 1) {
+    await page.waitForTimeout(100);
+    const now = await frames();
+    expect(
+      now,
+      'the frame counter went backwards after the scene was ready',
+    ).toBeGreaterThanOrEqual(last);
+    last = now;
+  }
+  expect(errors, 'the boot threw at the page').toEqual([]);
+});
+
 test('a pointer leaving an object for the panel puts that row out', async ({ page }) => {
   // A coalesced pointer move can go from an object straight onto the copy
   // panel with no event in between. The panel branch used to return without
@@ -560,6 +649,38 @@ test('a pointer leaving an object for the panel puts that row out', async ({ pag
   );
   await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
   await expect(page.locator(`${section} .crossroads-stage`)).toHaveAttribute('data-hit', 'false');
+});
+
+test('a pointer the browser takes away puts the hand out', async ({ page }) => {
+  // A finger on a wide tablet sends pointermove, and then pointercancel when
+  // the browser takes the gesture over for a scroll. It never sends
+  // pointerleave. Until the same handler heard both, the parallax, the cursor
+  // light and whichever row the finger was over all stayed where the finger
+  // had been, with no pointer left on the page to put them out.
+  //
+  // The cancel is dispatched rather than gestured, because Playwright's touch
+  // emulation does not produce the browser's own takeover. What is asserted is
+  // the section's answer to the event, and the handler does not ask where an
+  // event came from.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+
+  // Onto an object, found the way the test above finds one: down from the app
+  // chip until the stage says something is under the pointer.
+  const anchor = await page.locator(`${section} .crossroads-mark`).nth(1).boundingBox();
+  expect(anchor, 'the app chip has no box to walk down from').not.toBeNull();
+  let found = false;
+  for (let step = 0; step <= 30 && !found; step += 1) {
+    await page.mouse.move(anchor!.x, anchor!.y + step * 10);
+    found = (await page.getAttribute(`${section} .crossroads-stage`, 'data-hit')) === 'true';
+  }
+  expect(found, 'no object was found under the pointer below the app chip').toBe(true);
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(1);
+
+  await page.locator(`${section} .crossroads-stage`).dispatchEvent('pointercancel');
+  await expect(page.locator(`${section} .crossroads-stage`)).toHaveAttribute('data-hit', 'false');
+  await expect(page.locator(`${section} li[data-focus="true"]`)).toHaveCount(0);
 });
 
 test('hovering and leaving the section reports no console errors', async ({ page }) => {
@@ -721,6 +842,71 @@ test('under the pin height the section is its own height and costs no scroll', a
   expect(seen.height, 'the section is a track rather than its own height').toBeLessThan(2);
   expect(seen.position).not.toBe('sticky');
   expect(seen.stops).toBe(0);
+});
+
+test('the canvas is the size of the stage after the pin flips, with no second window event', async ({
+  page,
+}) => {
+  // The stage's box changes without a window resize behind it. Crossing the
+  // PIN floor is the case with teeth: globals.css makes a pinned stage 100svh
+  // and an unpinned one the section's own height, and the two are hundreds of
+  // pixels apart. The window listener runs during the browser's resize steps,
+  // which is before the media query change React learns the flip from, so it
+  // measures the stage the OLD rule was sizing and there is no second event
+  // afterwards to correct it. What the reader gets is one frame's worth of
+  // picture stretched over a taller box until they resize the window again.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+
+  /**
+   * The drawing buffer against the box it is drawn for.
+   *
+   * The ratio is read off the width rather than assumed, because it is
+   * whatever the renderer settled on: window.devicePixelRatio capped at
+   * RETINA, 1 on this headless machine and 1.5 on a retina screen. The
+   * height is then the assertion, and one pixel of slack is
+   * renderer.setSize's own floor.
+   */
+  const sizing = () =>
+    page.evaluate(() => {
+      const c = document.querySelector('#services canvas.crossroads-canvas') as HTMLCanvasElement;
+      const stage = document.querySelector('.crossroads-stage') as HTMLElement;
+      return {
+        bufferW: c.width,
+        bufferH: c.height,
+        boxW: stage.clientWidth,
+        boxH: stage.clientHeight,
+      };
+    });
+  const fits = (seen: Awaited<ReturnType<typeof sizing>>, where: string) => {
+    const ratio = seen.bufferW / seen.boxW;
+    expect(ratio, `nothing to divide: a ${seen.bufferW} buffer on a ${seen.boxW} stage ${where}`).toBeGreaterThan(0); // prettier-ignore
+    expect(
+      Math.abs(seen.bufferH - seen.boxH * ratio),
+      `the canvas is ${seen.bufferW}x${seen.bufferH} for a ${seen.boxW}x${seen.boxH} stage ${where}`,
+    ).toBeLessThanOrEqual(1);
+  };
+
+  fits(await sizing(), 'pinned');
+
+  // 860 is under the 55rem pin floor and 1440 is over the 64rem room floor, so
+  // this unpins the section and keeps the world. Measured here: the stage goes
+  // from 900 tall to 976, which is the panel and the layout's own padding.
+  await page.setViewportSize({ width: 1440, height: 860 });
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'false');
+  await settled(page);
+  const unpinned = await sizing();
+  expect(unpinned.boxH, 'the unpinned stage is no taller than the viewport').toBeGreaterThan(860);
+  fits(unpinned, 'unpinned');
+
+  // And back, because the flip has to be followed in both directions: pinned
+  // again the stage is a viewport tall and the canvas has to come back down.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.locator(section)).toHaveAttribute('data-pinned', 'true');
+  await settled(page);
+  fits(await sizing(), 'pinned again');
 });
 
 test('pinned, the track walks the four routes, a hover overrides, and the end releases', async ({
@@ -885,6 +1071,61 @@ test('a still page costs no frames, and a scroll gets them', async ({ page }) =>
     .toBeGreaterThan(atRest);
   await settled(page);
   await expect(page.locator(section)).toHaveAttribute('data-parked', 'true');
+});
+
+test('a lost context comes back without the reader touching anything', async ({ page }) => {
+  // A browser takes the context away when it wants to: another tab asks for
+  // one and the cap is reached, the machine sleeps, the driver resets. The
+  // browser clears the drawing buffer on the way out and three.js builds
+  // itself again on the way back in, but the loop is PARKED, which is where
+  // the section spends most of a visit, so nothing asks for the frame that
+  // would fill the blank stage. Until this was wired the reader got an empty
+  // section until they happened to scroll or move the pointer.
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/de/');
+  await arrive(page);
+  const frames = () => page.locator(section).evaluate((el) => Number(el.dataset.frames ?? -1));
+  const parked = await frames();
+
+  const what = await page.evaluate(async () => {
+    const c = document.querySelector('#services canvas.crossroads-canvas') as HTMLCanvasElement;
+    // getContext hands back the context that is already on the canvas rather
+    // than making a second one, so this is the scene's own context.
+    const gl = c.getContext('webgl2') ?? c.getContext('webgl');
+    const ext = gl?.getExtension('WEBGL_lose_context');
+    if (!ext) return 'this browser does not offer WEBGL_lose_context';
+    const lost = new Promise<string>((told) => {
+      c.addEventListener('webglcontextlost', () => told('lost'), { once: true });
+      setTimeout(() => told('the browser never said the context was lost'), 10000);
+    });
+    const back = new Promise<string>((told) => {
+      c.addEventListener('webglcontextrestored', () => told('restored'), { once: true });
+      setTimeout(() => told('the browser never gave the context back'), 10000);
+    });
+    ext.loseContext();
+    const said = await lost;
+    if (said !== 'lost') return said;
+    // A whole task between the two, and it is required rather than polite.
+    // Resolving a promise inside the lost listener puts the continuation in
+    // the microtask checkpoint that runs while the event is still being
+    // dispatched, and Chromium only allows a restore once the dispatch is
+    // over: asking there answers "WebGL: INVALID_OPERATION: restoreContext:
+    // context restoration not allowed" and nothing comes back.
+    await new Promise((done) => setTimeout(done, 200));
+    ext.restoreContext();
+    return await back;
+  });
+  expect(what, 'the context could not be taken away and given back').toBe('restored');
+
+  // Nothing is hovered and nothing is scrolled between the restore and this
+  // poll, which is the whole assertion: the frame is the restore's own.
+  await expect
+    .poll(frames, { timeout: 10000, message: 'the restored context drew nothing' })
+    .toBeGreaterThan(parked);
+  await settled(page);
+  expect(errors, 'the restore threw at the page').toEqual([]);
 });
 
 test('both themes paint the world in the section own ink', async ({ page }) => {

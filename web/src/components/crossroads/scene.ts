@@ -569,7 +569,50 @@ export async function boot(
     resize();
     moving = advance(performance.now());
     invalidate();
+
+    /**
+     * Two ways to hear that the canvas has changed size, and both are needed.
+     *
+     * The observer is the one that matters, because the stage's box changes
+     * without the window changing at all. The web fonts landing reflow the
+     * panel and the rows, and an unpinned stage is exactly as tall as they
+     * make it. Pinning is the case with teeth: globals.css gives a pinned
+     * stage 100svh and an unpinned one the section's own height, which at 1440
+     * wide is 900 against 976. Worse, the window event and the flip are not
+     * even in step. The window listener runs during the browser's resize
+     * steps, which is BEFORE the media query change React learns the flip
+     * from, so on the notch that crosses the PIN floor it measures the stage
+     * the old rule was still sizing and no second event ever arrives to
+     * correct it.
+     *
+     * The window listener stays as the reserve. A ResizeObserver reports the
+     * element's own box, so a change that leaves the box alone and moves what
+     * is drawn into it, a devicePixelRatio that changes when the window is
+     * dragged to another screen, is the window's to report and not the box's.
+     */
+    const stageWatch = new ResizeObserver(resize);
+    stageWatch.observe(host);
     window.addEventListener('resize', resize, { passive: true });
+
+    /**
+     * A context the browser took away and gave back owes the reader a frame.
+     *
+     * Losing it is ordinary: another tab reaches the page's context cap, the
+     * machine sleeps, the driver resets. The browser clears the drawing buffer
+     * on the way out and three.js rebuilds every GL object it owns on the way
+     * back in, but this loop parks whenever nothing is moving, which is most
+     * of a visit, so without this line the reader is left looking at a blank
+     * stage until they happen to scroll or move the pointer.
+     *
+     * One thing does not come back, and it is accepted rather than fixed. The
+     * studio in studio.ts is baked into a PMREM render target, so its texture
+     * has no image behind it for three.js to upload again: after a restore the
+     * metals keep their lightmaps and lose the environment's highlight until
+     * the next boot. Baking it again here would mean holding the generator and
+     * the studio scene for the whole visit against an event most readers never
+     * see.
+     */
+    canvas.addEventListener('webglcontextrestored', invalidate);
 
     return {
       aim(way) {
@@ -643,7 +686,9 @@ export async function boot(
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         moving = false;
+        stageWatch.disconnect();
         window.removeEventListener('resize', resize);
+        canvas.removeEventListener('webglcontextrestored', invalidate);
         // The registry holds the composer and the studio bake; the loaded place
         // owns its own registry, which is what its dispose() empties. three.js
         // frees nothing when a mesh leaves a scene and nothing when the renderer

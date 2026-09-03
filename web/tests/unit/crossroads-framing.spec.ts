@@ -26,12 +26,15 @@ import type { CameraState, Mark, ServiceKey } from '../../src/components/crossro
  */
 
 const CANVASES = [
-  // The pinned stage at each viewport the live world mounts on, and how much
-  // of it the copy panel is standing on. The container is 72rem, capped and
-  // centred, with 2rem of padding, the panel 30rem bled 1.5rem left: the
-  // panel's right edge is (viewport - 1152) / 2 + 32 - 24 + 480, which is
-  // 488 at 1024, 632 at 1440 and 872 at 1920. Measured against the build by
-  // tools/shoot.mjs, which prints the reserve.
+  // The stage at each viewport the live world mounts on, and how much of it
+  // the copy panel is standing on. The container is 72rem centred and capped
+  // at the viewport, with 2rem of padding, and the panel is 30rem bled 1.5rem
+  // left, so the panel's right edge is
+  // max(0, (viewport - 1152) / 2) + 32 - 24 + 480. The cap is what the max is
+  // for: at 1024 the container is the viewport and its left edge is 0, which
+  // makes the reserve 488 rather than the 424 the halved difference alone
+  // would give. 632 at 1440 and 872 at 1920. All three measured against the
+  // build by tools/shoot.mjs, which prints the reserve.
   { name: '1024 wide', w: 1024, h: 736, reserve: 488 },
   { name: '1440 wide', w: 1440, h: 900, reserve: 632 },
   { name: '1920 wide', w: 1920, h: 1080, reserve: 872 },
